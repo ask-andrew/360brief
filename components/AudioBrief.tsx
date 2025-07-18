@@ -1,76 +1,76 @@
 
-import React from 'react';
-import { MailIcon, MessageSquareIcon, CpuIcon, RadioIcon, FileTextIcon, GmailIcon, GoogleCalendarIcon, SlackIcon } from './Icons';
+import React, { useState } from 'react';
+import { PlayIcon, PauseIcon, RewindIcon, FastForwardIcon } from './Icons';
 
-const VisualContainer: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className }) => (
-    <div className={`relative w-full min-h-[12rem] md:h-48 flex items-center justify-center p-8 bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden ${className}`}>
-        {children}
-    </div>
-);
+const AudioBrief: React.FC = () => {
+    const [isPlaying, setIsPlaying] = useState(true);
 
-export const Step1Visual: React.FC = () => (
-    <VisualContainer>
-        {/* Central Logo */}
-        <div className="relative z-10 flex items-center justify-center w-20 h-20 bg-brand-blue rounded-full shadow-lg shadow-sky-500/30 animate-fade-in-up">
-            <img src="/logo.png" alt="360Brief Logo" className="w-12 h-12 rounded-md" />
-        </div>
+    return (
+        <section id="audio-brief" className="py-20">
+            <div className="text-center">
+                <h2 className="text-4xl font-bold text-white mb-4">Your Daily Briefing, On Demand</h2>
+                <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-16">
+                    Listen to your personalized summary on your commute, at the gym, or on the go.
+                </p>
+            </div>
 
-        {/* Floating source icons */}
-        <div className="absolute top-1/2 left-4 transform -translate-y-1/2 -rotate-12 flex items-center justify-center w-16 h-16 bg-slate-700 rounded-full animate-fade-in-up" style={{animationDelay: '200ms'}}>
-            <GmailIcon className="w-8 h-8 text-slate-300" />
-        </div>
-        <div className="absolute top-8 right-4 transform rotate-12 flex items-center justify-center w-16 h-16 bg-slate-700 rounded-full animate-fade-in-up" style={{animationDelay: '400ms'}}>
-            <SlackIcon className="w-8 h-8 text-slate-300" />
-        </div>
-        <div className="absolute bottom-8 right-1/2 transform translate-x-1/2 rotate-6 flex items-center justify-center w-16 h-16 bg-slate-700 rounded-full animate-fade-in-up" style={{animationDelay: '600ms'}}>
-            <GoogleCalendarIcon className="w-8 h-8 text-slate-300" />
-        </div>
-    </VisualContainer>
-);
+            <div className="relative mx-auto border-slate-800 bg-slate-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
+                <div className="w-[148px] h-[18px] bg-slate-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+                <div className="h-[46px] w-[3px] bg-slate-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+                <div className="h-[46px] w-[3px] bg-slate-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+                <div className="h-[64px] w-[3px] bg-slate-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+                <div className="rounded-[2rem] overflow-hidden w-full h-full bg-brand-dark">
+                    <div className="px-6 py-10 text-white flex flex-col h-full">
+                        <div className="text-center mb-8">
+                            <p className="text-sm text-brand-blue font-semibold tracking-wider">NOW PLAYING</p>
+                            <h3 className="text-xl font-bold mt-1">360Brief Daily</h3>
+                        </div>
 
+                        <div className="flex-grow flex items-center justify-center">
+                            <div className="w-48 h-48 bg-gradient-to-br from-brand-blue to-sky-700 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/30 p-4">
+                                <img src="/logo.png" alt="Audio Brief Album Art" className="w-full h-full object-cover rounded-lg" />
+                            </div>
+                        </div>
 
-export const Step2Visual: React.FC = () => (
-    <VisualContainer className="flex items-center justify-between gap-4 md:gap-8">
-        {/* Input Streams (Noise) */}
-        <div className="w-2/5 space-y-4 animate-fade-in-up">
-            <div className="w-full h-1.5 bg-slate-700 rounded-full opacity-80 animate-pulse" style={{ animationDelay: '0s' }}></div>
-            <div className="w-4/5 h-1.5 bg-slate-700 rounded-full opacity-60 animate-pulse ml-auto" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-full h-1.5 bg-slate-700 rounded-full opacity-90 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-        </div>
+                        <div className="flex-shrink-0">
+                            <div className="mb-4">
+                                <h4 className="font-bold text-lg">Your Daily Ops Briefing</h4>
+                                <p className="text-sm text-slate-400">Today's key updates</p>
+                            </div>
+                            
+                            {/* Progress Bar */}
+                            <div className="mb-4">
+                                <div className="bg-slate-700 rounded-full h-1.5 w-full">
+                                    <div className="bg-brand-blue h-1.5 rounded-full" style={{ width: '45%' }}></div>
+                                </div>
+                                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <span>1:35</span>
+                                    <span>3:55</span>
+                                </div>
+                            </div>
 
-        {/* Processor */}
-        <div className="relative flex items-center justify-center flex-shrink-0 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-             <div className="absolute w-16 h-16 bg-brand-blue/20 rounded-full animate-ping"></div>
-             <CpuIcon className="w-16 h-16 text-brand-blue z-10" />
-        </div>
+                            {/* Controls */}
+                            <div className="flex items-center justify-center gap-6">
+                                <button className="text-slate-400 hover:text-white transition-colors" aria-label="Rewind 10 seconds">
+                                    <RewindIcon className="w-8 h-8" />
+                                </button>
+                                <button 
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                    className="w-16 h-16 bg-white text-brand-dark rounded-full flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform"
+                                    aria-label={isPlaying ? "Pause" : "Play"}
+                                >
+                                    {isPlaying ? <PauseIcon className="w-8 h-8" /> : <PlayIcon className="w-8 h-8 ml-1" />}
+                                </button>
+                                <button className="text-slate-400 hover:text-white transition-colors" aria-label="Fast-forward 10 seconds">
+                                    <FastForwardIcon className="w-8 h-8" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
 
-        {/* Output Stream (Signal) */}
-        <div className="w-2/5 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-             <div className="w-full h-2 bg-gradient-to-r from-brand-blue to-sky-400 rounded-full shadow-lg shadow-sky-500/20"></div>
-        </div>
-    </VisualContainer>
-);
-
-
-export const Step3Visual: React.FC = () => (
-    <VisualContainer>
-       {/* Central Brief card */}
-       <div className="w-40 h-24 bg-slate-700 rounded-lg p-3 flex flex-col gap-2.5 animate-fade-in-up">
-            <div className="w-3/4 h-2 bg-slate-500 rounded-full"></div>
-            <div className="w-full h-2 bg-slate-500 rounded-full"></div>
-            <div className="w-1/2 h-2 bg-slate-500 rounded-full"></div>
-            <div className="w-3/4 h-2 bg-slate-500 rounded-full"></div>
-       </div>
-
-       {/* Floating Output Icons */}
-       <div className="absolute top-2 left-4 flex items-center justify-center w-14 h-14 bg-slate-800 border-2 border-slate-600 rounded-full transform -rotate-12 animate-fade-in-up" style={{animationDelay: '200ms'}}>
-            <MailIcon className="w-7 h-7 text-sky-400" />
-       </div>
-       <div className="absolute bottom-2 right-4 flex items-center justify-center w-14 h-14 bg-slate-800 border-2 border-slate-600 rounded-full transform rotate-6 animate-fade-in-up" style={{animationDelay: '400ms'}}>
-            <RadioIcon className="w-7 h-7 text-sky-400" />
-       </div>
-        <div className="absolute top-8 right-0 flex items-center justify-center w-14 h-14 bg-slate-800 border-2 border-slate-600 rounded-full transform rotate-12 animate-fade-in-up" style={{animationDelay: '600ms'}}>
-            <FileTextIcon className="w-7 h-7 text-sky-400" />
-       </div>
-    </VisualContainer>
-);
+export default AudioBrief;
