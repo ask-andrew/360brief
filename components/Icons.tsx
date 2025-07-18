@@ -1,19 +1,9 @@
+
 import React from 'react';
 
 interface IconProps {
   className?: string;
 }
-
-export const LogoIcon: React.FC<IconProps> = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M15.5 13.5c0-2.3-1.6-4.5-4.5-4.5M8.5 13.5c0-2.3 1.6-4.5 4.5-4.5" />
-    <path d="M12 9C10.3 9 9 10.3 9 12s1.3 3 3 3 3-1.3 3-3" />
-    <path d="M12 15a2.5 2.5 0 0 0 2.5 2.5" />
-    <path d="M12 15a2.5 2.5 0 0 1-2.5 2.5" />
-    <path d="M12 2a9 9 0 0 0-9 9c0 4.2 3.8 9.3 8.2 10.8a1 1 0 0 0 1.6 0C17.2 20.3 21 15.2 21 11a9 9 0 0 0-9-9z" />
-    <path d="M9 20s1 .5 3 .5 3-.5 3-.5" />
-  </svg>
-);
 
 export const MailIcon: React.FC<IconProps> = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { LogoIcon, PlayIcon, PauseIcon, RewindIcon, FastForwardIcon } from './Icons';
+import { PlayIcon, PauseIcon, RewindIcon, FastForwardIcon } from './Icons';
 
 const AudioBrief: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState(true);
@@ -26,8 +27,8 @@ const AudioBrief: React.FC = () => {
                         </div>
 
                         <div className="flex-grow flex items-center justify-center">
-                            <div className="w-48 h-48 bg-gradient-to-br from-brand-blue to-sky-700 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/30">
-                                <LogoIcon className="w-24 h-24 text-white opacity-90" />
+                            <div className="w-48 h-48 bg-gradient-to-br from-brand-blue to-sky-700 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/30 p-4">
+                                <img src="/components/logo.png" alt="Audio Brief Album Art" className="w-full h-full object-cover rounded-lg" />
                             </div>
                         </div>
 
