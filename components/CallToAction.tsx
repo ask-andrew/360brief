@@ -24,10 +24,17 @@ const CallToAction: React.FC = () => {
           name="waitlist"
           method="POST"
           data-netlify="true"
+          data-netlify-honeypot="bot-field"
           className="max-w-md mx-auto flex flex-col sm:flex-row gap-3"
         >
           {/* This hidden input is required for Netlify Forms to work with React */}
           <input type="hidden" name="form-name" value="waitlist" />
+          {/* Netlify honeypot field for spam protection */}
+          <div hidden aria-hidden="true">
+            <label>
+              Don’t fill this out if you’re human: <input name="bot-field" />
+            </label>
+          </div>
           <label htmlFor="email-input" className="sr-only">Your Email</label>
           <input
             id="email-input"
