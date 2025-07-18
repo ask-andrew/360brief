@@ -12,7 +12,7 @@ export const Step1Visual: React.FC = () => (
     <VisualContainer>
         {/* Central Logo */}
         <div className="relative z-10 flex items-center justify-center w-20 h-20 bg-brand-blue rounded-full shadow-lg shadow-sky-500/30 animate-fade-in-up">
-            <img src="/components/logo.png" alt="360Brief Logo" className="w-12 h-12 rounded-md" />
+            <img src="/logo.png" alt="360Brief Logo" className="w-12 h-12 rounded-md" />
         </div>
 
         {/* Floating source icons */}
