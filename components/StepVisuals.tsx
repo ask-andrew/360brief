@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LogoIcon, MailIcon, MessageSquareIcon, CpuIcon, RadioIcon, FileTextIcon, GmailIcon, GoogleCalendarIcon, SlackIcon } from './Icons';
+import { MailIcon, MessageSquareIcon, CpuIcon, RadioIcon, FileTextIcon, GmailIcon, GoogleCalendarIcon, SlackIcon } from './Icons';
 
 const VisualContainer: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className }) => (
     <div className={`relative w-full min-h-[12rem] md:h-48 flex items-center justify-center p-8 bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden ${className}`}>
@@ -12,7 +12,7 @@ export const Step1Visual: React.FC = () => (
     <VisualContainer>
         {/* Central Logo */}
         <div className="relative z-10 flex items-center justify-center w-20 h-20 bg-brand-blue rounded-full shadow-lg shadow-sky-500/30 animate-fade-in-up">
-            <LogoIcon className="w-10 h-10 text-white" />
+            <img src="/components/logo.png" alt="360Brief Logo" className="w-12 h-12 rounded-md" />
         </div>
 
         {/* Floating source icons */}
