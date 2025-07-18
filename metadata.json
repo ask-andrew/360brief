@@ -1,0 +1,6 @@
+{
+  "name": "360Brief",
+  "description": "360Brief is your personal briefing assistant for work. It connects to your communication tools, uses an LLM to identify what matters, and generates a concise daily brief with key themes, blockers, progress, and kudos.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

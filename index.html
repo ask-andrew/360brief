@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>360Brief - Your Personal Briefing Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-blue': '#0ea5e9', // sky-500
+              'brand-green': '#22c55e', // green-500
+              'brand-dark': '#0f172a', // slate-900
+              'brand-light': '#f1f5f9', // slate-100
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            animation: {
+                'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+            },
+            keyframes: {
+                fadeInUp: {
+                    '0%': { opacity: '0', transform: 'translateY(20px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
+                },
+            },
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Custom Range Slider Styles */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 8px;
+        background: #334155; /* slate-700 */
+        border-radius: 9999px;
+        outline: none;
+        opacity: 0.8;
+        transition: opacity .2s;
+      }
+      input[type="range"]:hover {
+        opacity: 1;
+      }
+      
+      /* Thumb for Webkit browsers (Chrome, Safari) */
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        background: #0ea5e9; /* brand-blue */
+        cursor: pointer;
+        border-radius: 50%;
+        border: 4px solid #0f172a; /* brand-dark */
+        box-shadow: 0 0 5px rgba(14, 165, 233, 0.5);
+      }
+
+      /* Thumb for Firefox */
+      input[type="range"]::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        background: #0ea5e9; /* brand-blue */
+        cursor: pointer;
+        border-radius: 50%;
+        border: 4px solid #0f172a; /* brand-dark */
+        box-shadow: 0 0 5px rgba(14, 165, 233, 0.5);
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-brand-dark text-slate-300 font-sans antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
