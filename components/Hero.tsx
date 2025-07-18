@@ -1,11 +1,12 @@
 
 import React from 'react';
+import Logo from './Logo';
 
 const Hero: React.FC = () => {
   return (
     <section className="text-center pt-20 md:pt-24 pb-12 md:pb-16">
       <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-        <img src="/logo.png" alt="360Brief Logo" className="w-auto h-40 md:h-48 mx-auto rounded-2xl shadow-2xl shadow-black/30" />
+        <Logo className="w-auto h-40 md:h-48 mx-auto rounded-2xl shadow-2xl shadow-black/30" />
       </div>
       <h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
         Stop Drowning in Noise.
