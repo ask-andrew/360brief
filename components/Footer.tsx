@@ -6,7 +6,7 @@ const Footer: React.FC = () => {
     <footer className="py-8 border-t border-slate-800">
       <div className="container mx-auto px-6 md:px-12 text-center text-slate-500">
         <div className="flex items-center justify-center gap-2 text-lg font-bold text-slate-400 mb-4">
-            <img src="/components/logo.png" alt="360Brief Logo" className="h-6 w-6" />
+            <img src="/logo.png" alt="360Brief Logo" className="h-6 w-6" />
             360Brief
         </div>
         <p>&copy; {new Date().getFullYear()} 360Brief. All rights reserved.</p>
