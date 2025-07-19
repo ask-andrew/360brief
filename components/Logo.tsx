@@ -10,7 +10,7 @@ import React from 'react';
 // For example, if your username is 'octocat' and your repo is 'my-website',
 // the URL would be:
 // `https://raw.githubusercontent.com/octocat/my-website/main/components/logo.png`
-const logoImage = "https://github.com/ask-andrew/360brief/blob/main/components/logo.png";
+const logoImage = "https://raw.githubusercontent.com/ask-andrew/360brief/main/components/logo.png";
 
 interface LogoProps {
   className?: string;
