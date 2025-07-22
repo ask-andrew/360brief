@@ -9,8 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-dom": "^19.1.0",
-    "react": "^19.1.0"
+    "react-dom": "^18.2.0",
+    "react": "^18.2.0",
+    "@auth0/auth0-react": "2.2.4",
+    "googleapis": "^153.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "@netlify/functions": "^4.1.14",
+    "buffer": "^6.0.3",
+    "@google-cloud/secret-manager": "^6.1.0",
+    "jwks-rsa": "^3.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
