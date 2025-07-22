@@ -4,69 +4,53 @@ import { OAuth2Client } from 'google-auth-library';
 import { URLSearchParams } from 'url'; // Ensure this import is at the top if not there
 
 const handler: Handler = async (event) => {
-    console.log("google-oauth-callback function invoked!"); // This should appear in Netlify logs if they ever show up
+    console.log("google-oauth-callback function invoked!");
     const { code, state, error } = event.queryStringParameters || {};
     console.log("Query parameters received:", { code, state, error });
 
-    if (error) {
-        console.error("Google OAuth error:", error);
-        // Redirect with a clear error for the user
+    // --- Helper function for JSON response ---
+    const respondWithError = (message: string, details?: string, userId?: string) => {
+        console.error("Function error:", message, details);
         return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?auth_error=google_oauth_failed&details=${encodeURIComponent(error)}`,
-            },
+            statusCode: 200, // We'll return 200 OK for debugging, not a redirect
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                success: false,
+                error: message,
+                details: details,
+                userId: userId,
+            }),
         };
+    };
+    // --- End Helper ---
+
+    if (error) {
+        return respondWithError("Google OAuth error", error);
     }
 
     if (!code) {
-        console.error("No authorization code received.");
-        return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?auth_error=no_code_received`,
-            },
-        };
+        return respondWithError("No authorization code received.");
     }
 
     if (!state) {
-        console.error("No state parameter received.");
-        return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?auth_error=no_state`,
-            },
-        };
+        return respondWithError("No state parameter received.");
     }
 
-    // Decode the state to get the user ID
     const stateParams = new URLSearchParams(state);
     const userId = stateParams.get('userId');
 
     if (!userId) {
-        console.error("User ID not found in state.");
-        return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?auth_error=user_id_missing_in_state`,
-            },
-        };
+        return respondWithError("User ID not found in state.");
     }
     console.log("User ID from state:", userId);
 
 
     const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
     const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-    const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI; // This should be your Netlify function's callback URL
+    const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
 
     if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
-        console.error("Missing Google API credentials.");
-        return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?auth_error=missing_google_credentials`,
-            },
-        };
+        return respondWithError("Missing Google API credentials.");
     }
 
     const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
@@ -74,53 +58,34 @@ const handler: Handler = async (event) => {
     let refreshToken = '';
 
     try {
-        // Exchange authorization code for tokens
         console.log("Attempting to exchange authorization code for tokens...");
         const { tokens } = await oauth2Client.getToken(code);
         console.log("Tokens received.");
 
         if (!tokens.refresh_token) {
-            console.error("No refresh token received.");
-            return {
-                statusCode: 302,
-                headers: {
-                    Location: `/dashboard?auth_error=no_refresh_token&user=${encodeURIComponent(userId)}`,
-                },
-            };
+            return respondWithError("No refresh token received.", undefined, userId);
         }
         refreshToken = tokens.refresh_token;
-        console.log("Refresh token obtained. Length:", refreshToken.length); // Log length, not value
+        console.log("Refresh token obtained. Length:", refreshToken.length);
 
     } catch (tokenError) {
-        console.error("Error exchanging code for tokens:", tokenError);
         const errorMessage = tokenError instanceof Error ? tokenError.message : String(tokenError);
-        return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?auth_error=token_exchange_failed&details=${encodeURIComponent(errorMessage)}&user=${encodeURIComponent(userId)}`,
-            },
-        };
+        return respondWithError("Error exchanging code for tokens.", errorMessage, userId);
     }
 
     const projectId = process.env.GCP_PROJECT_ID;
     if (!projectId) {
-        console.error("GCP_PROJECT_ID environment variable not set at runtime.");
-        return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?auth_error=gcp_project_id_missing_runtime&user=${encodeURIComponent(userId)}`,
-            },
-        };
+        return respondWithError("GCP_PROJECT_ID environment variable not set at runtime.", undefined, userId);
     }
     console.log("GCP_PROJECT_ID confirmed:", projectId);
 
     const secretManagerClient = new SecretManagerServiceClient();
-    const secretName = `360brief-google-refresh-token-${userId.replace(/[^a-zA-Z0-9-]/g, '_')}`; // Ensure valid secret name chars
+    // Use a more robust replace for secret name, allowing only valid chars
+    const secretName = `360brief-google-refresh-token-${userId.replace(/[^a-zA-Z0-9-]/g, '_')}`;
     const secretPath = `projects/${projectId}/secrets/${secretName}`;
 
     try {
         console.log(`Attempting to create/update secret: ${secretPath}`);
-        // Check if secret exists
         let secretExists = false;
         try {
             await secretManagerClient.getSecret({ name: secretPath });
@@ -131,14 +96,12 @@ const handler: Handler = async (event) => {
                 secretExists = false;
                 console.log(`Secret ${secretName} does not exist, will create.`);
             } else {
-                // Re-throw other errors for getSecret, or handle specifically
                 console.error("Error checking secret existence:", getSecretError);
-                throw getSecretError; // Re-throw to catch in outer block
+                throw getSecretError;
             }
         }
 
         if (!secretExists) {
-            // Create the secret
             await secretManagerClient.createSecret({
                 parent: `projects/${projectId}`,
                 secretId: secretName,
@@ -151,7 +114,6 @@ const handler: Handler = async (event) => {
             console.log(`Secret ${secretName} created.`);
         }
 
-        // Add the new secret version (the refresh token)
         const payload = Buffer.from(refreshToken, 'utf8');
         await secretManagerClient.addSecretVersion({
             parent: secretPath,
@@ -161,23 +123,19 @@ const handler: Handler = async (event) => {
         });
         console.log(`New secret version added for ${secretName}.`);
 
-        // If everything worked, redirect with success
+        // If everything worked, return success JSON
         return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?google_connected=true&user=${encodeURIComponent(userId)}`,
-            },
+            statusCode: 200,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                success: true,
+                message: "Google refresh token stored successfully!",
+                userId: userId,
+            }),
         };
 
     } catch (secretManagerError) {
-        console.error("Error interacting with Secret Manager:", secretManagerError);
         const errorMessage = secretManagerError instanceof Error ? secretManagerError.message : String(secretManagerError);
-        // Redirect with a detailed error for Secret Manager failure
-        return {
-            statusCode: 302,
-            headers: {
-                Location: `/dashboard?auth_error=secret_storage_failed&details=${encodeURIComponent(errorMessage)}&user=${encodeURIComponent(userId)}`,
-            },
-        };
+        return respondWithError("Secret storage failed.", errorMessage, userId);
     }
 };
