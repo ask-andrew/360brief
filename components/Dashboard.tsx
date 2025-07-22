@@ -15,7 +15,7 @@ const Dashboard: React.FC = () => {
         try {
             const accessToken = await getAccessTokenSilently();
             
-            const response = await fetch('/api/connect-google', {
+            const response = await fetch('/.netlify/functions/connect-google', {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
