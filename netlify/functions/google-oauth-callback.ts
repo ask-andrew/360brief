@@ -70,29 +70,36 @@ const handler: Handler = async (event) => {
     }
 
     const projectId = process.env.GCP_PROJECT_ID;
-    // NEW: Get the Base64 encoded credentials
-    const googleCredentialsBase64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON_BASE64;
 
-    if (!projectId) {
-        return respondWithError("GCP_PROJECT_ID environment variable not set at runtime.", "Please ensure GCP_PROJECT_ID is correctly configured in Netlify environment variables.", userId);
-    }
-    if (!googleCredentialsBase64) {
-        return respondWithError("Google Cloud Service Account Credentials missing.", "GOOGLE_APPLICATION_CREDENTIALS_JSON_BASE64 environment variable is not set.", userId);
+    // --- NEW: Reconstruct credentials from individual environment variables ---
+    const googleCredentials = {
+        type: process.env.GCP_SA_TYPE,
+        project_id: process.env.GCP_SA_PROJECT_ID,
+        private_key_id: process.env.GCP_SA_PRIVATE_KEY_ID,
+        private_key: process.env.GCP_SA_PRIVATE_KEY, // This should be the multi-line string
+        client_email: process.env.GCP_SA_CLIENT_EMAIL,
+        client_id: process.env.GCP_SA_CLIENT_ID,
+        auth_uri: process.env.GCP_SA_AUTH_URI,
+        token_uri: process.env.GCP_SA_TOKEN_URI,
+        auth_provider_x509_cert_url: process.env.GCP_SA_AUTH_PROVIDER_X509_CERT_URL,
+        client_x509_cert_url: process.env.GCP_SA_CLIENT_X509_CERT_URL,
+        universe_domain: process.env.GCP_SA_UNIVERSE_DOMAIN,
+    };
+
+    // Basic validation for essential credentials
+    if (!projectId || !googleCredentials.private_key || !googleCredentials.client_email) {
+        return respondWithError(
+            "Missing Google Cloud Service Account Credentials.",
+            "One or more of GCP_PROJECT_ID, GCP_SA_PRIVATE_KEY, or GCP_SA_CLIENT_EMAIL environment variables are not set.",
+            userId
+        );
     }
     console.log("GCP_PROJECT_ID confirmed:", projectId);
+    console.log("Google Cloud credentials loaded from environment variables.");
 
-    let credentialsJson: any;
-    try {
-        // Decode the Base64 string and parse it as JSON
-        credentialsJson = JSON.parse(Buffer.from(googleCredentialsBase64, 'base64').toString('utf8'));
-        console.log("Google Cloud credentials decoded successfully.");
-    } catch (parseError) {
-        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
-        return respondWithError("Failed to decode or parse Google Cloud credentials.", errorMessage, userId);
-    }
-    
-    // NEW: Pass the credentials directly to the SecretManagerServiceClient constructor
-    const secretManagerClient = new SecretManagerServiceClient({ credentials: credentialsJson });
+    // NEW: Pass the reconstructed credentials directly to the SecretManagerServiceClient constructor
+    const secretManagerClient = new SecretManagerServiceClient({ credentials: googleCredentials });
+    // --- END NEW ---
 
     const sanitizedUserId = userId.replace(/[^a-zA-Z0-9-]/g, '_');
     const secretName = `360brief-google-refresh-token-${sanitizedUserId}`;
