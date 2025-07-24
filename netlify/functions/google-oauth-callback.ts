@@ -1,3 +1,5 @@
+// netlify/functions/google-oauth-callback.ts
+
 import { Handler } from '@netlify/functions';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { OAuth2Client } from 'google-auth-library';
@@ -9,17 +11,18 @@ const handler: Handler = async (event) => {
     console.log("Query parameters received:", { code, state, error });
 
     // --- Helper function for JSON response ---
+    // NOTE: For a redirect, you should return a 302 status code and a Location header,
+    // not a 200 OK with JSON. I'll adjust the usage below.
     const respondWithError = (message: string, details?: string, userId?: string) => {
         console.error("Function error:", message, details);
+        // For a Google OAuth callback, we should redirect to the dashboard with error params
+        const redirectUrl = `/dashboard?error=true&message=${encodeURIComponent(message + (details ? `: ${details}` : ''))}`;
         return {
-            statusCode: 200, // Always return 200 OK with JSON for debugging
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                success: false,
-                error: message,
-                details: details,
-                userId: userId,
-            }),
+            statusCode: 302,
+            headers: {
+                Location: redirectUrl,
+            },
+            body: "" // Body is not needed for a 302 redirect
         };
     };
     // --- End Helper ---
@@ -36,21 +39,27 @@ const handler: Handler = async (event) => {
         return respondWithError("No state parameter received.");
     }
 
-    const stateParams = new URLSearchParams(state);
-    const userId = stateParams.get('userId');
-
+    // The state parameter from Google OAuth will be the userId directly,
+    // as set in connect-google.ts: `state: userId,`
+    const userId = state; // Assuming state is directly the userId
+    
     if (!userId) {
-        return respondWithError("User ID not found in state.");
+        return respondWithError("User ID not found in state.", null, userId); // Pass userId for logging
     }
     console.log("User ID from state:", userId);
 
+    // IMPORTANT: Ensure these environment variables are correctly set in Netlify
     const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
     const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-    const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+    // The REDIRECT_URI must match what was sent to Google in connect-google.ts
+    // It should be dynamic based on the incoming host.
+    const REDIRECT_URI = `${event.headers['x-forwarded-proto'] || 'https'}://${event.headers.host}/.netlify/functions/google-oauth-callback`;
 
-    if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
-        return respondWithError("Missing Google API credentials.", "One or more of GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI environment variables are not set.", userId);
+
+    if (!CLIENT_ID || !CLIENT_SECRET) { // REDIRECT_URI is now dynamically built
+        return respondWithError("Missing Google API credentials.", "One or more of GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET environment variables are not set.", userId);
     }
+    console.log("Using REDIRECT_URI:", REDIRECT_URI); // Log the constructed URI
 
     const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
@@ -62,7 +71,10 @@ const handler: Handler = async (event) => {
         console.log("Tokens received.");
 
         if (!tokens.refresh_token) {
-            return respondWithError("No refresh token received from Google.", "This usually means the user did not grant offline access, or it's a non-refreshable token.", userId);
+            // This can happen if access_type 'offline' was not requested or user denied it.
+            // Or if it's not the first time and you already have a refresh token.
+            // For initial connection, a refresh token is critical.
+            return respondWithError("No refresh token received from Google.", "This usually means the user did not grant offline access, or it's a non-refreshable token. Ensure 'access_type: offline' and 'prompt: consent' are set in generateAuthUrl.", userId);
         }
         refreshToken = tokens.refresh_token;
         console.log("Refresh token obtained. Length:", refreshToken.length);
@@ -79,7 +91,9 @@ const handler: Handler = async (event) => {
     console.log("GCP_PROJECT_ID confirmed:", projectId);
 
     const secretManagerClient = new SecretManagerServiceClient();
-    const secretName = `360brief-google-refresh-token-${userId.replace(/[^a-zA-Z0-9-]/g, '_')}`;
+    // Sanitize userId for secret name to be safe for GCP Secret Manager
+    const sanitizedUserId = userId.replace(/[^a-zA-Z0-9-]/g, '_');
+    const secretName = `360brief-google-refresh-token-${sanitizedUserId}`;
     const secretPath = `projects/${projectId}/secrets/${secretName}`;
 
     try {
@@ -90,11 +104,12 @@ const handler: Handler = async (event) => {
             secretExists = true;
             console.log(`Secret ${secretName} already exists.`);
         } catch (getSecretError: any) {
-            if (getSecretError.code === 5) { // NOT_FOUND status code in gRPC
+            // Check for NOT_FOUND error specifically
+            // Google Cloud client libraries often use grpc.status.NOT_FOUND (code 5) for 404
+            if (getSecretError.code === 5 || getSecretError.details?.includes('NOT_FOUND')) { 
                 secretExists = false;
                 console.log(`Secret ${secretName} does not exist, will attempt to create.`);
             } else {
-                // If getSecret fails for reasons other than NOT_FOUND, that's an issue
                 const errorMessage = getSecretError instanceof Error ? getSecretError.message : String(getSecretError);
                 return respondWithError("Failed to check secret existence (unexpected error from getSecret).", errorMessage, userId);
             }
@@ -119,7 +134,7 @@ const handler: Handler = async (event) => {
             }
         }
 
-        // Now, try to add the new secret version
+        // Add the new secret version (this will update if secret already exists)
         const payload = Buffer.from(refreshToken, 'utf8');
         try {
             await secretManagerClient.addSecretVersion({
@@ -130,15 +145,13 @@ const handler: Handler = async (event) => {
             });
             console.log(`New secret version added for ${secretName}.`);
 
-            // If everything worked, return success JSON
+            // Redirect back to the dashboard on success
             return {
-                statusCode: 200,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    success: true,
-                    message: "Google refresh token stored successfully!",
-                    userId: userId,
-                }),
+                statusCode: 302,
+                headers: {
+                    Location: `/dashboard?google_connected=true`,
+                },
+                body: ""
             };
         } catch (addSecretVersionError) {
             const errorMessage = addSecretVersionError instanceof Error ? addSecretVersionError.message : String(addSecretVersionError);
@@ -146,8 +159,9 @@ const handler: Handler = async (event) => {
         }
 
     } catch (unexpectedError) {
-        // This catches any other unexpected errors in the main try block
         const errorMessage = unexpectedError instanceof Error ? unexpectedError.message : String(unexpectedError);
         return respondWithError("An unexpected error occurred during overall secret management operations.", errorMessage, userId);
     }
 };
+
+export { handler }; // <--- THIS IS THE CRUCIAL LINE THAT WAS MISSING
