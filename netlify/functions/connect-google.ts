@@ -7,7 +7,7 @@ import jwksClient from 'jwks-rsa';
 
 // These should be set as environment variables in your Netlify site settings
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
-const AUTH0_API_AUDIENCE = process.env.AUTH0_API_AUDIENCE; // <-- CHANGE THIS LINE to your API audience ENV var name
+const AUTH0_API_AUDIENCE = process.env.AUTH0_API_AUDIENCE; // Your API Audience from previous fix
 
 const client = jwksClient({
   jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`
@@ -27,7 +27,6 @@ const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
-  // Ensure you check for the correct audience variable
   if (!AUTH0_DOMAIN || !AUTH0_API_AUDIENCE) { 
     return { statusCode: 500, body: JSON.stringify({ message: "Auth0 environment variables not configured on the server." })};
   }
@@ -41,7 +40,7 @@ const handler: Handler = async (event) => {
   try {
     const decoded = await new Promise<jwt.JwtPayload>((resolve, reject) => {
       jwt.verify(token, getKey, {
-        audience: AUTH0_API_AUDIENCE, // <-- USE THE CORRECT API AUDIENCE HERE
+        audience: AUTH0_API_AUDIENCE,
         issuer: `https://${AUTH0_DOMAIN}/`,
         algorithms: ['RS256']
       }, (err, decoded) => {
@@ -55,10 +54,14 @@ const handler: Handler = async (event) => {
         throw new Error('User ID (sub) not found in token.');
     }
 
+    // Determine the current host dynamically for the redirect_uri
+    const currentHost = event.headers.host;
+    const protocol = event.headers['x-forwarded-proto'] || 'https'; // Use x-forwarded-proto for actual protocol
+
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      `${process.env.URL}/.netlify/functions/google-oauth-callback`
+      `${protocol}://${currentHost}/.netlify/functions/google-oauth-callback` // <-- UPDATED REDIRECT_URI HERE
     );
 
     const scopes = [
@@ -72,7 +75,7 @@ const handler: Handler = async (event) => {
       scope: scopes,
       state: userId,
     });
-
+    
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
