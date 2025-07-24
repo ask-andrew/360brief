@@ -1,3 +1,4 @@
+// src/components/Dashboard.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
@@ -13,29 +14,35 @@ const Dashboard: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
+            console.log("DEBUG: handleConnectGoogle initiated."); // <-- ADDED
             const accessToken = await getAccessTokenSilently();
-            
+            console.log("DEBUG: Access Token obtained:", accessToken ? "YES" : "NO"); // <-- ADDED
+
             const response = await fetch('/.netlify/functions/connect-google', {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                 },
             });
+            console.log("DEBUG: Fetch response received. Status:", response.status); // <-- ADDED
 
             if (!response.ok) {
                 const errorData = await response.json();
+                console.error("DEBUG: Fetch response NOT OK. Error data:", errorData); // <-- ADDED
                 throw new Error(errorData.message || 'Failed to start Google connection process.');
             }
 
             const { authUrl } = await response.json();
+            console.log("DEBUG: Received authUrl. Redirecting..."); // <-- ADDED
             window.location.href = authUrl;
 
         } catch (err: any) {
+            console.error("DEBUG: Error in handleConnectGoogle:", err); // <-- ADDED
             setError(err.message || 'An unexpected error occurred.');
             setIsLoading(false);
         }
     };
-    
+
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
         if (queryParams.get('google_connected') === 'true') {
@@ -59,7 +66,7 @@ const Dashboard: React.FC = () => {
                         Let's get your accounts connected to start generating your personalized briefs.
                     </p>
                 </div>
-                
+
                 <div className="mt-12 bg-slate-800/50 p-8 rounded-2xl border border-slate-700 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                     <h2 className="text-2xl font-bold text-white mb-6">Connect Your Services</h2>
                     {error && (
@@ -82,7 +89,7 @@ const Dashboard: React.FC = () => {
                                     <span className="font-semibold">Connected</span>
                                 </div>
                             ) : (
-                                <button 
+                                <button
                                     onClick={handleConnectGoogle}
                                     disabled={isLoading}
                                     className="flex items-center gap-2 bg-brand-blue text-white font-semibold py-2 px-5 rounded-lg hover:bg-sky-400 transition-colors duration-300 disabled:bg-slate-600 disabled:cursor-not-allowed"
