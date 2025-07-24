@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Google Cloud Service Account
+hidden-slice-465318-d0-ecf84e6bb709.json
