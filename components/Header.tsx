@@ -37,7 +37,7 @@ const Header: React.FC = () => {
           {!isLoading && !isAuthenticated && (
             <>
               <div className="hidden md:flex items-center gap-2">
-                <button 
+                {<button 
                   onClick={() => handleLogin('google-oauth2')}
                   className="flex items-center justify-center gap-2 bg-slate-800 text-slate-300 font-medium py-2 px-3 rounded-lg hover:bg-slate-700 hover:text-white transition-colors duration-300 text-sm"
                   aria-label="Continue with Google"
@@ -60,7 +60,7 @@ const Header: React.FC = () => {
                 >
                   <MicrosoftIcon className="w-5 h-5" />
                   <span>Microsoft</span>
-                </button>
+                </button>}
               </div>
                <button 
                 onClick={() => loginWithRedirect()}
