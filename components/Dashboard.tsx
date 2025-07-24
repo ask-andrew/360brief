@@ -1,21 +1,9 @@
-const handleConnectGoogle = async () => {
-    console.log("DEBUG: Access Token obtained:", accessToken);
-    setIsLoading(true);
-    setError(null);
-    try {
-        const accessToken = await getAccessTokenSilently();
-        // ... rest of your function
-    } catch (err: any) {
-        setError(err.message || 'An unexpected error occurred.');
-        setIsLoading(false);
-    }
-};
 // src/components/Dashboard.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { GoogleLoginIcon, CheckCircleIcon, LinkIcon, SlackIcon } from './Icons';
-import { auth0Config } from '../config';
+import { auth0Config } from '../config'; // Ensure auth0Config is imported
 
 const Dashboard: React.FC = () => {
     const { user, getAccessTokenSilently } = useAuth0();
@@ -27,13 +15,14 @@ const Dashboard: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            console.log("DEBUG: handleConnectGoogle initiated."); // <-- ADDED
+            console.log("DEBUG: handleConnectGoogle initiated.");
             const accessToken = await getAccessTokenSilently({
                 authorizationParams: {
                     audience: auth0Config.audience,
                 },
             });
-            console.log("DEBUG: Access Token obtained:", accessToken ? "YES" : "NO"); // <-- ADDED
+            // THIS LINE IS CHANGED TO LOG THE ACTUAL ACCESS TOKEN
+            console.log("DEBUG: Access Token obtained:", accessToken); 
 
             const response = await fetch('/.netlify/functions/connect-google', {
                 method: 'POST',
@@ -41,20 +30,20 @@ const Dashboard: React.FC = () => {
                     Authorization: `Bearer ${accessToken}`,
                 },
             });
-            console.log("DEBUG: Fetch response received. Status:", response.status); // <-- ADDED
+            console.log("DEBUG: Fetch response received. Status:", response.status);
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error("DEBUG: Fetch response NOT OK. Error data:", errorData); // <-- ADDED
+                console.error("DEBUG: Fetch response NOT OK. Error data:", errorData);
                 throw new Error(errorData.message || 'Failed to start Google connection process.');
             }
 
             const { authUrl } = await response.json();
-            console.log("DEBUG: Received authUrl. Redirecting..."); // <-- ADDED
+            console.log("DEBUG: Received authUrl. Redirecting...");
             window.location.href = authUrl;
 
         } catch (err: any) {
-            console.error("DEBUG: Error in handleConnectGoogle:", err); // <-- ADDED
+            console.error("DEBUG: Error in handleConnectGoogle:", err);
             setError(err.message || 'An unexpected error occurred.');
             setIsLoading(false);
         }
@@ -110,7 +99,7 @@ const Dashboard: React.FC = () => {
                                 onClick={handleConnectGoogle}
                                 disabled={isLoading}
                                 className="flex items-center gap-2 bg-brand-blue text-white font-semibold py-2 px-5 rounded-lg hover:bg-sky-400 transition-colors duration-300 disabled:bg-slate-600 disabled:cursor-not-allowed"
-                                id="my-custom-google-connect-button" // <-- ADD THIS ID
+                                id="my-custom-google-connect-button"
                             >
                                 {isLoading ? (
                                     <>
@@ -120,11 +109,11 @@ const Dashboard: React.FC = () => {
                                 ) : (
                                     <>
                                         <LinkIcon className="w-5 h-5" />
-                                        <span>Click My Custom Button!</span> {/* <-- CHANGE TEXT HERE */}
+                                        <span>Click My Custom Button!</span>
                                     </>
                                 )}
                             </button>
-                        )}
+                            )}
                         </div>
                         <div className="p-6 rounded-lg flex items-center justify-between bg-slate-800 border border-slate-600 opacity-50">
                              <div className="flex items-center gap-4">
