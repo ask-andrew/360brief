@@ -10,22 +10,17 @@ const handler: Handler = async (event) => {
     const { code, state, error } = event.queryStringParameters || {};
     console.log("Query parameters received:", { code, state, error });
 
-    // --- Helper function for JSON response ---
-    // NOTE: For a redirect, you should return a 302 status code and a Location header,
-    // not a 200 OK with JSON. I'll adjust the usage below.
     const respondWithError = (message: string, details?: string, userId?: string) => {
         console.error("Function error:", message, details);
-        // For a Google OAuth callback, we should redirect to the dashboard with error params
         const redirectUrl = `/dashboard?error=true&message=${encodeURIComponent(message + (details ? `: ${details}` : ''))}`;
         return {
             statusCode: 302,
             headers: {
                 Location: redirectUrl,
             },
-            body: "" // Body is not needed for a 302 redirect
+            body: ""
         };
     };
-    // --- End Helper ---
 
     if (error) {
         return respondWithError("Google OAuth error", error);
@@ -39,27 +34,20 @@ const handler: Handler = async (event) => {
         return respondWithError("No state parameter received.");
     }
 
-    // The state parameter from Google OAuth will be the userId directly,
-    // as set in connect-google.ts: `state: userId,`
-    const userId = state; // Assuming state is directly the userId
-    
+    const userId = state;
     if (!userId) {
-        return respondWithError("User ID not found in state.", null, userId); // Pass userId for logging
+        return respondWithError("User ID not found in state.", null, userId);
     }
     console.log("User ID from state:", userId);
 
-    // IMPORTANT: Ensure these environment variables are correctly set in Netlify
     const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
     const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-    // The REDIRECT_URI must match what was sent to Google in connect-google.ts
-    // It should be dynamic based on the incoming host.
     const REDIRECT_URI = `${event.headers['x-forwarded-proto'] || 'https'}://${event.headers.host}/.netlify/functions/google-oauth-callback`;
 
-
-    if (!CLIENT_ID || !CLIENT_SECRET) { // REDIRECT_URI is now dynamically built
+    if (!CLIENT_ID || !CLIENT_SECRET) {
         return respondWithError("Missing Google API credentials.", "One or more of GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET environment variables are not set.", userId);
     }
-    console.log("Using REDIRECT_URI:", REDIRECT_URI); // Log the constructed URI
+    console.log("Using REDIRECT_URI:", REDIRECT_URI);
 
     const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
@@ -71,9 +59,6 @@ const handler: Handler = async (event) => {
         console.log("Tokens received.");
 
         if (!tokens.refresh_token) {
-            // This can happen if access_type 'offline' was not requested or user denied it.
-            // Or if it's not the first time and you already have a refresh token.
-            // For initial connection, a refresh token is critical.
             return respondWithError("No refresh token received from Google.", "This usually means the user did not grant offline access, or it's a non-refreshable token. Ensure 'access_type: offline' and 'prompt: consent' are set in generateAuthUrl.", userId);
         }
         refreshToken = tokens.refresh_token;
@@ -85,13 +70,30 @@ const handler: Handler = async (event) => {
     }
 
     const projectId = process.env.GCP_PROJECT_ID;
+    // NEW: Get the Base64 encoded credentials
+    const googleCredentialsBase64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON_BASE64;
+
     if (!projectId) {
         return respondWithError("GCP_PROJECT_ID environment variable not set at runtime.", "Please ensure GCP_PROJECT_ID is correctly configured in Netlify environment variables.", userId);
     }
+    if (!googleCredentialsBase64) {
+        return respondWithError("Google Cloud Service Account Credentials missing.", "GOOGLE_APPLICATION_CREDENTIALS_JSON_BASE64 environment variable is not set.", userId);
+    }
     console.log("GCP_PROJECT_ID confirmed:", projectId);
 
-    const secretManagerClient = new SecretManagerServiceClient();
-    // Sanitize userId for secret name to be safe for GCP Secret Manager
+    let credentialsJson: any;
+    try {
+        // Decode the Base64 string and parse it as JSON
+        credentialsJson = JSON.parse(Buffer.from(googleCredentialsBase64, 'base64').toString('utf8'));
+        console.log("Google Cloud credentials decoded successfully.");
+    } catch (parseError) {
+        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+        return respondWithError("Failed to decode or parse Google Cloud credentials.", errorMessage, userId);
+    }
+    
+    // NEW: Pass the credentials directly to the SecretManagerServiceClient constructor
+    const secretManagerClient = new SecretManagerServiceClient({ credentials: credentialsJson });
+
     const sanitizedUserId = userId.replace(/[^a-zA-Z0-9-]/g, '_');
     const secretName = `360brief-google-refresh-token-${sanitizedUserId}`;
     const secretPath = `projects/${projectId}/secrets/${secretName}`;
@@ -104,9 +106,7 @@ const handler: Handler = async (event) => {
             secretExists = true;
             console.log(`Secret ${secretName} already exists.`);
         } catch (getSecretError: any) {
-            // Check for NOT_FOUND error specifically
-            // Google Cloud client libraries often use grpc.status.NOT_FOUND (code 5) for 404
-            if (getSecretError.code === 5 || getSecretError.details?.includes('NOT_FOUND')) { 
+            if (getSecretError.code === 5 || getSecretError.details?.includes('NOT_FOUND')) {
                 secretExists = false;
                 console.log(`Secret ${secretName} does not exist, will attempt to create.`);
             } else {
@@ -117,7 +117,6 @@ const handler: Handler = async (event) => {
 
         if (!secretExists) {
             try {
-                // Create the secret
                 await secretManagerClient.createSecret({
                     parent: `projects/${projectId}`,
                     secretId: secretName,
@@ -134,7 +133,6 @@ const handler: Handler = async (event) => {
             }
         }
 
-        // Add the new secret version (this will update if secret already exists)
         const payload = Buffer.from(refreshToken, 'utf8');
         try {
             await secretManagerClient.addSecretVersion({
@@ -145,7 +143,6 @@ const handler: Handler = async (event) => {
             });
             console.log(`New secret version added for ${secretName}.`);
 
-            // Redirect back to the dashboard on success
             return {
                 statusCode: 302,
                 headers: {
@@ -164,4 +161,4 @@ const handler: Handler = async (event) => {
     }
 };
 
-export { handler }; // <--- THIS IS THE CRUCIAL LINE THAT WAS MISSING
+export { handler };
