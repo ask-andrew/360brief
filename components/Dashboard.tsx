@@ -101,22 +101,25 @@ const Dashboard: React.FC = () => {
                                     <span className="font-semibold">Connected</span>
                                 </div>
                             ) : (
-                                <button
-                                    onClick={handleConnectGoogle}onClick={() => alert('Button Was Clicked!')}        disabled={isLoading}
-                                    className="flex items-center gap-2 bg-brand-blue text-white font-semibold py-2 px-5 rounded-lg hover:bg-sky-400 transition-colors duration-300 disabled:bg-slate-600 disabled:cursor-not-allowed"
-                                >
-                                    {isLoading ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-dashed rounded-full animate-spin border-white"></div>
-                                            <span>Connecting...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <LinkIcon className="w-5 h-5" />
-                                            <span>Connect</span>
-                                        </>
-                                    )}
-                                </button>
+                            <button
+                                onClick={handleConnectGoogle}
+                                disabled={isLoading}
+                                className="flex items-center gap-2 bg-brand-blue text-white font-semibold py-2 px-5 rounded-lg hover:bg-sky-400 transition-colors duration-300 disabled:bg-slate-600 disabled:cursor-not-allowed"
+                                id="my-custom-google-connect-button" // <-- ADD THIS ID
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-dashed rounded-full animate-spin border-white"></div>
+                                        <span>Connecting...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <LinkIcon className="w-5 h-5" />
+                                        <span>Click My Custom Button!</span> {/* <-- CHANGE TEXT HERE */}
+                                    </>
+                                )}
+                            </button>
+                        )}
                             )}
                         </div>
                         <div className="p-6 rounded-lg flex items-center justify-between bg-slate-800 border border-slate-600 opacity-50">
