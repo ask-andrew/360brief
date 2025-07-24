@@ -102,8 +102,7 @@ const Dashboard: React.FC = () => {
                                 </div>
                             ) : (
                                 <button
-                                    onClick={handleConnectGoogle}
-                                    disabled={isLoading}
+                                    onClick={handleConnectGoogle}onClick={() => alert('Button Was Clicked!')}        disabled={isLoading}
                                     className="flex items-center gap-2 bg-brand-blue text-white font-semibold py-2 px-5 rounded-lg hover:bg-sky-400 transition-colors duration-300 disabled:bg-slate-600 disabled:cursor-not-allowed"
                                 >
                                     {isLoading ? (
