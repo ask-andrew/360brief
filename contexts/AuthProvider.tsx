@@ -29,9 +29,6 @@ export const AppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
             domain={domain}
             clientId={clientId}
             onRedirectCallback={onRedirectCallback}
-            authorizationParams={{
-                redirect_uri: window.location.origin
-            }}
         >
             {children}
         </Auth0Provider>
