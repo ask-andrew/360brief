@@ -15,6 +15,7 @@ const handleConnectGoogle = async () => {
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { GoogleLoginIcon, CheckCircleIcon, LinkIcon, SlackIcon } from './Icons';
+import { auth0Config } from '../config';
 
 const Dashboard: React.FC = () => {
     const { user, getAccessTokenSilently } = useAuth0();
@@ -27,7 +28,11 @@ const Dashboard: React.FC = () => {
         setError(null);
         try {
             console.log("DEBUG: handleConnectGoogle initiated."); // <-- ADDED
-            const accessToken = await getAccessTokenSilently();
+            const accessToken = await getAccessTokenSilently({
+                authorizationParams: {
+                    audience: auth0Config.audience,
+                },
+            });
             console.log("DEBUG: Access Token obtained:", accessToken ? "YES" : "NO"); // <-- ADDED
 
             const response = await fetch('/.netlify/functions/connect-google', {

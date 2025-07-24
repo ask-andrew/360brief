@@ -15,4 +15,5 @@
 export const auth0Config = {
   domain: "dev-i7fjk3ewk3kpofry.us.auth0.com", // Replace with your Auth0 Domain
   clientId: "keCgwYGwRh1rjuFMxlIX06WQmRXK6bmW", // Replace with your Auth0 Client ID
+  audience: "https://api.360brief.com", // Replace with your API Identifier
 };

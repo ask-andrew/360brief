@@ -3,10 +3,10 @@ import { Auth0Provider, AppState } from '@auth0/auth0-react';
 import { auth0Config } from '../config';
 
 export const AppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { domain, clientId } = auth0Config;
+    const { domain, clientId, audience } = auth0Config;
 
     // This component will render if the config is not set, guiding the user on how to fix it.
-    if (!domain || !clientId || domain === "YOUR_AUTH0_DOMAIN" || clientId === "YOUR_AUTH0_CLIENT_ID") {
+    if (!domain || !clientId || !audience || domain === "YOUR_AUTH0_DOMAIN" || clientId === "YOUR_AUTH0_CLIENT_ID" || audience === "YOUR_API_IDENTIFIER") {
         return (
             <div className="min-h-screen bg-brand-dark flex flex-col items-center justify-center text-center p-4">
                 <h1 className="text-2xl font-bold text-white mb-4">Authentication Not Configured</h1>
@@ -28,6 +28,9 @@ export const AppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
         <Auth0Provider
             domain={domain}
             clientId={clientId}
+            authorizationParams={{
+                audience: audience,
+            }}
             onRedirectCallback={onRedirectCallback}
         >
             {children}
