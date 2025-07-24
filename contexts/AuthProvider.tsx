@@ -1,3 +1,4 @@
+// src/auth/AuthProvider.tsx
 import React from 'react';
 import { Auth0Provider, AppState } from '@auth0/auth0-react';
 import { auth0Config } from '../config';
@@ -28,10 +29,13 @@ export const AppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
         <Auth0Provider
             domain={domain}
             clientId={clientId}
-            authorizationParams={{
-                audience: audience,
-            }}
             onRedirectCallback={onRedirectCallback}
+            authorizationParams={{
+                redirect_uri: window.location.origin, // <--- RE-ADDED THIS CRUCIAL LINE
+                audience: audience, 
+                // Optional: If your API needs specific permissions, you can also add scope here:
+                // scope: 'openid profile email read:briefs',
+            }}
         >
             {children}
         </Auth0Provider>
