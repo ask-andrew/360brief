@@ -120,7 +120,6 @@ const Dashboard: React.FC = () => {
                                 )}
                             </button>
                         )}
-                            )}
                         </div>
                         <div className="p-6 rounded-lg flex items-center justify-between bg-slate-800 border border-slate-600 opacity-50">
                              <div className="flex items-center gap-4">
