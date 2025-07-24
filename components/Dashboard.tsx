@@ -1,3 +1,15 @@
+const handleConnectGoogle = async () => {
+    console.log("DEBUG: handleConnectGoogle function entered."); // ADD THIS LINE
+    setIsLoading(true);
+    setError(null);
+    try {
+        const accessToken = await getAccessTokenSilently();
+        // ... rest of your function
+    } catch (err: any) {
+        setError(err.message || 'An unexpected error occurred.');
+        setIsLoading(false);
+    }
+};
 // src/components/Dashboard.tsx
 
 import React, { useState, useEffect } from 'react';
