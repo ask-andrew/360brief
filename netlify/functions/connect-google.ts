@@ -7,7 +7,7 @@ import jwksClient from 'jwks-rsa';
 
 // These should be set as environment variables in your Netlify site settings
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
-const AUTH0_AUDIENCE = process.env.AUTH0_CLIENT_ID; // For SPA, audience is often the Client ID
+const AUTH0_API_AUDIENCE = process.env.AUTH0_API_AUDIENCE; // <-- CHANGE THIS LINE to your API audience ENV var name
 
 const client = jwksClient({
   jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`
@@ -27,7 +27,8 @@ const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
-  if (!AUTH0_DOMAIN || !AUTH0_AUDIENCE) {
+  // Ensure you check for the correct audience variable
+  if (!AUTH0_DOMAIN || !AUTH0_API_AUDIENCE) { 
     return { statusCode: 500, body: JSON.stringify({ message: "Auth0 environment variables not configured on the server." })};
   }
 
@@ -40,7 +41,7 @@ const handler: Handler = async (event) => {
   try {
     const decoded = await new Promise<jwt.JwtPayload>((resolve, reject) => {
       jwt.verify(token, getKey, {
-        audience: AUTH0_AUDIENCE,
+        audience: AUTH0_API_AUDIENCE, // <-- USE THE CORRECT API AUDIENCE HERE
         issuer: `https://${AUTH0_DOMAIN}/`,
         algorithms: ['RS256']
       }, (err, decoded) => {
@@ -54,7 +55,6 @@ const handler: Handler = async (event) => {
         throw new Error('User ID (sub) not found in token.');
     }
 
-    // Corrected: Removed 'const' for these declarations inside the try block
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -72,7 +72,7 @@ const handler: Handler = async (event) => {
       scope: scopes,
       state: userId,
     });
-    
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
