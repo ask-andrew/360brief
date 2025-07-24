@@ -35,7 +35,7 @@ const Header: React.FC = () => {
 
           {!isLoading && !isAuthenticated && (
             <>
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden items-center gap-2">
                 {/*
                 <button
                   onClick={() => handleLogin('google-oauth2')}
@@ -65,7 +65,7 @@ const Header: React.FC = () => {
               </div>
                <button
                 onClick={() => loginWithRedirect()}
-                className="text-slate-300 hover:text-white font-medium transition-colors duration-300 text-sm md:hidden"
+                className="text-slate-300 hover:text-white font-medium transition-colors duration-300 text-sm"
                 aria-label="Log in to your account"
               >
                 Log In
