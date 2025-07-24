@@ -1,16 +1,15 @@
-
 import React from 'react';
 import Logo from './Logo';
 import { useAuth0 } from '@auth0/auth0-react';
 import { GoogleLoginIcon, SlackIcon, MicrosoftIcon } from './Icons';
 
 const Header: React.FC = () => {
-  const { 
-    loginWithRedirect, 
-    logout, 
-    user, 
-    isAuthenticated, 
-    isLoading 
+  const {
+    loginWithRedirect,
+    logout,
+    user,
+    isAuthenticated,
+    isLoading
   } = useAuth0();
 
   const handleLogin = (connection: 'google-oauth2' | 'slack' | 'windowslive') => {
@@ -33,11 +32,12 @@ const Header: React.FC = () => {
           {isLoading && (
             <div className="w-40 h-9 bg-slate-700 rounded-lg animate-pulse"></div>
           )}
-          
+
           {!isLoading && !isAuthenticated && (
             <>
               <div className="hidden md:flex items-center gap-2">
-                {<button 
+                {/*
+                <button
                   onClick={() => handleLogin('google-oauth2')}
                   className="flex items-center justify-center gap-2 bg-slate-800 text-slate-300 font-medium py-2 px-3 rounded-lg hover:bg-slate-700 hover:text-white transition-colors duration-300 text-sm"
                   aria-label="Continue with Google"
@@ -45,7 +45,8 @@ const Header: React.FC = () => {
                   <GoogleLoginIcon className="w-5 h-5" />
                   <span>Google</span>
                 </button>
-                <button 
+                */}
+                <button
                   onClick={() => handleLogin('slack')}
                   className="flex items-center justify-center gap-2 bg-slate-800 text-slate-300 font-medium py-2 px-3 rounded-lg hover:bg-slate-700 hover:text-white transition-colors duration-300 text-sm"
                   aria-label="Continue with Slack"
@@ -53,16 +54,16 @@ const Header: React.FC = () => {
                   <SlackIcon className="w-5 h-5" />
                   <span>Slack</span>
                 </button>
-                 <button 
+                 <button
                   onClick={() => handleLogin('windowslive')}
                   className="flex items-center justify-center gap-2 bg-slate-800 text-slate-300 font-medium py-2 px-3 rounded-lg hover:bg-slate-700 hover:text-white transition-colors duration-300 text-sm"
                   aria-label="Continue with Microsoft"
                 >
                   <MicrosoftIcon className="w-5 h-5" />
                   <span>Microsoft</span>
-                </button>}
+                </button>
               </div>
-               <button 
+               <button
                 onClick={() => loginWithRedirect()}
                 className="text-slate-300 hover:text-white font-medium transition-colors duration-300 text-sm md:hidden"
                 aria-label="Log in to your account"
