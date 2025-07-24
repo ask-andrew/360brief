@@ -63,7 +63,25 @@ const handler: Handler = async (event) => {
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/calendar.readonly'
     ];
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  `${process.env.URL}/.netlify/functions/google-oauth-callback`
+);
 
+console.log("DEBUG: connect-google generated REDIRECT_URI:", `${process.env.URL}/.netlify/functions/google-oauth-callback`);
+
+const scopes = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/calendar.readonly'
+];
+
+const authUrl = oauth2Client.generateAuthUrl({
+  access_type: 'offline',
+  prompt: 'consent',
+  scope: scopes,
+  state: userId,
+});
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
