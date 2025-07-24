@@ -1,5 +1,5 @@
 const handleConnectGoogle = async () => {
-    console.log("DEBUG: handleConnectGoogle function entered."); // ADD THIS LINE
+    console.log("DEBUG: Access Token obtained:", accessToken);
     setIsLoading(true);
     setError(null);
     try {
