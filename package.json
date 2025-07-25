@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp _redirects dist/", <-- This is the updated line
     "preview": "vite preview"
   },
   "dependencies": {
