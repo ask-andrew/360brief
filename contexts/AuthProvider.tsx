@@ -21,6 +21,8 @@ export const AppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     const onRedirectCallback = (appState?: AppState) => {
+        // This function is called after Auth0 redirects back to your application.
+        // It helps maintain the correct path after authentication.
         const returnTo = appState?.returnTo || window.location.pathname;
         window.history.replaceState({}, document.title, returnTo);
     };
@@ -31,11 +33,19 @@ export const AppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ child
             clientId={clientId}
             onRedirectCallback={onRedirectCallback}
             authorizationParams={{
-                redirect_uri: window.location.origin, // <--- RE-ADDED THIS CRUCIAL LINE
+                // IMPORTANT: This redirect_uri must exactly match one of the "Allowed Callback URLs"
+                // configured in your Auth0 application settings.
+                // It should be the URL where Auth0 sends the user back after login.
+                // Since your app redirects to /dashboard after Google connect, we set it here.
+                redirect_uri: `${window.location.origin}/dashboard`, // <--- THIS LINE IS MODIFIED
                 audience: audience, 
-                // Optional: If your API needs specific permissions, you can also add scope here:
-                // scope: 'openid profile email read:briefs',
+                // Optional: If your API needs specific permissions, you can also add scope here.
+                // 'openid profile email' are standard OIDC scopes.
+                // If your API needs custom scopes (e.g., 'read:data'), add them here.
+                // scope: 'openid profile email read:briefs', 
             }}
+            // It's often good practice to store the Auth0 session in local storage for persistence
+            cacheLocation="localstorage" 
         >
             {children}
         </Auth0Provider>
