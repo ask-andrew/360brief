@@ -12,6 +12,7 @@ import CallToAction from './components/CallToAction';
 import Footer from './components/Footer';
 import { useAuth0 } from '@auth0/auth0-react';
 import Dashboard from './components/Dashboard';
+import BriefingStyles from './components/BriefingStyles';
 
 const App: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -35,6 +36,7 @@ const App: React.FC = () => {
             <Hero />
             <ProblemSolution />
             <HowItWorks />
+            <BriefingStyles />
             <Benefits />
             <ProductivityCalculator />
             <AudioBrief />
