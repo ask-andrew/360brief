@@ -14,13 +14,14 @@ const logoImage = "https://raw.githubusercontent.com/ask-andrew/360brief/main/co
 
 interface LogoProps {
   className?: string;
+  alt?: string;
 }
 
-const Logo: React.FC<LogoProps> = ({ className }) => {
+const Logo: React.FC<LogoProps> = ({ className, alt = "Company Logo" }) => {
   return (
     // Use the direct GitHub URL as the src for the <img> tag.
     // The 'alt' attribute is crucial for accessibility.
-    <img src={logoImage} alt="Company Logo" className={className} />
+    <img src={logoImage} alt={alt} className={className} />
   );
 };
 
