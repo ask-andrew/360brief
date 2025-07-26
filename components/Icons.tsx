@@ -275,3 +275,41 @@ export const ChevronRightIcon: React.FC<IconProps> = ({ className }) => (
     <polyline points="9 18 15 12 9 6" />
   </svg>
 );
+
+export const ShieldAlertIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+export const BriefcaseIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+  </svg>
+);
+
+export const RocketIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4.5 16.5c-1.5 1.5-3 1.5-4.5 0" />
+    <path d="M13 6V2" />
+    <path d="m11.5 7.5-3-3" />
+    <path d="M14 8h-4" />
+    <path d="m20.5 15.5.5-2.5" />
+    <path d="M18 13.5c.5-1 1-1.5 1.5-2.5" />
+    <path d="M7 12H3" />
+    <path d="M21 12h-2" />
+    <path d="m3 9 1.5-1.5" />
+    <path d="M19.5 4.5.5 19.5" />
+  </svg>
+);
+
+export const NewspaperIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h4v18H4Z" />
+    <path d="M12 18h6" /><path d="M12 14h6" />
+    <path d="M12 10h6" />
+  </svg>
+);
