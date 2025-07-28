@@ -1,0 +1,20 @@
+[build]
+  publish = "dist" # Your frontend build output directory (Vite's default)
+  functions = "netlify/functions" # Where your Netlify Functions are located
+
+[dev]
+  framework = "#custom" # Tell Netlify Dev to use custom dev server settings
+  command = "vite"      # <--- ADDED THIS LINE: Explicitly run Vite for the frontend dev server
+  targetPort = 5173     # The port your Vite frontend dev server actually runs on
+  port = 8888           # The port Netlify Dev will listen on and proxy everything through
+  functionsPort = 8889  # A separate port for the functions server, distinct from the main proxy port
+  autoLaunch = true
+  functions = "netlify/functions" # Explicitly declare functions directory for dev too
+
+# REMOVED: The explicit redirect for /.netlify/functions/* is not needed
+# and causes a syntax error. Netlify Dev handles this proxy automatically.
+# [[redirects]]
+#   from = "/.netlify/functions/*"
+#   to = "http://localhost:8889/.netlify/functions/:splat"
+#   status = 200
+#   force = true

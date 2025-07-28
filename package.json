@@ -1,0 +1,28 @@
+{
+  "name": "360brief",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "vite build && cp _redirects dist/",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@auth0/auth0-react": "^2.4.0",
+    "@google-cloud/secret-manager": "^6.1.0",
+    "@netlify/functions": "^4.1.14",
+    "buffer": "^6.0.3",
+    "google-auth-library": "^9.0.0",
+    "googleapis": "^153.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  }
+}
