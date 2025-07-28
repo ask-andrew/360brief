@@ -23,9 +23,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.env
 
 # Google Cloud Service Account
 hidden-slice-465318-d0-ecf84e6bb709.json
+hidden-slice-465318-d0-ad2d79fccca7.json
+
 
 # Local Netlify folder
 .netlify
