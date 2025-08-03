@@ -3,16 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Icons } from '@/components/icons';
-import { Menu, X, ChevronRight } from 'lucide-react';
+import { Menu, X, BookOpen } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navItems = [
   { name: 'Features', href: '#features' },
   { name: 'How It Works', href: '#how-it-works' },
   { name: 'Pricing', href: '#pricing' },
-  { name: 'About', href: '#about' },
 ];
 
 export function Navbar() {
@@ -49,10 +46,11 @@ export function Navbar() {
             className="flex items-center space-x-2 group"
             aria-label="360°Brief Home"
           >
-            <Icons.logo className="h-7 w-7 text-primary transition-transform group-hover:rotate-12" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              360°Brief
-            </span>
+            <img 
+              src="/images/360logo.svg" 
+              alt="360°Brief" 
+              className="h-16 w-auto transition-transform group-hover:rotate-12 md:h-24" 
+            />
           </Link>
         </div>
 
@@ -81,41 +79,50 @@ export function Navbar() {
           {/* Desktop CTA */}
           <div className="hidden items-center space-x-3 md:flex">
             <Link
-              href="/login"
+              href="/signin"
               className={cn(
                 'text-sm font-medium text-muted-foreground transition-colors hover:text-foreground/90',
                 'px-3 py-2 rounded-md hover:bg-muted/50'
               )}
             >
-              Sign in
+              Sign In
             </Link>
             <Link
               href="/signup"
               className={cn(
-                buttonVariants({ size: 'default' }),
-                'group px-5 py-2.5 text-sm font-medium transition-all hover:shadow-md'
+                'inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground',
+                'transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'group px-5 py-2.5 hover:shadow-md'
               )}
             >
               Get Started
-              <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <svg 
+                className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex items-center md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
+          <div className="flex md:hidden">
+            <button
+              type="button"
+              className="text-foreground/80 hover:bg-transparent hover:text-primary p-2 rounded-md"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {mobileMenuOpen ? (
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" aria-hidden="true" />
               ) : (
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" aria-hidden="true" />
               )}
-            </Button>
+              <span className="sr-only">
+                {mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -140,10 +147,9 @@ export function Navbar() {
           ))}
           <div className="flex flex-col space-y-2 pt-4">
             <Link
-              href="/login"
+              href="/signin"
               className={cn(
-                buttonVariants({ variant: 'outline' }),
-                'w-full'
+                'text-sm font-medium text-foreground/80 transition-colors hover:text-primary'
               )}
             >
               Sign In
@@ -151,11 +157,15 @@ export function Navbar() {
             <Link
               href="/signup"
               className={cn(
-                buttonVariants(),
-                'w-full'
+                'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+                'bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2',
+                'transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
               )}
             >
               Get Started
+              <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
             </Link>
           </div>
         </div>

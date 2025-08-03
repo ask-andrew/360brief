@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 
@@ -31,8 +31,9 @@ export function HeroSection() {
             <Link 
               href="/signup"
               className={cn(
-                buttonVariants({ size: 'lg' }),
-                'group px-8 py-6 text-base font-semibold transition-all hover:shadow-lg',
+                'group inline-flex items-center justify-center rounded-lg bg-primary px-8 py-6 text-base font-semibold text-primary-foreground',
+                'transition-all hover:bg-primary/90 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'hover:shadow-primary/20'
               )}
             >
               Get Started Free
@@ -42,8 +43,9 @@ export function HeroSection() {
             <Link
               href="#how-it-works"
               className={cn(
-                buttonVariants({ variant: 'outline', size: 'lg' }),
-                'px-8 py-6 text-base font-medium',
+                'inline-flex items-center justify-center rounded-lg border border-input bg-background px-8 py-6 text-base font-medium',
+                'transition-colors hover:bg-accent hover:text-accent-foreground',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
               )}
             >
               See How It Works
