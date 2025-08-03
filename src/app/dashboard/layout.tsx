@@ -1,16 +1,29 @@
-import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/auth0-session';
+'use client';
 
-export default async function DashboardLayout({
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useUser } from '@auth0/nextjs-auth0/client';
+
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
-  
-  // Redirect to login if not authenticated
-  if (!session) {
-    redirect('/login');
+  const { user, isLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/api/auth/login?returnTo=/dashboard');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
@@ -22,7 +35,7 @@ export default async function DashboardLayout({
               360Brief Dashboard
             </h1>
             <div className="text-sm text-gray-600 dark:text-gray-300">
-              {session.user.email}
+              {user?.email || 'User'}
             </div>
           </div>
         </div>

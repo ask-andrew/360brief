@@ -5,10 +5,16 @@ import ProblemSolution from './components/ProblemSolution';
 import HowItWorks from './components/HowItWorks';
 import FutureFeatures from './components/FutureFeatures';
 import Benefits from './components/Benefits';
+import PainPoints from './components/PainPoints';
+import ProductDemo from './components/ProductDemo';
+import SocialProof from './components/SocialProof';
+import Pricing from './components/Pricing';
+import FAQ from './components/FAQ';
 import AudioBrief from './components/AudioBrief';
 import ProductivityCalculator from './components/ProductivityCalculator';
 import CallToAction from './components/CallToAction';
 import Footer from './components/Footer';
+import TestimonialCarousel from './components/TestimonialCarousel';
 import { useAuth0, Auth0Provider } from '@auth0/auth0-react'; // Import Auth0Provider
 import Dashboard from './components/Dashboard';
 import BriefingStyles from './components/BriefingStyles';
@@ -71,12 +77,18 @@ const App: React.FC = () => {
         <Dashboard />
       ) : (
         <>
-          <main className="container mx-auto px-6 md:px-12">
+          <main>
             <Hero />
+            <PainPoints />
+            <ProductDemo />
+            <SocialProof />
+            <Pricing />
+            <FAQ />
             <ProblemSolution />
             <HowItWorks />
             <BriefingStyles />
             <Benefits />
+            <TestimonialCarousel />
             <ProductivityCalculator />
             <AudioBrief />
             <FutureFeatures />

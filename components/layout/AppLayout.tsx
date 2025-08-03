@@ -16,6 +16,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import Image from 'next/image';
 
 interface NavItem {
   name: string;
@@ -57,8 +58,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex-shrink-0 flex items-center px-4">
-              <h1 className="text-2xl font-bold text-indigo-600">360Brief</h1>
+            <div className="flex-shrink-0 flex items-center px-6 h-16 border-b border-gray-200">
+              <div className="flex items-center space-x-2">
+                <Image 
+                  src="/360logo.svg" 
+                  alt="360Brief Logo" 
+                  width={120} 
+                  height={30} 
+                  className="h-8 w-auto"
+                  priority
+                />
+              </div>
             </div>
             <nav className="mt-5 px-2 space-y-1">
               {navigation.map((item) => (

@@ -1,18 +1,32 @@
 /**
  * Auth0 Configuration
- * * To set up authentication, you need to create a free Auth0 account and a new 'Single Page Application'.
- * 1. Go to your Auth0 Dashboard -> Applications.
- * 2. Create a new Application and name it (e.g., '360Brief App').
- * 3. Choose 'Single Page Web Applications' as the application type.
- * 4. In the application's 'Settings' tab, find the 'Domain' and 'Client ID'.
- * 5. Copy and paste them into the corresponding fields below.
- * * Also, you must configure the callback URLs in your Auth0 Application settings:
- * - Add `http://localhost:8888/dashboard` to 'Allowed Callback URLs', 'Allowed Logout URLs', and 'Allowed Web Origins' for local development.
- * - Add your live Netlify site URL (e.g., `https://your-site-name.netlify.app`) to these fields for production.
+ * This configuration uses environment variables for sensitive values.
+ * Make sure to set these in your .env file:
+ * - NEXT_PUBLIC_AUTH0_DOMAIN
+ * - NEXT_PUBLIC_AUTH0_CLIENT_ID
+ * - NEXT_PUBLIC_AUTH0_AUDIENCE
+ * - NEXT_PUBLIC_AUTH0_BASE_URL
  */
+
 export const auth0Config = {
-  domain: "dev-i7fjk3ewk3kpofry.us.auth0.com", // Replace with your Auth0 Domain
-  clientId: "keCgwYGwRh1rjuFMxlIX06WQmRXK6bmW", // Replace with your Auth0 Client ID
-  audience: "https://api.360brief.com", // Replace with your API Identifier
-  redirectUri: "http://localhost:8888/dashboard", // <--- UPDATED THIS LINE
+  domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || "",
+  clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || "",
+  audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || "",
+  redirectUri: process.env.NEXT_PUBLIC_AUTH0_BASE_URL ? `${process.env.NEXT_PUBLIC_AUTH0_BASE_URL}/dashboard` : "http://localhost:3000/dashboard",
+  baseUrl: process.env.NEXT_PUBLIC_AUTH0_BASE_URL || "http://localhost:3000"
 };
+
+// Validate required environment variables
+if (process.env.NODE_ENV !== 'test') {
+  const requiredVars = [
+    'NEXT_PUBLIC_AUTH0_DOMAIN',
+    'NEXT_PUBLIC_AUTH0_CLIENT_ID',
+    'NEXT_PUBLIC_AUTH0_AUDIENCE',
+    'NEXT_PUBLIC_AUTH0_BASE_URL'
+  ];
+
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+  if (missingVars.length > 0) {
+    console.error('Missing required Auth0 environment variables:', missingVars.join(', '));
+  }
+}

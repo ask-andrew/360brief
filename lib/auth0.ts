@@ -1,8 +1,70 @@
 import { Auth0Client } from '@auth0/nextjs-auth0/server';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-// Create a single instance of the Auth0 client
-export const auth0 = new Auth0Client();
+// Verify required environment variables
+const requiredVars = [
+  'NEXT_PUBLIC_AUTH0_DOMAIN',
+  'NEXT_PUBLIC_AUTH0_CLIENT_ID',
+  'AUTH0_CLIENT_SECRET',
+  'NEXT_PUBLIC_AUTH0_BASE_URL',
+  'NEXT_PUBLIC_AUTH0_AUDIENCE',
+  'AUTH0_SECRET'
+];
+
+// Check for missing environment variables
+const missingVars = requiredVars.filter(varName => !process.env[varName]);
+if (missingVars.length > 0 && process.env.NODE_ENV !== 'test') {
+  console.error('Missing required environment variables:', missingVars.join(', '));
+  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+}
+
+// Create a configured instance of the Auth0 client
+export const auth0 = new Auth0Client({
+  domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN!,
+  clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID!,
+  clientSecret: process.env.AUTH0_CLIENT_SECRET!,
+  
+  // Base URL for the application
+  baseURL: process.env.NEXT_PUBLIC_AUTH0_BASE_URL,
+  
+  // Session configuration
+  session: {
+    // The secret used to encrypt the session cookie
+    secret: process.env.AUTH0_SECRET!,
+    // Session duration in seconds (7 days)
+    duration: 7 * 24 * 60 * 60,
+    // Cookie name
+    cookie: {
+      name: 'app_session',
+    },
+  },
+  
+  // Authorization parameters
+  authorizationParams: {
+    redirect_uri: `${process.env.NEXT_PUBLIC_AUTH0_BASE_URL}/api/auth/callback`,
+    audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+    // Request these scopes
+    scope: 'openid profile email',
+    // Explicitly use Google OAuth connection
+    connection: 'google-oauth2',
+    // Enable offline access for refresh tokens
+    access_type: 'offline',
+    // Request a refresh token
+    prompt: 'consent',
+  },
+  
+  // HTTP settings
+  httpTimeout: 10000,
+  
+  // Enable debug logging in development
+  debug: process.env.NODE_ENV === 'development',
+  
+  // Disable the organization selection prompt
+  organization: undefined,
+  
+  // Use the Auth0 hosted login page
+  useFormData: true,
+});
 
 // Type for the user session
 export interface Auth0User {

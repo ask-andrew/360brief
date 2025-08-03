@@ -28,26 +28,28 @@ if (missing.length > 0) {
 
 // Create an instance of Auth0Client with your configuration
 const auth0 = new Auth0Client({
-  // Options are loaded from environment variables by default
-  // Ensure necessary environment variables are properly set in .env.local
-  // domain: process.env.AUTH0_DOMAIN,
-  // clientId: process.env.AUTH0_CLIENT_ID,
-  // clientSecret: process.env.AUTH0_CLIENT_SECRET,
-  // secret: process.env.AUTH0_SECRET,
+  // Use the same configuration as the client-side
+  domain: process.env.AUTH0_DOMAIN || '',
+  clientId: process.env.AUTH0_CLIENT_ID || '',
+  clientSecret: process.env.AUTH0_CLIENT_SECRET,
+  secret: process.env.AUTH0_SECRET,
   
-  // Explicitly set authorization parameters
+  // Explicitly set authorization parameters to match client-side
   authorizationParameters: {
-    response_type: 'code',
+    redirect_uri: `${process.env.AUTH0_BASE_URL}/api/auth/callback`,
+    audience: process.env.AUTH0_API_AUDIENCE, // Use the correct environment variable name
     scope: 'openid profile email',
-    audience: process.env.AUTH0_AUDIENCE, // Optional: Only if using API authorization
+    connection: 'google-oauth2',
+    prompt: 'select_account',
+    access_type: 'offline'
   },
   
-  // Session configuration (optional)
+  // Session configuration
   session: {
     absoluteDuration: 60 * 60 * 24 * 7, // 7 days
   },
   
-  // HTTP settings (optional)
+  // HTTP settings
   httpTimeout: 10000, // 10 seconds
 });
 

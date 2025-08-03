@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ClockIcon, EyeIcon, ZapIcon } from './Icons';
+import { ClockIcon, EyeIcon, BoltIcon } from '@/components/ui/icons';
 
 interface BenefitCardProps {
     icon: React.ReactNode;
@@ -22,17 +22,17 @@ const BenefitCard: React.FC<BenefitCardProps> = ({ icon, title, description }) =
 const Benefits: React.FC = () => {
     const benefits = [
         {
-            icon: <ClockIcon className="h-8 w-8 text-brand-blue" />,
+            icon: <ClockIcon className="w-6 h-6 text-brand-blue" />,
             title: "Save Time",
             description: "Reclaim 15-30 minutes every single day by getting the summary, not the noise."
         },
         {
-            icon: <EyeIcon className="h-8 w-8 text-brand-blue" />,
+            icon: <EyeIcon className="w-6 h-6 text-brand-blue" />,
             title: "Gain Clarity",
             description: "Catch subtle blockers and celebrate team wins you might have otherwise missed."
         },
         {
-            icon: <ZapIcon className="h-8 w-8 text-brand-blue" />,
+            icon: <BoltIcon className="w-6 h-6 text-brand-blue" />,
             title: "Reduce Fatigue",
             description: "Stay in the loop without constant tool-hopping and notification overload."
         },

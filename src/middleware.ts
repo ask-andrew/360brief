@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getSession } from './lib/auth0';
 
 // Define routes that require authentication
 const protectedRoutes = ['/dashboard', '/profile', '/settings'];
@@ -8,9 +7,43 @@ const protectedRoutes = ['/dashboard', '/profile', '/settings'];
 // Define public routes that should not be accessible when logged in
 const publicRoutes = ['/login', '/signup', '/'];
 
+// List of Auth0-related paths that should bypass the middleware
+const authPaths = [
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/auth/callback',
+  '/api/auth/me'
+];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session = await getSession(request);
+  
+  // Skip middleware for Auth0-related paths and static files
+  if (
+    authPaths.some(path => pathname.startsWith(path)) ||
+    pathname.startsWith('/_next') ||
+    pathname.includes('.') // Static files
+  ) {
+    return NextResponse.next();
+  }
+  
+  // Log all cookies for debugging
+  const allCookies = request.cookies.getAll().map(c => c.name);
+  console.log('All cookies in request:', allCookies);
+  
+  // Check for Auth0 session cookies
+  const auth0Cookies = {
+    appSession: request.cookies.get('appSession'),
+    auth0IsAuthenticated: request.cookies.get('auth0.is.authenticated'),
+    auth0State: request.cookies.get('auth0:state'),
+    a0State: request.cookies.get('a0:state'),
+    a0Session: request.cookies.get('a0:session')
+  };
+  
+  console.log('Auth0 session cookies:', JSON.stringify(auth0Cookies, null, 2));
+  
+  const hasAuth0Session = Object.values(auth0Cookies).some(cookie => cookie !== undefined);
+  console.log('Has Auth0 session:', hasAuth0Session);
   
   // Check if the current route is protected
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
@@ -19,16 +52,22 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(route => pathname === route);
   
   // If the user is not authenticated and trying to access a protected route
-  if (isProtectedRoute && !session) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('callbackUrl', pathname);
+  if (isProtectedRoute && !hasAuth0Session) {
+    console.log('Redirecting to login from protected route:', pathname);
+    const loginUrl = new URL('/api/auth/login', request.url);
+    // Auth0 uses 'returnTo' parameter for post-login redirect
+    loginUrl.searchParams.set('returnTo', pathname);
+    console.log('Login URL with returnTo:', loginUrl.toString());
     return NextResponse.redirect(loginUrl);
   }
   
   // If the user is authenticated and trying to access a public route
-  if (isPublicRoute && session) {
+  if (isPublicRoute && hasAuth0Session) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
+  
+  // Continue with the request if no redirection is needed
+  return NextResponse.next();
   
   return NextResponse.next();
 }

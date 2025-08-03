@@ -1,25 +1,16 @@
 import React from 'react';
-import Logo from './Logo';
-import { useAuth0 } from '@auth0/auth0-react';
-import { GoogleLoginIcon, SlackIcon, MicrosoftIcon } from './Icons';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { GoogleLoginIcon, MicrosoftIcon, SlackIcon } from '@/components/ui/icons';
+import Link from 'next/link';
+import Image from 'next/image';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the Logo component to avoid SSR issues with Next.js
+const Logo = dynamic(() => import('./Logo'), { ssr: false });
 
 const Header: React.FC = () => {
-  const {
-    loginWithRedirect,
-    logout,
-    user,
-    isAuthenticated,
-    isLoading
-  } = useAuth0();
-
-  const handleLogin = (connection: 'google-oauth2' | 'slack' | 'windowslive') => {
-    loginWithRedirect({
-      appState: { returnTo: window.location.pathname },
-      authorizationParams: {
-        connection: connection,
-      }
-    });
-  };
+  const { user, isLoading } = useUser();
+  const isAuthenticated = !!user;
 
   return (
     <header className="py-4 px-6 md:px-12 sticky top-0 z-50 bg-brand-dark/80 backdrop-blur-lg border-b border-slate-800">
@@ -35,41 +26,32 @@ const Header: React.FC = () => {
 
           {!isLoading && !isAuthenticated && (
             <>
-              <div className="hidden items-center gap-2">
-                {/*
-                <button
-                  onClick={() => handleLogin('google-oauth2')}
+              <div className="flex items-center gap-2">
+                <Link 
+                  href="/api/auth/login?connection=google-oauth2"
                   className="flex items-center justify-center gap-2 bg-slate-800 text-slate-300 font-medium py-2 px-3 rounded-lg hover:bg-slate-700 hover:text-white transition-colors duration-300 text-sm"
                   aria-label="Continue with Google"
                 >
                   <GoogleLoginIcon className="w-5 h-5" />
                   <span>Google</span>
-                </button>
-                */}
-                <button
-                  onClick={() => handleLogin('slack')}
+                </Link>
+                <Link 
+                  href="/api/auth/login?connection=slack"
                   className="flex items-center justify-center gap-2 bg-slate-800 text-slate-300 font-medium py-2 px-3 rounded-lg hover:bg-slate-700 hover:text-white transition-colors duration-300 text-sm"
                   aria-label="Continue with Slack"
                 >
                   <SlackIcon className="w-5 h-5" />
                   <span>Slack</span>
-                </button>
-                 <button
-                  onClick={() => handleLogin('windowslive')}
+                </Link>
+                <Link 
+                  href="/api/auth/login?connection=windowslive"
                   className="flex items-center justify-center gap-2 bg-slate-800 text-slate-300 font-medium py-2 px-3 rounded-lg hover:bg-slate-700 hover:text-white transition-colors duration-300 text-sm"
                   aria-label="Continue with Microsoft"
                 >
                   <MicrosoftIcon className="w-5 h-5" />
                   <span>Microsoft</span>
-                </button>
+                </Link>
               </div>
-               <button
-                onClick={() => loginWithRedirect()}
-                className="text-slate-300 hover:text-white font-medium transition-colors duration-300 text-sm"
-                aria-label="Log in to your account"
-              >
-                Log In
-              </button>
               <a
                 href="#join-waitlist"
                 className="bg-brand-blue text-white font-semibold py-2 px-5 rounded-lg hover:bg-sky-400 transition-colors duration-300 text-sm md:text-base"
@@ -81,18 +63,21 @@ const Header: React.FC = () => {
 
           {!isLoading && isAuthenticated && user && (
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-                className="text-slate-300 hover:text-white font-medium transition-colors duration-300 text-sm md:text-base"
+              <Link
+                href="/api/auth/logout"
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-300"
               >
                 Log Out
-              </button>
-              <img
-                src={user.picture}
-                alt={user.name ?? 'User avatar'}
-                className="h-9 w-9 rounded-full border-2 border-slate-600 hover:opacity-90 transition-opacity"
-                title={`Logged in as ${user.name}`}
-              />
+              </Link>
+              {user.picture && (
+                <Image
+                  src={user.picture}
+                  alt={user.name ?? 'User avatar'}
+                  className="w-8 h-8 rounded-full"
+                  width={32}
+                  height={32}
+                />
+              )}
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "next dev",
+    "dev:incognito": "next dev & (sleep 2 && osascript -e 'tell application \"Google Chrome\" to open location \"http://localhost:3000/login\"' && osascript -e 'tell application \"Google Chrome\" to activate' && osascript -e 'tell application \"System Events\" to keystroke \"i\" using {option, command}') & open -n -a \"Google Chrome\" --args --incognito --auto-open-devtools-for-tabs \"http://localhost:3000/login\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -14,8 +15,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@auth0/auth0-react": "^2.4.0",
-    "@auth0/nextjs-auth0": "^4.8.0",
     "@google-cloud/secret-manager": "^6.1.0",
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
@@ -24,7 +23,6 @@
     "buffer": "^6.0.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "dotenv": "^17.2.1",
     "google-auth-library": "^10.2.0",
     "googleapis": "^154.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -32,14 +30,16 @@
     "lucide-react": "^0.534.0",
     "luxon": "^3.7.1",
     "next": "^15.4.5",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "recharts": "^3.1.0",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@auth0/auth0-spa-js": "^2.3.0",
+    "@auth0/nextjs-auth0": "^4.9.0",
+    "@faker-js/faker": "^9.9.0",
     "@playwright/test": "^1.54.1",
-    "@tailwindcss/postcss7-compat": "^2.2.17",
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
@@ -51,14 +51,19 @@
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "autoprefixer": "^10.4.21",
+    "dotenv": "^17.2.1",
     "eslint": "^9.32.0",
     "eslint-config-next": "^15.4.5",
     "jest": "^30.0.5",
     "node-mocks-http": "^1.17.2",
     "postcss": "^8.5.6",
+    "postcss-functions": "^4.0.2",
+    "postcss-js": "^4.0.1",
+    "postcss-nested": "^7.0.2",
     "supertest": "^7.1.4",
     "tailwindcss": "^4.1.11",
     "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
     "typescript": "~5.7.2"
   }
 }
