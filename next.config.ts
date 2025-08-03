@@ -6,9 +6,14 @@ const nextConfig: NextConfig = {
   
   // Enable server components by default
   experimental: {
-    serverActions: true,
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+    serverActions: {
+      bodySizeLimit: '2mb',
+      allowedOrigins: []
+    },
   },
+  
+  // External packages that should be processed by the server
+  serverExternalPackages: ['@supabase/supabase-js'],
   
   // Configure images domains
   images: {
