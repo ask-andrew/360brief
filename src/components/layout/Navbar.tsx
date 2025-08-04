@@ -44,11 +44,11 @@ export function Navbar() {
           <Link 
             href="/" 
             className="flex items-center space-x-2 group"
-            aria-label="360°Brief Home"
+            aria-label="360Brief Home"
           >
             <img 
               src="/images/360logo.svg" 
-              alt="360°Brief" 
+              alt="360Brief" 
               className="h-16 w-auto transition-transform group-hover:rotate-12 md:h-24" 
             />
           </Link>

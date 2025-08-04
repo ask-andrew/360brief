@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Github } from 'lucide-react';
+import { GoogleConnectButton } from '@/components/auth/GoogleConnectButton';
 
 export default function SignInPage() {
   return (
@@ -13,6 +14,8 @@ export default function SignInPage() {
           </div>
           
           <div className="space-y-4">
+            <GoogleConnectButton variant="outline" className="w-full" />
+            
             <Button className="w-full" variant="outline">
               <Github className="mr-2 h-4 w-4" />
               Continue with GitHub

@@ -1,31 +1,48 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ChevronRight, PlayCircle } from 'lucide-react';
 
 export function GetStartedSection() {
   return (
-    <section className="py-20 bg-gradient-to-b from-background to-muted/20">
+    <section className="relative py-24 overflow-hidden bg-gradient-to-b from-background to-muted/10">
+      {/* Background pattern */}
+      <div className="absolute inset-0 -z-10 opacity-10 [mask-image:radial-gradient(farthest-side_at_top,white,transparent)]">
+        <div className="h-[1000px] w-full [background-image:radial-gradient(125%_125%_at_50%_10%,#000_40%,#63e_100%)]"></div>
+      </div>
+      
       <div className="container px-4 mx-auto">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center px-4 py-1.5 mb-4 text-sm font-medium rounded-full border border-primary/20 bg-primary/10 text-primary">
-            Get Started in Minutes
+        <div className="max-w-4xl mx-auto text-center relative">
+          <div className="inline-flex items-center justify-center px-6 py-2.5 mb-6 text-sm font-medium rounded-full border border-primary/20 bg-primary/10 text-primary backdrop-blur-sm">
+            🚀 Start your executive productivity journey today
           </div>
           
-          <h2 className="text-4xl font-bold tracking-tight sm:text-5xl mb-6">
-            Ready to transform your workflow?
+          <h2 className="text-4xl font-bold tracking-tight sm:text-5xl mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Reclaim Your Most Valuable Asset: Time
           </h2>
           
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10">
-            Join thousands of executives who save hours every week with 360°Brief's intelligent executive digests.
+            Join forward-thinking executives who've already transformed their workflow. Get your first executive briefing in minutes—no credit card required.
           </p>
           
-          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
-            <Button size="lg" className="px-8 py-6 text-lg" asChild>
-              <Link href="/signup">
-                Start Free Trial
+          <div className="flex flex-col sm:flex-row justify-center gap-6 mb-12">
+            <Button 
+              size="lg" 
+              className="px-10 py-7 text-lg font-semibold group transition-all duration-200 hover:shadow-xl hover:shadow-primary/20 hover:scale-[1.02]"
+              asChild
+            >
+              <Link href="/signup" className="flex items-center gap-2">
+                Get Started Free
+                <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="px-8 py-6 text-lg" asChild>
-              <Link href="/demo">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="px-10 py-7 text-lg font-medium group transition-all duration-200 hover:scale-[1.02]" 
+              asChild
+            >
+              <Link href="/demo" className="flex items-center gap-2">
+                <PlayCircle className="h-5 w-5" />
                 Watch Demo
               </Link>
             </Button>

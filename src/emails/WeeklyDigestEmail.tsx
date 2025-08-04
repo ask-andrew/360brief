@@ -53,7 +53,7 @@ export const WeeklyDigestEmail = ({
     <Preview>Your Weekly Digest - {dateRange}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={logo}>360°Brief</Text>
+        <Text style={logo}>360Brief</Text>
         <Text style={greeting}>Hi {userName},</Text>
         <Text style={paragraph}>
           Here's your weekly digest for {dateRange}. You had {summary.emailCount} emails and {summary.eventCount} events this week.
@@ -125,7 +125,7 @@ export const WeeklyDigestEmail = ({
         </Section>
 
         <Text style={footer}>
-          You're receiving this email because you're subscribed to weekly digests from 360°Brief.
+          You're receiving this email because you're subscribed to weekly digests from 360Brief.
           <br />
           <a href={`${baseUrl}/preferences`} style={link}>
             Update preferences

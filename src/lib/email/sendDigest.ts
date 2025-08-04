@@ -78,7 +78,7 @@ export async function sendWeeklyDigest({
 
     // Send the email using Resend
     const { data, error } = await resend.emails.send({
-      from: '360°Brief <digest@360brief.app>',
+      from: '360Brief <digest@360brief.app>',
       to,
       subject: `Your Weekly Digest - ${dateRange}`,
       html: emailHtml,

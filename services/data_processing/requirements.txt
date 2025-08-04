@@ -1,0 +1,18 @@
+# Core dependencies
+pandas>=2.0.0
+spacy>=3.6.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+httpx>=0.24.0
+
+# Development
+pytest>=7.4.0
+black>=23.3.0
+isort>=5.12.0
+mypy>=1.4.0
+pylint>=2.17.0
+
+# NLP models
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.6.0/en_core_web_sm-3.6.0-py3-none-any.whl

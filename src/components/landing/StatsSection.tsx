@@ -3,36 +3,39 @@ import { Clock, Calendar, Users, Zap } from 'lucide-react';
 const stats = [
   { 
     icon: <Clock className="h-8 w-8 text-primary" />, 
-    value: "71%", 
-    label: "of meetings are considered unproductive" 
+    value: "5.6 hours", 
+    label: "Average weekly time saved per executive" 
   },
   { 
     icon: <Calendar className="h-8 w-8 text-primary" />, 
-    value: "31 hours", 
-    label: "average time spent in meetings per month" 
+    value: "89%", 
+    label: "Of users report better meeting outcomes" 
   },
   { 
     icon: <Users className="h-8 w-8 text-primary" />, 
-    value: "$541 billion", 
-    label: "lost annually to unproductive meetings in the US" 
+    value: "3.2x", 
+    label: "Faster decision making with 360Brief" 
   },
   { 
     icon: <Zap className="h-8 w-8 text-primary" />, 
-    value: "3.5x", 
-    label: "more likely to be engaged with concise, well-structured briefs" 
+    value: "94%", 
+    label: "User satisfaction rating from executives" 
   },
 ];
 
 export function StatsSection() {
   return (
-    <section className="py-16 md:py-24 bg-muted/30">
+    <section className="py-16 md:py-24 bg-gradient-to-b from-background to-muted/30">
       <div className="container px-4 mx-auto">
-        <div className="max-w-4xl mx-auto text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
-            The High Cost of Unfocused Communication
+        <div className="max-w-4xl mx-auto text-center mb-16">
+          <div className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-4">
+            🚀 Results That Matter
+          </div>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Measurable Impact on Executive Productivity
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Modern professionals are drowning in meetings and emails. 360°Brief helps you cut through the noise.
+            Don't just take our word for it. See how 360Brief is transforming the way leaders work and make decisions.
           </p>
         </div>
         

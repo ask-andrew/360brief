@@ -1,7 +1,10 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { HeroSection } from '@/components/landing/HeroSection';
-import { GetStartedSection } from '@/components/landing/GetStartedSection';
 import { StatsSection } from '@/components/landing/StatsSection';
+import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
+import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
+import { PricingSection } from '@/components/landing/PricingSection';
+import { GetStartedSection } from '@/components/landing/GetStartedSection';
 
 export default function Home() {
   return (
@@ -10,6 +13,9 @@ export default function Home() {
       <main className="overflow-hidden">
         <HeroSection />
         <StatsSection />
+        <HowItWorksSection />
+        <TestimonialsSection />
+        <PricingSection />
         <GetStartedSection />
       </main>
     </div>
