@@ -5,11 +5,35 @@ import { Database } from '@/lib/supabase/database.types';
 import env from '@/config/env';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get('code');
+  const { searchParams, hash } = new URL(request.url);
+  let code = searchParams.get('code');
   const error = searchParams.get('error');
   const errorDescription = searchParams.get('error_description');
   const state = searchParams.get('state');
+  
+  // If we have a hash fragment, parse it for the access token
+  if (!code && request.url.includes('#')) {
+    const hashParams = new URLSearchParams(request.url.split('#')[1]);
+    const accessToken = hashParams.get('access_token');
+    const tokenType = hashParams.get('token_type');
+    
+    if (accessToken && tokenType) {
+      // If we have an access token, we can use it directly
+      const supabase = createRouteHandlerClient<Database>({ cookies });
+      const { data: { session }, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: hashParams.get('refresh_token') || '',
+        token_type: tokenType,
+      });
+      
+      if (sessionError || !session) {
+        console.error('Error setting session from hash:', sessionError);
+        return redirectTo('/login?error=auth_error&error_description=Failed to authenticate with provider');
+      }
+      
+      return redirectTo('/dashboard');
+    }
+  }
 
   // Redirect base URL
   const baseUrl = env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -90,14 +114,14 @@ export async function GET(request: Request) {
       userId = userData.id;
     }
 
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.createSession({
+    const { data: sessionData, error: sessionCreationError } = await supabase.auth.admin.createSession({
       userId,
       authenticationMethod: 'oauth',
       authenticationMethodReference: 'google',
     });
 
-    if (sessionError || !sessionData.session) {
-      console.error('Error creating session:', sessionError);
+    if (sessionCreationError || !sessionData?.session) {
+      console.error('Error creating session:', sessionCreationError);
       throw new Error('Failed to create user session');
     }
 
