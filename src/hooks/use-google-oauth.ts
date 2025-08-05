@@ -108,7 +108,7 @@ export const useGoogleOAuth = ({
     }
   }, [handleError]);
 
-  // Handle the OAuth callback when the page loads with a code
+  // Handle the OAuth callback when the page loads with a code or token
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -128,40 +128,89 @@ export const useGoogleOAuth = ({
       const error = url.searchParams.get('error');
       const errorDescription = url.searchParams.get('error_description');
 
-      console.log('OAuth callback params:', { code, error, errorDescription });
+      console.log('OAuth callback params from search:', { code, error, errorDescription });
 
-      // If no code or error, check for implicit flow in fragment
-      if ((!code || code === 'undefined') && !error) {
-        // Try to handle implicit flow if needed (not recommended for SPAs)
-        const fragment = window.location.hash.substring(1);
-        if (fragment) {
-          const fragmentParams = new URLSearchParams(fragment);
-          const accessToken = fragmentParams.get('access_token');
-          if (accessToken) {
-            // If we have an access token directly, we can use it
-            try {
-              setLoading(true);
-              const { data: { session }, error: sessionError } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: fragmentParams.get('refresh_token') || ''
-                // Only include properties that match the expected type
-              });
+      // Check URL fragment for OAuth response (implicit/PKCE fallback)
+      const fragment = window.location.hash.substring(1);
+      let fragmentParams = new URLSearchParams();
+      let accessTokenFromFragment: string | null = null;
+      let refreshTokenFromFragment: string | null = null;
+      
+      if (fragment) {
+        fragmentParams = new URLSearchParams(fragment);
+        accessTokenFromFragment = fragmentParams.get('access_token');
+        refreshTokenFromFragment = fragmentParams.get('refresh_token');
+        console.log('Fragment params:', {
+          access_token: accessTokenFromFragment ? '[REDACTED]' : null,
+          refresh_token: refreshTokenFromFragment ? '[REDACTED]' : null,
+          expires_in: fragmentParams.get('expires_in'),
+          token_type: fragmentParams.get('token_type'),
+          provider_token: fragmentParams.get('provider_token') ? '[REDACTED]' : null
+        });
+      }
 
-              if (sessionError) throw sessionError;
-              if (session) {
-                setSession(session);
-                setUser(session.user);
-                // Clean up the URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-              }
-            } catch (err) {
-              handleError(err as Error);
-            } finally {
-              setLoading(false);
-            }
+      // If we have an access token in the fragment, handle it first
+      if (accessTokenFromFragment) {
+        console.log('Processing OAuth response from URL fragment...');
+        
+        try {
+          // First, set the session with the access token
+          const { data: { session }, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessTokenFromFragment,
+            refresh_token: refreshTokenFromFragment || ''
+          });
+          
+          if (sessionError) {
+            console.error('Error setting session:', sessionError);
+            throw sessionError;
           }
+          
+          if (!session) {
+            throw new Error('No session returned after setting session');
+          }
+          
+          console.log('Session set successfully, getting user...');
+          
+          // Then, refresh the session to ensure it's valid
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            console.error('Error getting user:', userError);
+            throw userError;
+          }
+          
+          if (user) {
+            console.log('User authenticated successfully:', user.email);
+            
+            // Update the auth store
+            setSession(session);
+            setUser(user);
+            
+            // Clean up the URL by removing the fragment
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.hash = '';
+            window.history.replaceState({}, document.title, cleanUrl.toString());
+            
+            // Get the redirect path from session storage or use the default
+            const redirectPath = sessionStorage.getItem('oauth_redirect') || '/dashboard';
+            console.log('Redirecting to:', redirectPath);
+            
+            // Clear the redirect from storage
+            sessionStorage.removeItem('oauth_redirect');
+            
+            // Use router.replace for client-side navigation without full page reload
+            router.replace(redirectPath);
+            return;
+          } else {
+            throw new Error('No user returned after authentication');
+          }
+        } catch (error) {
+          console.error('Error in OAuth callback:', error);
+          handleError(error as Error, 'Error processing OAuth response');
+          // Redirect to login page on error
+          window.location.href = '/login?error=auth_error';
+          return;
         }
-        return;
       }
 
       try {
@@ -177,15 +226,18 @@ export const useGoogleOAuth = ({
         setLoading(true);
         
         try {
+          console.log('Exchanging authorization code for session...');
+          
           // Exchange the authorization code for a session
-          // This will automatically handle the PKCE flow
           const { data: { session }, error: authError } = await supabase.auth.exchangeCodeForSession(code);
           
           if (authError) {
+            console.error('Error exchanging code for session:', authError);
             throw authError;
           }
           
           if (session && isMounted.current) {
+            console.log('Session established successfully from code exchange');
             setSession(session);
             setUser(session.user);
             
@@ -193,19 +245,22 @@ export const useGoogleOAuth = ({
             const redirectPath = sessionStorage.getItem('oauth_redirect') || '/dashboard';
             sessionStorage.removeItem('oauth_redirect');
             
-            // Clean up the URL by removing the code parameter
+            // Clean up the URL by removing OAuth parameters
             const cleanUrl = new URL(window.location.href);
             cleanUrl.searchParams.delete('code');
-            window.history.replaceState({}, '', cleanUrl.toString());
+            cleanUrl.searchParams.delete('state');
+            cleanUrl.searchParams.delete('error');
+            cleanUrl.searchParams.delete('error_description');
+            cleanUrl.hash = ''; // Clear any fragments
             
-            // Notify success
-            toast({
-              title: 'Signed in successfully',
-              description: 'You have been successfully authenticated.'
-            });
+            // Only update URL if we're not already on the clean path
+            if (window.location.href !== cleanUrl.toString()) {
+              window.history.replaceState({}, '', cleanUrl.toString());
+            }
             
-            onSuccess?.();
+            // Redirect to the intended page
             router.push(redirectPath);
+            onSuccess?.();
           }
         } catch (error) {
           console.error('[OAuth] Session error:', error);

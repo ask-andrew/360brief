@@ -30,7 +30,7 @@ export default async function DigestPage({ params }: { params: { id: string } })
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            360°Brief Weekly Digest
+            360Brief Weekly Digest
           </h1>
           <p className="text-gray-600">
             {content.dateRange}

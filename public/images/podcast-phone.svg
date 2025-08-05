@@ -1,0 +1,42 @@
+<svg width="300" height="600" viewBox="0 0 300 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Phone body -->
+  <rect x="20" y="20" width="260" height="560" rx="40" fill="#0F172A" stroke="#1E293B" stroke-width="2"/>
+  
+  <!-- Screen -->
+  <rect x="30" y="40" width="240" height="520" rx="20" fill="#0F172A"/>
+  
+  <!-- Screen content -->
+  <rect x="40" y="60" width="220" height="440" rx="10" fill="#1E293B"/>
+  
+  <!-- Podcast artwork -->
+  <circle cx="150" cy="180" r="80" fill="#0EA5E9"/>
+  <path d="M150 270C162.426 270 174.5 266.843 185.355 260.74C196.21 254.638 205.543 245.76 212.678 234.813C219.814 223.866 224.545 211.12 226.494 197.674C228.444 184.229 227.558 170.448 223.902 157.5" stroke="white" stroke-width="10" stroke-linecap="round"/>
+  <path d="M150 250C159.389 250 168.617 247.766 176.968 243.481C185.32 239.197 192.584 232.96 198.195 225.188C203.807 217.417 207.632 208.303 209.359 198.601C211.085 188.899 210.669 178.887 208.147 169.419" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <path d="M150 230C156.627 230 163.106 228.733 169.066 226.286C175.026 223.84 180.349 220.264 184.678 215.757C189.007 211.25 192.255 205.903 194.197 200.066C196.14 194.23 196.734 188.045 195.939 181.967" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Progress bar -->
+  <rect x="50" y="520" width="200" height="4" rx="2" fill="#334155"/>
+  <rect x="50" y="520" width="70" height="4" rx="2" fill="#0EA5E9"/>
+  
+  <!-- Time indicators -->
+  <text x="50" y="550" font-family="Inter, sans-serif" font-size="12" fill="#94A3B8">1:24</text>
+  <text x="230" y="550" text-anchor="end" font-family="Inter, sans-serif" font-size="12" fill="#94A3B8">4:37</text>
+  
+  <!-- Playback controls -->
+  <circle cx="150" cy="490" r="30" fill="#0EA5E9" fill-opacity="0.2"/>
+  <path d="M140 480V500L160 490L140 480Z" fill="#0EA5E9"/>
+  
+  <!-- Phone notch -->
+  <rect x="120" y="20" width="60" height="20" rx="10" fill="#0F172A"/>
+  <rect x="125" y="25" width="50" height="10" rx="5" fill="#1E293B"/>
+  
+  <!-- Side buttons -->
+  <rect x="280" y="80" width="15" height="60" rx="5" fill="#1E293B"/>
+  <rect x="280" y="160" width="15" height="100" rx="5" fill="#1E293B"/>
+  <rect x="5" y="100" width="15" height="40" rx="5" fill="#1E293B"/>
+  
+  <!-- Screen reflection -->
+  <path d="M270 40L40 40L40 60L270 60L270 40Z" fill="white" fill-opacity="0.03"/>
+  <path d="M40 40L40 60L30 60L30 40L40 40Z" fill="white" fill-opacity="0.05"/>
+  <path d="M40 40L30 40L30 50L40 50L40 40Z" fill="white" fill-opacity="0.02"/>
+</svg>

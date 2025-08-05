@@ -10,9 +10,9 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "360°Brief - Executive Digest Platform",
-  description: "Transform your information overload into actionable insights with 360°Brief's executive digest platform.",
+  description: "Transform your information overload into actionable insights with 360Brief's executive digest platform.",
   keywords: ["executive briefing", "productivity", "email digest", "calendar digest", "executive assistant"],
-  authors: [{ name: "360°Brief Team" }],
+  authors: [{ name: "360Brief Team" }],
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
@@ -21,13 +21,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://360brief.app",
-    title: "360°Brief - Executive Digest Platform",
+    title: "360Brief - Executive Digest Platform",
     description: "Transform your information overload into actionable insights.",
-    siteName: "360°Brief",
+    siteName: "360Brief",
   },
   twitter: {
     card: "summary_large_image",
-    title: "360°Brief",
+    title: "360Brief",
     description: "Transform your information overload into actionable insights.",
     creator: "@360brief",
   },

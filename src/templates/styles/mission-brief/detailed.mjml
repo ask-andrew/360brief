@@ -1,0 +1,187 @@
+<!-- Import base layout -->
+{% extends "../../base/layout.mjml" %}
+
+{% block content %}
+  <!-- Executive Summary -->
+  <mj-section padding="0 25px 15px">
+    <mj-column>
+      <mj-text font-weight="700" font-size="16px" padding-bottom="10px">EXECUTIVE SUMMARY</mj-text>
+      <mj-text padding="0 0 20px 0" line-height="24px">
+        {{summary}}
+      </mj-text>
+    </mj-column>
+  </mj-section>
+
+  <!-- Situation -->
+  <mj-section padding="0 25px 15px">
+    <mj-column>
+      <mj-text font-weight="700" font-size="16px" padding-bottom="10px" border-bottom="1px solid #E5E7EB">
+        SITUATION
+      </mj-text>
+      <mj-text padding="15px 0 0 0" line-height="24px">
+        {{situation.detailed}}
+      </mj-text>
+      {{#if situation.metrics}}
+      <mj-table padding="15px 0 0 0">
+        <tr>
+          {{#each situation.metrics}}
+          <td style="border-right: 1px solid #E5E7EB; padding-right: 20px;">
+            <mj-text font-size="24px" font-weight="700" padding="0 0 5px 0">{{value}}</mj-text>
+            <mj-text font-size="12px" color="#6B7280" padding="0">{{label}}</mj-text>
+          </td>
+          {{/each}}
+        </tr>
+      </mj-table>
+      {{/if}}
+    </mj-column>
+  </mj-section>
+
+  <!-- Action Required -->
+  <mj-section background-color="#FEF2F2" padding="20px 25px" border-radius="6px">
+    <mj-column>
+      <mj-text font-weight="700" color="#B91C1C" padding-bottom="10px" border-bottom="1px solid #FECACA">
+        ACTION REQUIRED
+      </mj-text>
+      <mj-text padding="15px 0 0 0" line-height="24px">
+        {{action.description}}
+      </mj-text>
+      
+      <mj-table padding="15px 0 0 0">
+        <tr>
+          <td width="120" style="padding: 5px 0;">
+            <mj-text font-weight="600" padding="0">Priority:</mj-text>
+          </td>
+          <td style="padding: 5px 0;">
+            <mj-text padding="0">{{action.priority}} Priority</mj-text>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 5px 0;">
+            <mj-text font-weight="600" padding="0">Deadline:</mj-text>
+          </td>
+          <td style="padding: 5px 0;">
+            <mj-text padding="0">{{action.deadline}}</mj-text>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 5px 0;" valign="top">
+            <mj-text font-weight="600" padding="0">Owners:</mj-text>
+          </td>
+          <td style="padding: 5px 0;">
+            {{#each action.owners}}
+            <mj-text padding="0 0 5px 0">{{this}}</mj-text>
+            {{/each}}
+          </td>
+        </tr>
+      </mj-table>
+    </mj-column>
+  </mj-section>
+
+  <!-- Impact Analysis -->
+  <mj-section padding="20px 25px 15px">
+    <mj-column>
+      <mj-text font-weight="700" font-size="16px" padding-bottom="10px" border-bottom="1px solid #E5E7EB">
+        IMPACT ANALYSIS
+      </mj-text>
+      <mj-text padding="15px 0 0 0" line-height="24px">
+        {{impact.overview}}
+      </mj-text>
+      
+      {{#if impact.metrics}}
+      <mj-table padding="15px 0 0 0">
+        <tr>
+          {{#each impact.metrics}}
+          <td style="border-right: 1px solid #E5E7EB; padding: 10px 20px 10px 0;">
+            <mj-text font-size="14px" font-weight="600" padding="0 0 5px 0">{{label}}:</mj-text>
+            <mj-text font-size="18px" font-weight="700" color="{{color}}" padding="0">
+              {{value}}
+            </mj-text>
+          </td>
+          {{/each}}
+        </tr>
+      </mj-table>
+      {{/if}}
+    </mj-column>
+  </mj-section>
+
+  <!-- Status Updates -->
+  <mj-section padding="0 25px 15px">
+    <mj-column>
+      <mj-text font-weight="700" font-size="16px" padding-bottom="10px" border-bottom="1px solid #E5E7EB">
+        STATUS UPDATES
+      </mj-text>
+      {{#each updates}}
+      <mj-table padding="15px 0 0 0">
+        <tr>
+          <td width="24" valign="top" style="padding-right: 10px;">
+            <span class="status-{{status}}">
+              {{#if (eq status 'critical')}}🔴{{/if}}
+              {{#if (eq status 'warning')}}🟡{{/if}}
+              {{#if (eq status 'normal')}}🟢{{/if}}
+            </span>
+          </td>
+          <td>
+            <mj-text font-weight="600" padding="0 0 5px 0">{{title}}</mj-text>
+            <mj-text padding="0" line-height="22px">{{description}}</mj-text>
+            {{#if details}}
+            <mj-text padding="5px 0 0 0" font-size="14px" color="#4B5563" line-height="20px">
+              {{details}}
+            </mj-text>
+            {{/if}}
+            {{#if metrics}}
+            <mj-table padding="5px 0 0 0">
+              <tr>
+                {{#each metrics}}
+                <td style="padding-right: 15px;">
+                  <mj-text font-size="12px" color="#6B7280" padding="0 0 2px 0">{{label}}</mj-text>
+                  <mj-text font-size="14px" font-weight="600" padding="0">{{value}}</mj-text>
+                </td>
+                {{/each}}
+              </tr>
+            </mj-table>
+            {{/if}}
+          </td>
+        </tr>
+      </mj-table>
+      {{/each}}
+    </mj-column>
+  </mj-section>
+
+  <!-- Next Steps -->
+  <mj-section padding="0 25px 20px">
+    <mj-column>
+      <mj-text font-weight="700" font-size="16px" padding-bottom="10px" border-bottom="1px solid #E5E7EB">
+        NEXT STEPS
+      </mj-text>
+      <mj-table padding="10px 0 0 0">
+        {{#each nextSteps}}
+        <tr>
+          <td width="24" valign="top" style="padding-right: 10px; padding-bottom: 10px;">
+            <span style="color: #4B5563;">•</span>
+          </td>
+          <td style="padding-bottom: 10px;">
+            <mj-text padding="0" line-height="22px">{{this}}</mj-text>
+          </td>
+        </tr>
+        {{/each}}
+      </mj-table>
+    </mj-column>
+  </mj-section>
+
+  <!-- Call to Action -->
+  <mj-section padding="10px 0 0 0">
+    <mj-column>
+      <mj-button background-color="#1F2937" color="#FFFFFF" font-weight="600" font-size="14px"
+        href="{{cta.url}}" border-radius="6px" padding="12px 24px">
+        {{cta.text}}
+      </mj-button>
+      {{#if secondaryCta}}
+      <mj-text align="center" padding="10px 0 0 0">
+        <a href="{{secondaryCta.url}}" style="color: #4B5563; text-decoration: underline; font-size: 14px;">
+          {{secondaryCta.text}}
+        </a>
+      </mj-text>
+      {{/if}}
+    </mj-column>
+  </mj-section>
+{% endblock %}

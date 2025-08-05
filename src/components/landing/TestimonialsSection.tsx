@@ -6,7 +6,7 @@ const testimonials = [
     role: 'VP Operations',
     company: 'TechScale',
     avatar: 'SK',
-    content: "360°Brief has completely transformed how I start my day. Instead of drowning in emails, I get a concise briefing that highlights exactly what needs my attention. I've reclaimed 6 hours a week!",
+    content: "360Brief has completely transformed how I start my day. Instead of drowning in emails, I get a concise briefing that highlights exactly what needs my attention. I've reclaimed 6 hours a week!",
     rating: 5
   },
   {
@@ -22,7 +22,7 @@ const testimonials = [
     role: 'Head of Product',
     company: 'NovaLabs',
     avatar: 'PM',
-    content: "As someone who was skeptical about adding another tool to my stack, I was blown away by how quickly 360°Brief proved its value. The time savings are real and substantial.",
+    content: "As someone who was skeptical about adding another tool to my stack, I was blown away by how quickly 360Brief proved its value. The time savings are real and substantial.",
     rating: 4
   },
   {
@@ -85,7 +85,7 @@ export function TestimonialsSection() {
 
         <div className="mt-16 text-center">
           <p className="text-muted-foreground mb-6">
-            Join thousands of executives who trust 360°Brief to stay on top of their work
+            Join thousands of executives who trust 360Brief to stay on top of their work
           </p>
           <a
             href="/signup"

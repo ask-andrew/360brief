@@ -7,7 +7,7 @@ export function HowItWorksSection() {
     {
       icon: <Mail className="h-6 w-6 text-primary" />,
       title: "1. Connect Your Tools",
-      description: "Securely link your email, calendar, and other communication tools to 360°Brief."
+      description: "Securely link your email, calendar, and other communication tools to 360Brief."
     },
     {
       icon: <Zap className="h-6 w-6 text-primary" />,

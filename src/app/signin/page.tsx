@@ -10,7 +10,7 @@ export default function SignInPage() {
         <div className="w-full max-w-md space-y-6 rounded-xl bg-card p-8 shadow-lg">
           <div className="space-y-2 text-center">
             <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to your 360°Brief account</p>
+            <p className="text-muted-foreground">Sign in to your 360Brief account</p>
           </div>
           
           <div className="space-y-4">
