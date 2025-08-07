@@ -1,0 +1,97 @@
+@startuml 360Brief - Class Diagram
+
+title 360Brief - Core Domain Model
+
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+
+' Core Entities
+class User {
+  +id: UUID
+  +email: string
+  +preferences: UserPreferences
+  +dataSources: DataSource[]
+  +getDigestSettings()
+  +updatePreferences()
+}
+
+class Digest {
+  +id: UUID
+  +userId: UUID
+  +createdAt: DateTime
+  +timeRange: TimeRange
+  +sections: DigestSection[]
+  +generate()
+  +format()
+}
+
+class DataSource {
+  +id: UUID
+  +userId: UUID
+  +type: DataSourceType
+  +credentials: EncryptedData
+  +lastSynced: DateTime
+  +syncData()
+  +testConnection()
+}
+
+' Value Objects
+class TimeRange {
+  +start: DateTime
+  +end: DateTime
+  +duration(): TimeSpan
+}
+
+class DigestSection {
+  +type: SectionType
+  +title: string
+  +items: DigestItem[]
+  +addItem()
+  +removeItem()
+}
+
+class DigestItem {
+  +id: UUID
+  +source: DataSourceType
+  +content: string
+  +metadata: JSON
+  +relevance: number
+  +getFormattedContent()
+}
+
+' Enums
+enum DataSourceType {
+  GMAIL
+  CALENDAR
+  SLACK
+  JIRA
+  ASANA
+}
+
+enum SectionType {
+  PRIORITY
+  MEETINGS
+  TASKS
+  UPDATES
+  BLOCKERS
+}
+
+' Relationships
+User "1" -- "*" DataSource : has >
+User "1" -- "*" Digest : generates >
+Digest "1" -- "*" DigestSection : contains >
+DigestSection "1" -- "*" DigestItem : contains >
+DataSource "1" -- "*" DigestItem : provides >
+
+' Add notes
+note top of User
+  Core entity representing
+  an executive user
+end note
+
+note right of Digest
+  Main aggregate root for
+  executive briefings
+end note
+
+@enduml

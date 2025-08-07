@@ -9,8 +9,13 @@ export function PodcastSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left column - Content */}
           <div className="space-y-6">
-            <div className="inline-flex items-center justify-center px-4 py-1.5 mb-4 text-sm font-medium rounded-full border border-primary/20 bg-primary/10 text-primary">
-              On-the-Go Briefings
+            <div className="flex items-center gap-2 mb-4">
+              <span className="inline-flex items-center justify-center px-4 py-1.5 text-sm font-medium rounded-full border border-primary/20 bg-primary/10 text-primary">
+                On-the-Go Briefings
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                Coming Soon
+              </span>
             </div>
             
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
@@ -19,7 +24,7 @@ export function PodcastSection() {
             
             <p className="text-lg text-muted-foreground">
               Turn your commute, workout, or coffee break into productive time with our podcast-style briefings. 
-              Get the same executive summary in an audio format that fits your busy schedule.
+              Audio briefings are coming soon! Get the same executive summary in an audio format that fits your busy schedule.
             </p>
             
             <ul className="space-y-4">
@@ -56,9 +61,8 @@ export function PodcastSection() {
             </ul>
             
             <div className="pt-4 flex flex-wrap gap-4">
-              <Button className="gap-2" size="lg">
-                <Play className="h-4 w-4" />
-                Play Sample
+              <Button className="mt-4" size="lg" disabled>
+                <Play className="mr-2 h-4 w-4" /> Coming Soon
               </Button>
               <Button variant="outline" size="lg">
                 Learn More

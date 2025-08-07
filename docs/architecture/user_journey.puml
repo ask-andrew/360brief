@@ -1,0 +1,66 @@
+@startuml 360Brief - User Journey
+
+title 360Brief - Executive User Journey
+
+actor "Executive" as user
+participant "Mobile App" as mobile
+participant "Web App" as web
+participant "Backend" as backend
+participant "Data Sources" as sources
+
+== Onboarding ==
+user -> web: 1. Visits 360Brief
+web -> backend: 2. Loads landing page
+web <-- backend: 3. Returns app
+user -> web: 4. Clicks "Get Started"
+web -> backend: 5. Initiate OAuth
+user <-> backend: 6. Authenticates (Auth0)
+backend -> backend: 7. Creates user account
+web <-- backend: 8. Returns dashboard
+
+== Initial Setup ==
+user -> web: 9. Clicks "Connect Data"
+web -> backend: 10. Fetches available integrations
+web <-- backend: 11. Returns integration options
+user -> web: 12. Selects Gmail
+web <-> backend: 13. OAuth flow with Google
+backend -> sources: 14. Connects to Gmail API
+backend -> backend: 15. Stores connection
+web <-- backend: 16. Confirms connection
+
+== Daily Usage ==
+user -> mobile: 17. Opens app
+mobile -> backend: 18. Requests latest digest
+backend -> sources: 19. Fetches new data
+backend -> backend: 20. Processes data
+backend -> backend: 21. Generates digest
+mobile <-- backend: 22. Returns digest
+user -> mobile: 23. Reviews digest
+user -> mobile: 24. Takes action on item
+mobile -> backend: 25. Records interaction
+
+== Digest Interaction ==
+user -> web: 26. Views detailed digest
+web -> backend: 27. Requests full digest
+web <-- backend: 28. Returns complete data
+user -> web: 29. Filters/sorts content
+user -> web: 30. Shares digest
+web -> backend: 31. Generates shareable link
+
+' Add swimlanes
+note left of user #LightBlue
+  **Executive Goals:**
+  • Save time
+  • Stay informed
+  • Make decisions
+end note
+
+note right of sources #LightGreen
+  **Data Sources:**
+  • Email (Gmail)
+  • Calendar
+  • Project Tools
+  • Communication Apps
+end note
+
+@enduml

@@ -21,6 +21,7 @@ import NetworkGraph from '../components/analytics/charts/NetworkGraph';
 import CommunicationVolume from '../components/analytics/charts/CommunicationVolume';
 import { EnhancedActionCenter } from '../components/analytics/action/EnhancedActionCenter';
 import { mockEnhancedData } from '../components/analytics/action/mockEnhancedData';
+import ProjectNetworkView from '../components/analytics/ProjectNetworkView';
 import DashboardDownload from '../components/common/DashboardDownload';
 
 const { Title } = Typography;
@@ -292,6 +293,18 @@ const Dashboard: React.FC = () => {
               showIcon
             />
           </div>
+        </TabPane>
+        
+        <TabPane
+          tab={
+            <span>
+              <TeamOutlined />
+              Project Network
+            </span>
+          }
+          key="project-network"
+        >
+          <ProjectNetworkView />
         </TabPane>
       </Tabs>
     </div>

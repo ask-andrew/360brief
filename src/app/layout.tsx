@@ -1,6 +1,10 @@
-import type { Metadata } from "next";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -8,39 +12,49 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export const metadata: Metadata = {
-  title: "360°Brief - Executive Digest Platform",
-  description: "Transform your information overload into actionable insights with 360Brief's executive digest platform.",
-  keywords: ["executive briefing", "productivity", "email digest", "calendar digest", "executive assistant"],
-  authors: [{ name: "360Brief Team" }],
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
-  ],
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://360brief.app",
-    title: "360Brief - Executive Digest Platform",
-    description: "Transform your information overload into actionable insights.",
-    siteName: "360Brief",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "360Brief",
-    description: "Transform your information overload into actionable insights.",
-    creator: "@360brief",
-  },
-};
-
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const supabase = createClientComponentClient();
+
+  // Set mounted state on client-side
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Handle authentication and redirects
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If no session and not on login page, redirect to login
+      if (!session && !pathname.startsWith('/dev/login')) {
+        router.push('/dev/login');
+      }
+      // If session exists and on login page, redirect to dashboard
+      else if (session && pathname === '/dev/login') {
+        router.push('/dashboard');
+      }
+    };
+
+    checkAuth();
+  }, [mounted, pathname, router, supabase.auth]);
+
+  // Don't render anything until we've checked auth state
+  if (!mounted) {
+    return null;
+  }
+
   return (
-    <html lang="en" className="h-full">
-      <body className={`${inter.variable} font-sans antialiased h-full bg-white`}>
+    <html lang="en" className="h-full bg-white">
+      <body className={`${inter.variable} font-sans h-full`}>
         {children}
       </body>
     </html>

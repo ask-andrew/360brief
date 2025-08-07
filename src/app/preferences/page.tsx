@@ -252,7 +252,7 @@ export default function PreferencesPage() {
                 {[
                   { value: 'email' as const, label: 'Email', desc: 'Receive in your inbox' },
                   { value: 'slack' as const, label: 'Slack', desc: 'Direct message in Slack' },
-                  { value: 'audio' as const, label: 'Audio Podcast', desc: 'Listen on the go' },
+                  { value: 'audio' as const, label: 'Audio Podcast', desc: 'Listen on the go', disabled: true, badge: 'Coming Soon' },
                 ].map((method) => (
                   <div 
                     key={method.value}
@@ -263,7 +263,14 @@ export default function PreferencesPage() {
                     }`}
                     onClick={() => setPreferences({...preferences, deliveryMode: method.value})}
                   >
-                    <div className="font-medium">{method.label}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{method.label}</span>
+                      {method.badge && (
+                        <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full">
+                          {method.badge}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm text-muted-foreground">{method.desc}</div>
                   </div>
                 ))}

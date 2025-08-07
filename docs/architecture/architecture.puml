@@ -1,0 +1,70 @@
+@startuml
+!define RECTANGLE class
+skinparam componentStyle uml2
+skinparam monochrome true
+
+package "Frontend" as frontend {
+    [Next.js App] as nextjs
+    [Dashboard] as dashboard
+    [Auth UI] as auth_ui
+    [Settings] as settings
+    [Digest View] as digest_view
+}
+
+package "Backend Services" as backend {
+    [API Routes] as api_routes
+    [Auth0] as auth0
+    
+    package "Supabase" as supabase {
+        [Database] as db
+        [Auth] as supabase_auth
+        [Storage] as storage
+    }
+}
+
+package "External Services" as external {
+    [Gmail API] as gmail
+    [Google Calendar] as calendar
+    [Slack] as slack
+    [Project Tools] as project_tools
+}
+
+package "Core Services" as core {
+    [UnifiedDataService] as uds
+    [Data Processors] as processors
+    [Cache Layer] as cache
+    [Digest Generator] as digest_gen
+}
+
+' Define relationships
+nextjs --> api_routes : HTTP
+nextjs --> auth0 : Authentication
+api_routes --> uds : Processes
+api_routes --> supabase : CRUD Operations
+
+uds --> gmail : Fetches
+uds --> calendar : Fetches
+uds --> slack : Fetches
+uds --> project_tools : Fetches
+
+uds --> processors : Processes Data
+uds --> cache : Caches Results
+processors --> digest_gen : Generates
+
+supabase_auth <--> auth0 : Syncs Users
+db --> storage : Stores Data
+
+' Add notes
+note right of db
+  == Database Security ==
+  • Row-Level Security
+  • Encryption at Rest
+end note
+
+note right of auth0
+  == Authentication ==
+  • Secure OAuth 2.0 Flow
+  • JWT Token Based
+end note
+
+@enduml

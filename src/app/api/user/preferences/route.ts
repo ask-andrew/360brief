@@ -1,140 +1,163 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+
+// Default preferences that match our database schema
+const DEFAULT_PREFERENCES = {
+  timezone: 'UTC',
+  digest_frequency: 'daily',
+  digest_time: '07:00',
+  digest_style: 'executive',
+  preferred_format: 'email',
+  email_notifications: true,
+  priority_keywords: [],
+  key_contacts: []
+}
 
 type DigestStyle = 'mission-brief' | 'management-consulting' | 'startup-velocity' | 'newsletter';
 type Frequency = 'daily' | 'weekly' | 'weekdays' | 'custom';
 type DeliveryMode = 'email' | 'slack' | 'audio';
 
-export interface UserPreferences {
-  digestStyle: DigestStyle;
-  frequency: Frequency;
-  deliveryMode: DeliveryMode;
-  filterMarketing: boolean;
-  customDays?: number[];
-  customTime?: string;
-}
-
 export async function GET() {
+  const supabase = createServerSupabaseClient()
+  
   try {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-    
     // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
       return NextResponse.json(
         { error: 'User not authenticated' },
         { status: 401 }
-      );
+      )
     }
-    
+
     // Fetch user preferences
-    const { data, error } = await supabase
+    const { data: preferences, error } = await supabase
       .from('user_preferences')
       .select('*')
       .eq('user_id', user.id)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-      console.error('Error fetching preferences:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch preferences' },
-        { status: 500 }
-      );
-    }
-    
-    // Return default preferences if none found
-    if (!data) {
-      const defaultPreferences: UserPreferences = {
-        digestStyle: 'mission-brief',
-        frequency: 'weekly',
-        deliveryMode: 'email',
-        filterMarketing: true,
-        customTime: '08:00',
-      };
-      
-      // Save default preferences
-      const { error: insertError } = await supabase
-        .from('user_preferences')
-        .insert([{ 
-          user_id: user.id, 
-          preferences: defaultPreferences 
-        }]);
-      
-      if (insertError) {
-        console.error('Error saving default preferences:', insertError);
+      .single()
+
+    if (error) {
+      // If no preferences exist, return default values
+      if (error.code === 'PGRST116') {
+        // Insert default preferences
+        const { data: newPrefs, error: insertError } = await supabase
+          .from('user_preferences')
+          .insert([{
+            user_id: user.id,
+            ...DEFAULT_PREFERENCES
+          }])
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error('Error creating default preferences:', insertError)
+          throw insertError
+        }
+
+        // Return the inserted preferences
+        const { id, user_id, created_at, updated_at, ...prefs } = newPrefs
+        return NextResponse.json(prefs)
       }
       
-      return NextResponse.json(defaultPreferences);
+      console.error('Error fetching preferences:', error)
+      throw error
     }
-    
-    return NextResponse.json(data.preferences);
-    
+
+    // Remove internal fields before returning
+    const { id, user_id, created_at, updated_at, ...prefs } = preferences
+    return NextResponse.json(prefs)
   } catch (error) {
-    console.error('Error in GET /api/user/preferences:', error);
+    console.error('Error in GET /api/user/preferences:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch user preferences' },
       { status: 500 }
-    );
+    )
   }
 }
 
 export async function POST(request: Request) {
+  const supabase = createServerSupabaseClient()
+  const updates = await request.json()
+  
   try {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
-    
     // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
       return NextResponse.json(
         { error: 'User not authenticated' },
         { status: 401 }
-      );
+      )
     }
-    
-    // Parse request body
-    const preferences: UserPreferences = await request.json();
-    
-    // Validate preferences
-    if (!preferences || typeof preferences !== 'object') {
+
+    // Validate the updates object
+    if (!updates || typeof updates !== 'object') {
       return NextResponse.json(
-        { error: 'Invalid preferences format' },
+        { error: 'Invalid preferences data' },
         { status: 400 }
-      );
+      )
     }
-    
-    // Update or insert preferences
+
+    // Get current preferences to merge with updates
+    const { data: currentPrefs, error: fetchError } = await supabase
+      .from('user_preferences')
+      .select('*')
+      .eq('user_id', user.id)
+      .single()
+
+    // If no existing prefs, use defaults
+    const currentPreferences = fetchError?.code === 'PGRST116' 
+      ? { ...DEFAULT_PREFERENCES }
+      : currentPrefs || { ...DEFAULT_PREFERENCES }
+
+    // Merge updates with current preferences
+    const updatedPreferences = {
+      ...currentPreferences,
+      ...updates,
+      // Ensure arrays are properly set
+      priority_keywords: Array.isArray(updates.priority_keywords) 
+        ? updates.priority_keywords 
+        : currentPreferences.priority_keywords || [],
+      key_contacts: Array.isArray(updates.key_contacts) 
+        ? updates.key_contacts 
+        : currentPreferences.key_contacts || []
+    }
+
+    // Remove internal fields
+    delete updatedPreferences.id
+    delete updatedPreferences.user_id
+    delete updatedPreferences.created_at
+    delete updatedPreferences.updated_at
+
+    // Update or insert the preferences
     const { data, error } = await supabase
       .from('user_preferences')
       .upsert({
         user_id: user.id,
-        preferences,
-        updated_at: new Date().toISOString(),
+        ...updatedPreferences,
+        updated_at: new Date().toISOString()
       }, {
-        onConflict: 'user_id',
+        onConflict: 'user_id'
       })
-      .select('preferences')
-      .single();
-    
+      .select()
+      .single()
+
     if (error) {
-      console.error('Error saving preferences:', error);
-      return NextResponse.json(
-        { error: 'Failed to save preferences' },
-        { status: 500 }
-      );
+      console.error('Error saving preferences:', error)
+      throw error
     }
-    
-    return NextResponse.json(data.preferences);
-    
+
+    // Remove internal fields before returning
+    const { id, user_id: uid, created_at, updated_at, ...prefs } = data
+    return NextResponse.json(prefs)
   } catch (error) {
-    console.error('Error in POST /api/user/preferences:', error);
+    console.error('Error in POST /api/user/preferences:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to save user preferences' },
       { status: 500 }
-    );
+    )
   }
 }

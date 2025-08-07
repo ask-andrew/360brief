@@ -1,0 +1,49 @@
+@startuml 360Brief - Use Case Diagram
+
+left to right direction
+skinparam actorStyle awesome
+
+' Define actors
+actor "Executive User" as exec
+actor "System Administrator" as admin
+
+' Define use cases
+rectangle "360Brief Application" {
+    usecase "Authenticate User" as UC1
+    usecase "View Executive Digest" as UC2
+    usecase "Generate New Digest" as UC3
+    usecase "Customize Digest Preferences" as UC4
+    usecase "Connect Data Sources" as UC5
+    usecase "View Historical Digests" as UC6
+    usecase "Share Digest" as UC7
+    usecase "Configure Digest Schedule" as UC8
+    
+    usecase "Manage Users" as UC9
+    usecase "Monitor System Health" as UC10
+    usecase "View Analytics" as UC11
+    usecase "Configure System Settings" as UC12
+}
+
+' Define relationships
+exec --> UC1
+UC1 <.. UC2 : <<include>>
+UC1 <.. UC3 : <<include>>
+UC1 <.. UC4 : <<include>>
+UC1 <.. UC5 : <<include>>
+UC1 <.. UC6 : <<include>>
+UC1 <.. UC7 : <<include>>
+UC1 <.. UC8 : <<include>>
+
+admin --> UC1
+admin --> UC9
+admin --> UC10
+admin --> UC11
+admin --> UC12
+
+' Add notes
+note "Executive users can perform all use cases except\nadministrative functions (UC9-UC12)" as N1
+note "System administrators have access to all\nuse cases including administrative functions" as N2
+N1 .. UC2
+N2 .. UC9
+
+@enduml

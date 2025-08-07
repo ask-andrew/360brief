@@ -39,6 +39,10 @@ export default async function AuthLayout({ children }: AuthLayoutProps) {
             <CreditCardIcon className="w-5 h-5" />
             <span>Billing</span>
           </NavLink>
+          <NavLink href="/app/preferences">
+            <Cog6ToothIcon className="w-5 h-5" />
+            <span>Preferences</span>
+          </NavLink>
           <NavLink href="/api/auth/signout">
             <ArrowRightOnRectangleIcon className="w-5 h-5" />
             <span>Sign Out</span>
