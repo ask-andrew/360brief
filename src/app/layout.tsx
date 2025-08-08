@@ -2,14 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Inter } from "next/font/google";
+import { Dosis } from "next/font/google";
 import "./globals.css";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { isDevSession } from '@/lib/dev-auth';
+import Script from 'next/script';
 
-const inter = Inter({
+const dosis = Dosis({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-sans",
+  weight: ['300', '400', '500', '600', '700'],
+  style: ['normal'],
+  adjustFontFallback: true,
+  fallback: ['system-ui', 'sans-serif'],
 });
 
 export default function RootLayout({
@@ -17,44 +22,53 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClientComponentClient();
-
-  // Set mounted state on client-side
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Handle authentication and redirects
   useEffect(() => {
-    if (!mounted) return;
+    if (typeof window === 'undefined') return;
     
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const checkAuth = () => {
+      const isLoggedIn = isDevSession();
+      const isLoginPage = pathname?.startsWith('/dev/login');
       
-      // If no session and not on login page, redirect to login
-      if (!session && !pathname.startsWith('/dev/login')) {
+      if (!isLoggedIn && !isLoginPage) {
         router.push('/dev/login');
-      }
-      // If session exists and on login page, redirect to dashboard
-      else if (session && pathname === '/dev/login') {
+      } else if (isLoggedIn && isLoginPage) {
         router.push('/dashboard');
       }
+      
+      setIsLoading(false);
     };
-
+    
     checkAuth();
-  }, [mounted, pathname, router, supabase.auth]);
+  }, [pathname, router]);
 
-  // Don't render anything until we've checked auth state
-  if (!mounted) {
-    return null;
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <html lang="en">
+        <body className="flex items-center justify-center min-h-screen">
+          <div className="text-lg">Loading...</div>
+        </body>
+      </html>
+    );
   }
 
   return (
     <html lang="en" className="h-full bg-white">
-      <body className={`${inter.variable} font-sans h-full`}>
+      <head>
+        {/* Google Identity Services Library */}
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="lazyOnload"
+          onError={(e) => console.error('Failed to load Google Identity Services', e)}
+        />
+      </head>
+      <body className={`${dosis.variable} font-sans antialiased`}>
+        <div id="one-tap-container" className="fixed top-4 right-4 z-50"></div>
         {children}
       </body>
     </html>

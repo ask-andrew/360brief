@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Poiret+One&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -67,8 +69,13 @@
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
   
+  html {
+    font-family: 'Poiret One', sans-serif;
+  }
+  
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans font-bold tracking-tight;
+    @apply font-bold tracking-tight;
+    font-family: 'Poiret One', sans-serif;
   }
   
   h1 {

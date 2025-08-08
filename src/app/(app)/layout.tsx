@@ -1,36 +1,33 @@
-import { Inter } from 'next/font/google';
+'use client';
+
 import { ReactNode } from 'react';
 import { AppSidebar } from '@/components/layout/AppSidebar';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
-const inter = Inter({ subsets: ['latin'] });
-
-export default async function AppLayout({
-  children,
-}: {
+interface AuthenticatedLayoutProps {
   children: ReactNode;
-}) {
-  const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+}
 
-  if (!session) {
-    redirect('/login');
-  }
-
+export default function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
+  const pathname = usePathname();
+  const isAnalyticsPage = pathname?.startsWith('/analytics');
+  
   return (
-    <html lang="en" className="h-full bg-white">
-      <body className={`${inter.className} h-full`}>
-        <div className="flex h-full">
-          <AppSidebar />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
-              {children}
-            </main>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="hidden md:flex md:flex-shrink-0">
+        <AppSidebar />
+      </div>
+      
+      {/* Main content */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Main content area */}
+        <main className={`flex-1 overflow-y-auto focus:outline-none ${isAnalyticsPage ? 'bg-gray-50' : 'bg-white'}`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {children}
           </div>
-        </div>
-      </body>
-    </html>
+        </main>
+      </div>
+    </div>
   );
 }

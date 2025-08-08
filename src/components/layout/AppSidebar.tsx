@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -10,7 +11,15 @@ import {
   User, 
   HelpCircle, 
   Link as LinkIcon,
-  Sliders
+  Sliders,
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  LogOut,
+  Menu,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,6 +37,8 @@ type NavigationItem = {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
   
   const navigation: NavigationItem[] = [
     { 
@@ -38,10 +49,17 @@ export function AppSidebar() {
       exact: true
     },
     { 
+      name: 'Analytics', 
+      href: '/analytics', 
+      icon: BarChart3, 
+      current: pathname?.startsWith('/analytics')
+    },
+    { 
       name: 'Digests', 
       href: '/digest', 
       icon: BookOpen, 
-      current: pathname?.startsWith('/digest')
+      current: pathname?.startsWith('/digest'),
+      comingSoon: true
     },
     { 
       name: 'Settings', 
@@ -83,96 +101,144 @@ export function AppSidebar() {
     }
   ];
 
-  return (
-    <div className="hidden md:flex md:flex-shrink-0">
-      <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
-        <div className="flex flex-col flex-1 h-0">
-          <div className="flex items-center h-16 flex-shrink-0 px-4 bg-white">
-            <Link href="/app" className="flex items-center">
-              <span className="text-xl font-bold text-primary">360Brief</span>
-            </Link>
-          </div>
-          <div className="flex-1 flex flex-col overflow-y-auto">
-            <nav className="flex-1 px-2 py-4 space-y-1">
-              {navigation.map((item) => (
-                <div key={item.name}>
-                  <Link
-                    href={item.comingSoon || !item.href ? '#' : item.href}
-                    className={cn(
-                      (item.current || (item.children?.some(child => child.current)))
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                      'group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md',
-                      item.comingSoon ? 'opacity-50 cursor-not-allowed' : ''
-                    )}
-                    onClick={(e) => {
-                      if (item.comingSoon || !item.href) {
-                        e.preventDefault();
-                      }
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <item.icon
-                        className={cn(
-                          (item.current || (item.children?.some(child => child.current))) ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500',
-                          'mr-3 flex-shrink-0 h-5 w-5'
-                        )}
-                        aria-hidden="true"
-                      />
-                      <span className="flex-1">{item.name}</span>
-                    </div>
-                    {item.comingSoon && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Soon
-                      </span>
-                    )}
-                  </Link>
-                  
-                  {item.children && (
-                    <div className="ml-8 mt-1 space-y-1">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.name}
-                          href={child.href || '#'}
-                          className={cn(
-                            child.current
-                              ? 'bg-gray-50 text-gray-900'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                            'group flex items-center px-3 py-2 text-sm font-medium rounded-md',
-                            child.comingSoon ? 'opacity-50 cursor-not-allowed' : ''
-                          )}
-                        >
-                          <child.icon
-                            className={cn(
-                              child.current ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500',
-                              'mr-3 flex-shrink-0 h-4 w-4'
-                            )}
-                            aria-hidden="true"
-                          />
-                          <span className="flex-1">{child.name}</span>
-                          {child.comingSoon && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              Soon
-                            </span>
-                          )}
-                        </Link>
-                      ))}
-                    </div>
+  const toggleSubmenu = (name: string) => {
+    setOpenSubmenus(prev => ({
+      ...prev,
+      [name]: !prev[name]
+    }));
+  };
+
+  const renderNavItem = (item: NavigationItem) => {
+    const isSubmenuOpen = openSubmenus[item.name] ?? false;
+    const hasChildren = item.children && item.children.length > 0;
+    
+    return (
+      <li key={item.name} className="relative">
+        {item.href ? (
+          <Link
+            href={item.comingSoon ? '#' : item.href}
+            className={cn(
+              'flex items-center px-4 py-3 text-sm font-medium rounded-lg mx-2 transition-colors',
+              item.current
+                ? 'bg-primary/10 text-primary font-semibold'
+                : 'text-gray-700 hover:bg-gray-100',
+              item.comingSoon ? 'opacity-60 cursor-not-allowed' : ''
+            )}
+            onClick={(e) => {
+              if (item.comingSoon) {
+                e.preventDefault();
+              }
+            }}
+          >
+            <item.icon className={cn('h-5 w-5 flex-shrink-0', item.current ? 'text-primary' : 'text-gray-500')} />
+            {!collapsed && (
+              <>
+                <span className="ml-3">{item.name}</span>
+                {item.comingSoon && (
+                  <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded-full">
+                    Soon
+                  </span>
+                )}
+              </>
+            )}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              'flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg mx-2 transition-colors',
+              item.current
+                ? 'bg-primary/10 text-primary font-semibold'
+                : 'text-gray-700 hover:bg-gray-100',
+              'justify-between'
+            )}
+            onClick={() => hasChildren && toggleSubmenu(item.name)}
+          >
+            <div className="flex items-center">
+              <item.icon className={cn('h-5 w-5 flex-shrink-0', item.current ? 'text-primary' : 'text-gray-500')} />
+              {!collapsed && <span className="ml-3">{item.name}</span>}
+            </div>
+            {hasChildren && !collapsed && (
+              <span className="ml-2">
+                {isSubmenuOpen ? (
+                  <ChevronUp className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                )}
+              </span>
+            )}
+          </button>
+        )}
+        
+        {hasChildren && !collapsed && isSubmenuOpen && (
+          <ul className="mt-1 ml-8 space-y-1">
+            {item.children?.map((child) => (
+              <li key={child.name}>
+                <Link
+                  href={child.href || '#'}
+                  className={cn(
+                    'flex items-center px-3 py-2 text-sm rounded-lg',
+                    child.current
+                      ? 'text-primary font-medium bg-primary/5'
+                      : 'text-gray-600 hover:bg-gray-50'
                   )}
-                </div>
-              ))}
-            </nav>
+                >
+                  <child.icon className="h-4 w-4 text-gray-400 mr-3" />
+                  {child.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  };
+
+  return (
+    <div className={cn(
+      'hidden md:flex flex-col h-screen bg-white border-r border-gray-200 transition-all duration-300',
+      collapsed ? 'w-16' : 'w-64'
+    )}>
+      {/* Header */}
+      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+        <Link href="/dashboard" className="flex items-center">
+          <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold">
+            360
           </div>
-          <div className="p-4 border-t border-gray-200">
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => signOut()}
-            >
-              Sign out
-            </Button>
-          </div>
-        </div>
+          {!collapsed && <span className="ml-3 text-lg font-bold text-gray-900">360Brief</span>}
+        </Link>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-5 w-5" />
+          ) : (
+            <ChevronLeft className="h-5 w-5" />
+          )}
+        </button>
+      </div>
+      
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-4">
+        <ul className="space-y-1 px-2">
+          {navigation.map(renderNavItem)}
+        </ul>
+      </nav>
+      
+      {/* Footer */}
+      <div className="border-t border-gray-200 p-4">
+        <button
+          onClick={() => signOut()}
+          className={cn(
+            'flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100',
+            collapsed ? 'justify-center' : ''
+          )}
+        >
+          <LogOut className="h-5 w-5 text-gray-500" />
+          {!collapsed && <span className="ml-3">Sign out</span>}
+        </button>
       </div>
     </div>
   );

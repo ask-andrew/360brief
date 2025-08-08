@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useMemo } from 'react';
-import { Card, Typography, Empty } from 'antd';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
+import { Card, Typography, Empty, Switch, Space, Radio, Tooltip } from 'antd';
+import { ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import * as echarts from 'echarts/core';
 import { LineChart, BarChart, LineSeriesOption, BarSeriesOption } from 'echarts/charts';
 import { 
@@ -50,6 +51,18 @@ interface CommunicationVolumeProps {
 const CommunicationVolume: React.FC<CommunicationVolumeProps> = ({ data }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
+  const [showInbound, setShowInbound] = useState(true);
+  const [showOutbound, setShowOutbound] = useState(true);
+  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('month');
+
+  // Toggle message direction
+  const toggleInbound = (checked: boolean) => {
+    setShowInbound(checked);
+  };
+
+  const toggleOutbound = (checked: boolean) => {
+    setShowOutbound(checked);
+  };
 
   // Process data for the chart
   const chartData = useMemo(() => {
@@ -62,56 +75,81 @@ const CommunicationVolume: React.FC<CommunicationVolumeProps> = ({ data }) => {
       meeting: { inbound: '#722ed1', outbound: '#b37feb' },
     };
 
+    // Filter data based on time range
+    const filterDataByRange = (data: number[] | undefined, range: number) => {
+      if (!data) return [];
+      return data.slice(-range);
+    };
+
+    const rangeMap = {
+      week: 7,
+      month: 30,
+      quarter: 90
+    };
+
+    const range = rangeMap[timeRange];
+    const filteredDates = filterDataByRange(data.dates as any, range);
+
     // Add series for each communication type
     (['email', 'slack', 'meeting'] as const).forEach(type => {
-      if (data[type]?.inbound?.length) {
+      if (showInbound && data[type]?.inbound?.length) {
+        const inboundData = filterDataByRange(data[type]?.inbound, range);
         series.push({
           name: `${type.charAt(0).toUpperCase() + type.slice(1)} Inbound`,
           type: 'line',
           stack: 'total',
           smooth: true,
           lineStyle: {
-            width: 2,
+            width: 3,
             type: 'solid',
           },
           showSymbol: false,
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: `${colors[type].inbound}40` },
-              { offset: 1, color: `${colors[type].inbound}10` },
+              { offset: 0, color: `${colors[type].inbound}60` },
+              { offset: 1, color: `${colors[type].inbound}15` },
             ]),
           },
           emphasis: {
             focus: 'series',
+            lineStyle: {
+              width: 4,
+            }
           },
-          data: data[type]?.inbound,
+          data: inboundData,
           itemStyle: {
             color: colors[type].inbound,
           },
         });
       }
 
-      if (data[type]?.outbound?.length) {
+      if (showOutbound && data[type]?.outbound?.length) {
+        const outboundData = filterDataByRange(data[type]?.outbound, range);
         series.push({
           name: `${type.charAt(0).toUpperCase() + type.slice(1)} Outbound`,
           type: 'line',
           stack: 'total',
           smooth: true,
           lineStyle: {
-            width: 2,
-            type: 'dashed',
+            width: 3,
+            type: 'solid',
+            opacity: 0.9,
           },
           showSymbol: false,
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: `${colors[type].outbound}40` },
+              { offset: 0, color: `${colors[type].outbound}50` },
               { offset: 1, color: `${colors[type].outbound}10` },
             ]),
           },
           emphasis: {
             focus: 'series',
+            lineStyle: {
+              width: 4,
+              opacity: 1,
+            }
           },
-          data: data[type]?.outbound,
+          data: outboundData,
           itemStyle: {
             color: colors[type].outbound,
           },
@@ -120,14 +158,14 @@ const CommunicationVolume: React.FC<CommunicationVolumeProps> = ({ data }) => {
     });
 
     return {
-      dates: data.dates,
       series,
+      dates: filteredDates,
     };
-  }, [data]);
+  }, [data, showInbound, showOutbound]);
 
   // Initialize and update chart
   useEffect(() => {
-    if (!chartRef.current || !chartData) return;
+    if (!chartData?.series.length || !chartRef.current) return;
 
     // Initialize chart
     if (!chartInstance.current) {
@@ -229,30 +267,120 @@ const CommunicationVolume: React.FC<CommunicationVolumeProps> = ({ data }) => {
     };
   }, [chartData]);
 
-  // Show empty state if no data
-  if (!chartData?.series.length) {
+  // Show empty state if no data or no series selected
+  if (!chartData?.series.length || (!showInbound && !showOutbound)) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <Empty 
-          description={
-            <Text type="secondary">
-              No communication volume data available
-            </Text>
-          }
-        />
+      <div style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Communication Volume</h3>
+            <Text type="secondary">Toggle message directions to view data</Text>
+          </div>
+          <Space size="middle">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Inbound</span>
+              <Switch 
+                checked={showInbound}
+                onChange={toggleInbound}
+                checkedChildren={<ArrowDownOutlined />}
+                unCheckedChildren={<ArrowDownOutlined />}
+                style={{ backgroundColor: showInbound ? '#1890ff' : '#d9d9d9' }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Outbound</span>
+              <Switch 
+                checked={showOutbound}
+                onChange={toggleOutbound}
+                checkedChildren={<ArrowUpOutlined />}
+                unCheckedChildren={<ArrowUpOutlined />}
+                style={{ backgroundColor: showOutbound ? '#52c41a' : '#d9d9d9' }}
+              />
+            </div>
+            <Radio.Group 
+              value={timeRange} 
+              onChange={(e) => setTimeRange(e.target.value)}
+              buttonStyle="solid"
+              size="small"
+            >
+              <Radio.Button value="week">Week</Radio.Button>
+              <Radio.Button value="month">Month</Radio.Button>
+              <Radio.Button value="quarter">Quarter</Radio.Button>
+            </Radio.Group>
+          </Space>
+        </div>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '300px',
+          border: '1px dashed #d9d9d9',
+          borderRadius: '8px',
+          backgroundColor: '#fafafa'
+        }}>
+          <Empty 
+            description={
+              <span>
+                {!showInbound && !showOutbound 
+                  ? "Please select at least one message direction"
+                  : "No communication data available for the selected filters"
+                }
+              </span>
+            } 
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div 
-      ref={chartRef} 
-      style={{ 
-        width: '100%', 
-        height: '300px',
-        minHeight: '300px',
-      }} 
-    />
+    <div style={{ padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
+        <div>
+          <h3 style={{ margin: 0 }}>Communication Volume</h3>
+          <Text type="secondary">
+            Showing {timeRange}ly data 
+            <Tooltip title="Adjust time range to analyze communication patterns">
+              <InfoCircleOutlined style={{ marginLeft: '8px', color: '#8c8c8c' }} />
+            </Tooltip>
+          </Text>
+        </div>
+        <Space size="middle">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>Inbound</span>
+            <Switch 
+              checked={showInbound}
+              onChange={toggleInbound}
+              checkedChildren={<ArrowDownOutlined />}
+              unCheckedChildren={<ArrowDownOutlined />}
+              style={{ backgroundColor: showInbound ? '#1890ff' : '#d9d9d9' }}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>Outbound</span>
+            <Switch 
+              checked={showOutbound}
+              onChange={toggleOutbound}
+              checkedChildren={<ArrowUpOutlined />}
+              unCheckedChildren={<ArrowUpOutlined />}
+              style={{ backgroundColor: showOutbound ? '#52c41a' : '#d9d9d9' }}
+            />
+          </div>
+          <Radio.Group 
+            value={timeRange} 
+            onChange={(e) => setTimeRange(e.target.value)}
+            buttonStyle="solid"
+            size="small"
+          >
+            <Radio.Button value="week">Week</Radio.Button>
+            <Radio.Button value="month">Month</Radio.Button>
+            <Radio.Button value="quarter">Quarter</Radio.Button>
+          </Radio.Group>
+        </Space>
+      </div>
+      <div ref={chartRef} style={{ width: '100%', height: '400px' }} />
+    </div>
   );
 };
 

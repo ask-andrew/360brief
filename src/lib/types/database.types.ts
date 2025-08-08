@@ -67,6 +67,50 @@ export interface Database {
           updated_at?: string
         }
       }
+      digest_schedules: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          description: string | null;
+          frequency: 'daily' | 'weekly' | 'weekdays';
+          time: string;
+          timezone: string;
+          include_emails: boolean;
+          include_calendar: boolean;
+          summary_length: 'brief' | 'detailed' | 'comprehensive';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          description?: string | null;
+          frequency: 'daily' | 'weekly' | 'weekdays';
+          time: string;
+          timezone: string;
+          include_emails?: boolean;
+          include_calendar?: boolean;
+          summary_length?: 'brief' | 'detailed' | 'comprehensive';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          description?: string | null;
+          frequency?: 'daily' | 'weekly' | 'weekdays';
+          time?: string;
+          timezone?: string;
+          include_emails?: boolean;
+          include_calendar?: boolean;
+          summary_length?: 'brief' | 'detailed' | 'comprehensive';
+          created_at?: string;
+          updated_at?: string;
+        };
+      }
     }
     Views: {
       [_ in never]: never

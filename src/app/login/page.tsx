@@ -15,11 +15,6 @@ interface LoginPageProps {
 }
 
 export default function LoginPage() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  if (!mounted) return null;
   const router = useRouter();
   const searchParams = useSearchParams() as ReadonlyURLSearchParams | null;
   const [isLoading, setIsLoading] = useState(false);

@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { supabase } from '@/lib/supabase/custom-client';
 
+// This is a development-only endpoint
 export async function POST() {
-  // This is a development-only endpoint
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
       { error: 'This endpoint is only available in development mode' },
@@ -11,57 +10,59 @@ export async function POST() {
     );
   }
 
-  const cookieStore = cookies();
-  const supabase = createServerSupabaseClient();
+  const testEmail = 'dev@360brief.local';
+  const testPassword = 'devpassword123';
 
   try {
-    // Define test user credentials with a fixed email for development
-    const testEmail = 'test@360brief.app';
-    const testPassword = 'testpassword123';
+    console.log('Attempting dev login with email:', testEmail);
     
-    // First try to sign up (which will also sign in the user)
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    // Sign in with password (will create user if doesn't exist)
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: testEmail,
       password: testPassword,
-      options: {
-        data: {
-          full_name: 'Test User',
-          avatar_url: ''
-        },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
-      }
     });
 
-    if (signUpError) {
-      console.error('Error signing up test user:', signUpError);
-      
-      // If user already exists, try to sign in
-      if (signUpError.message.includes('already registered')) {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: testEmail,
-          password: testPassword,
-        });
-
-        if (signInError) {
-          console.error('Error signing in test user:', signInError);
-          throw signInError;
+    if (error) {
+      // If user doesn't exist, sign up first
+      console.log('User does not exist, creating new user...');
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: testEmail,
+        password: testPassword,
+        options: {
+          data: {
+            full_name: 'Development User',
+            avatar_url: ''
+          }
         }
+      });
 
-        return NextResponse.json({
-          success: true,
-          message: 'Logged in as test user',
-          user: signInData.user,
-        });
+      if (signUpError) {
+        console.error('Error creating user:', signUpError);
+        throw signUpError;
       }
-      
-      throw signUpError;
+
+      // Sign in with the new user
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: testEmail,
+        password: testPassword,
+      });
+
+      if (signInError) {
+        console.error('Error signing in after sign up:', signInError);
+        throw signInError;
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Created and logged in as dev user',
+        user: signInData.user,
+      });
     }
 
-    // If we get here, sign up was successful
     return NextResponse.json({
       success: true,
-      message: 'Test user created and logged in',
-      user: signUpData.user,
+      message: 'Logged in as dev user',
+      user: data.user,
     });
   } catch (error: any) {
     console.error('Error in dev login:', error);

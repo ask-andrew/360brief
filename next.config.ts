@@ -1,19 +1,45 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   // Enable React Strict Mode for better development practices
   reactStrictMode: true,
+  swcMinify: true,
   
-  // Enable server components by default
+  // Enable server components and app directory
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: 2 * 1024 * 1024, // 2MB
       allowedOrigins: []
     },
+    // Ensure proper layout handling
+    externalDir: true,
+    // Enable app directory with proper typing
+    serverComponentsExternalPackages: ['@supabase/supabase-js']
   },
   
-  // External packages that should be processed by the server
-  serverExternalPackages: ['@supabase/supabase-js'],
+  // Configure webpack
+  webpack: (config, { isServer }) => {
+    // Handle path aliases
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, './src'),
+    };
+
+    // Client-side optimizations
+    if (!isServer) {
+      // Don't include certain packages in the client bundle
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        dns: false,
+      };
+    }
+    
+    return config;
+  },
   
   // Configure images domains
   images: {
@@ -52,21 +78,6 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
-  },
-  
-  // Enable webpack optimizations
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Don't include certain packages in the client bundle
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        dns: false,
-      };
-    }
-    return config;
   },
   
   // Add output configuration for Netlify

@@ -18,10 +18,10 @@ const config: Config = {
   	},
   	extend: {
   		fontFamily: {
-  			sans: [
-  				'var(--font-inter)',
-                    ...defaultTheme.fontFamily.sans
-                ]
+  				sans: [
+          'Dosis',
+          ...defaultTheme.fontFamily.sans,
+        ]
   		},
   		colors: {
   			border: 'hsl(var(--border))',
