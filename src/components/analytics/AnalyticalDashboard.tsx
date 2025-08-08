@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Col, Row, Spin, Typography, Tabs, Alert, Image, Tooltip, Switch, Space } from 'antd';
+import { Card, Col, Row, Spin, Typography, Tabs, Alert, Image, Tooltip, Switch, Space, Drawer, Tag, List, Select, Button } from 'antd';
 import { LoadingOutlined, ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined, MailOutlined, MailFilled } from '@ant-design/icons';
 import NextImage from 'next/image';
 import { useBriefData } from '../../hooks/useBriefData';
@@ -76,7 +76,10 @@ const mockAnalyticsData = {
 const AnalyticalDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('actions'); // Set 'actions' as default tab
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'actions';
+    return localStorage.getItem('analytics:activeTab') || 'actions';
+  }); // Persisted active tab
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [useDemoData, setUseDemoData] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
@@ -88,6 +91,13 @@ const AnalyticalDashboard: React.FC = () => {
       localStorage.setItem('analytics:dataSource', useDemoData ? 'demo' : 'real');
     }
   }, [useDemoData]);
+
+  // Persist active tab
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('analytics:activeTab', activeTab);
+    }
+  }, [activeTab]);
 
   // Fetch real data (unified API). The structure should align with charts; when unavailable, we fall back to demo data.
   const { data: realData, loading: realLoading, error: realError } = useBriefData<any>({});
@@ -281,6 +291,91 @@ const AnalyticalDashboard: React.FC = () => {
   const reconnectCount: number = peopleToReconnect.length;
   const missedCount: number = missedMessagesData.length;
 
+  // Compute prior-period deltas from time-series if available (fallback to null)
+  const computeDeltaPct = (current: number, previous: number): number | null => {
+    if (previous <= 0) return null;
+    return Math.round(((current - previous) / previous) * 100);
+  };
+
+  const getSeriesTotals = (series: number[], days: number) => {
+    const n = series.length;
+    if (n < days * 2) return { curr: null, prev: null };
+    const curr = series.slice(n - days).reduce((a, b) => a + b, 0);
+    const prev = series.slice(n - days * 2, n - days).reduce((a, b) => a + b, 0);
+    return { curr, prev };
+  };
+
+  const daysWindow = 14;
+  const totals = (() => {
+    const d = selectedData ?? mockAnalyticsData;
+    const len: number = (d?.email?.inbound ?? []).length;
+    if (!len) return { deltaTotalPct: null };
+    const inboundAll: number[] = Array.from({ length: len }, (_: unknown, i: number) =>
+      (d?.email?.inbound?.[i] ?? 0) + (d?.slack?.inbound?.[i] ?? 0) + (d?.meeting?.inbound?.[i] ?? 0)
+    );
+    const outboundAll: number[] = Array.from({ length: len }, (_: unknown, i: number) =>
+      (d?.email?.outbound?.[i] ?? 0) + (d?.slack?.outbound?.[i] ?? 0) + (d?.meeting?.outbound?.[i] ?? 0)
+    );
+    const totalAll: number[] = inboundAll.map((v: number, i: number) => v + (outboundAll[i] ?? 0));
+    const { curr: currTotal, prev: prevTotal } = getSeriesTotals(totalAll, daysWindow);
+    const deltaTotalPct = currTotal != null && prevTotal != null ? computeDeltaPct(currTotal, prevTotal) : null;
+    return { deltaTotalPct };
+  })();
+
+  const totalDeltaPct = totals.deltaTotalPct;
+
+  // Missed messages drawer state
+  const [missedOpen, setMissedOpen] = useState(false);
+  const [filterPriority, setFilterPriority] = useState<'all' | 'high' | 'medium' | 'low'>(
+    () => (typeof window === 'undefined' ? 'all' : (localStorage.getItem('analytics:missed:priority') as any) || 'all')
+  );
+  const [filterChannel, setFilterChannel] = useState<'all' | 'email' | 'slack' | 'meeting' | 'teams'>(
+    () => (typeof window === 'undefined' ? 'all' : (localStorage.getItem('analytics:missed:channel') as any) || 'all')
+  );
+  const [filterDirectQ, setFilterDirectQ] = useState<'all' | 'question' | 'no_question'>(
+    () => (typeof window === 'undefined' ? 'all' : (localStorage.getItem('analytics:missed:directQ') as any) || 'all')
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('analytics:missed:priority', filterPriority);
+  }, [filterPriority]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('analytics:missed:channel', filterChannel);
+  }, [filterChannel]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('analytics:missed:directQ', filterDirectQ);
+  }, [filterDirectQ]);
+
+  // External/Internal drawer state
+  const [extOpen, setExtOpen] = useState(false);
+  const [extScope, setExtScope] = useState<'all' | 'external' | 'internal'>(() => {
+    if (typeof window === 'undefined') return 'all';
+    return (localStorage.getItem('analytics:ext:scope') as any) || 'all';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('analytics:ext:scope', extScope);
+  }, [extScope]);
+
+  const allNodes: { id: string; name: string; is_external: boolean; messageCount?: number; email?: string }[] =
+    (selectedData?.nodes ?? mockAnalyticsData.nodes) as any[];
+  const extFiltered = allNodes
+    .filter(n => (extScope === 'all' ? true : extScope === 'external' ? n.is_external : !n.is_external))
+    .sort((a, b) => (b.messageCount ?? 0) - (a.messageCount ?? 0));
+
+  const filteredMissed = missedMessagesData.filter(m => {
+    if (filterPriority !== 'all' && m.priority !== filterPriority) return false;
+    if (filterChannel !== 'all' && m.channel !== filterChannel) return false;
+    if (filterDirectQ !== 'all') {
+      const want = filterDirectQ === 'question';
+      if (m.hasDirectQuestion !== want) return false;
+    }
+    return true;
+  });
+
   // Simulate data loading
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -349,8 +444,22 @@ const AnalyticalDashboard: React.FC = () => {
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <ArrowUpOutlined style={{ color: '#52c41a' }} />
-                    <span><strong>{(selectedData?.total_count ?? mockAnalyticsData.total_count).toLocaleString()}</strong> total messages — <span style={{ color: '#52c41a' }}>+12% vs prior</span></span>
+                    {typeof totalDeltaPct === 'number' && totalDeltaPct < 0 ? (
+                      <ArrowDownOutlined style={{ color: '#cf1322' }} />
+                    ) : (
+                      <ArrowUpOutlined style={{ color: '#52c41a' }} />
+                    )}
+                    <span>
+                      <strong>{(selectedData?.total_count ?? mockAnalyticsData.total_count).toLocaleString()}</strong>
+                      {` total messages — `}
+                      {typeof totalDeltaPct === 'number' ? (
+                        <span style={{ color: totalDeltaPct >= 0 ? '#52c41a' : '#cf1322' }}>
+                          {totalDeltaPct >= 0 ? '+' : ''}{totalDeltaPct}% vs prior
+                        </span>
+                      ) : (
+                        <span style={{ color: '#8c8c8c' }}>vs prior n/a</span>
+                      )}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     {missedCount > 0 ? (
@@ -368,6 +477,96 @@ const AnalyticalDashboard: React.FC = () => {
               </Card>
             </Col>
           </Row>
+
+          {/* Missed Messages Drawer */}
+          <Drawer
+            title="Potential Missed / Overdue"
+            open={missedOpen}
+            onClose={() => setMissedOpen(false)}
+            width={640}
+          >
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+              <Tag color={filterPriority === 'high' ? 'red' : 'default'} onClick={() => setFilterPriority(filterPriority === 'high' ? 'all' : 'high')} style={{ cursor: 'pointer' }}>High</Tag>
+              <Tag color={filterPriority === 'medium' ? 'orange' : 'default'} onClick={() => setFilterPriority(filterPriority === 'medium' ? 'all' : 'medium')} style={{ cursor: 'pointer' }}>Medium</Tag>
+              <Tag color={filterPriority === 'low' ? 'blue' : 'default'} onClick={() => setFilterPriority(filterPriority === 'low' ? 'all' : 'low')} style={{ cursor: 'pointer' }}>Low</Tag>
+              <Tag color={filterDirectQ === 'question' ? 'processing' : 'default'} onClick={() => setFilterDirectQ(filterDirectQ === 'question' ? 'all' : 'question')} style={{ cursor: 'pointer' }}>Direct question</Tag>
+            </div>
+            <List
+              dataSource={filteredMissed}
+              renderItem={(msg: any) => (
+                <List.Item
+                  key={msg.id}
+                  actions={[
+                    <a key="open" href={msg.url} target="_blank" rel="noreferrer">Open</a>
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <Tag color={msg.priority === 'high' ? 'red' : msg.priority === 'medium' ? 'orange' : 'blue'} style={{ marginRight: 0 }}>{msg.priority}</Tag>
+                        <span style={{ fontWeight: 500 }}>{msg.subject}</span>
+                      </div>
+                    }
+                    description={
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', color: '#666' }}>
+                        <span>{msg.from}</span>
+                        <span>•</span>
+                        <span>{msg.channel}</span>
+                        <span>•</span>
+                        <span>{msg.daysOld} day{msg.daysOld !== 1 ? 's' : ''} ago</span>
+                        {msg.hasDirectQuestion && (<Tag color="processing">Response needed</Tag>)}
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </Drawer>
+
+          {/* External vs Internal Drawer */}
+          <Drawer
+            title="External vs Internal"
+            open={extOpen}
+            onClose={() => setExtOpen(false)}
+            width={640}
+          >
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ color: '#8c8c8c', fontSize: 12 }}>Scope:</span>
+              <Select
+                size="small"
+                value={extScope}
+                onChange={setExtScope}
+                style={{ width: 140 }}
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'external', label: 'External' },
+                  { value: 'internal', label: 'Internal' },
+                ]}
+              />
+            </div>
+            <List
+              dataSource={extFiltered}
+              renderItem={(n: any) => (
+                <List.Item key={n.id}>
+                  <List.Item.Meta
+                    title={
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {n.is_external ? <Tag color="purple">External</Tag> : <Tag>Internal</Tag>}
+                        <span style={{ fontWeight: 500 }}>{n.name}</span>
+                      </div>
+                    }
+                    description={
+                      <div style={{ display: 'flex', gap: 8, color: '#666', flexWrap: 'wrap' }}>
+                        <span>{n.email || '—'}</span>
+                        <span>•</span>
+                        <span>{n.messageCount ?? 0} messages</span>
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </Drawer>
 
           {/* First Row - Primary Tiles */}
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
@@ -446,6 +645,9 @@ const AnalyticalDashboard: React.FC = () => {
                   <div style={{ fontSize: 24, fontWeight: 700 }}>{extIntPct.internalPct}%</div>
                 </div>
                 <div style={{ fontSize: 12, color: '#8c8c8c' }}>External / Internal</div>
+                <div style={{ textAlign: 'right', marginTop: 8 }}>
+                  <Button type="link" onClick={() => setExtOpen(true)} style={{ padding: 0 }}>View details</Button>
+                </div>
               </Card>
             </Col>
             <Col xs={24} sm={12} lg={6}>
@@ -657,10 +859,22 @@ const AnalyticalDashboard: React.FC = () => {
                     </a>
                   ))
                   )}
-                  <div style={{ textAlign: 'right', marginTop: '8px' }}>
-                    <a href="/inbox?filter=unread" style={{ color: '#1890ff', fontSize: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ color: '#8c8c8c', fontSize: 12 }}>Filters:</span>
+                      <Select size="small" value={filterPriority} onChange={setFilterPriority} style={{ width: 110 }}
+                        options={[{value:'all',label:'All priority'},{value:'high',label:'High'},{value:'medium',label:'Medium'},{value:'low',label:'Low'}]}
+                      />
+                      <Select size="small" value={filterChannel} onChange={setFilterChannel} style={{ width: 110 }}
+                        options={[{value:'all',label:'All channels'},{value:'email',label:'Email'},{value:'slack',label:'Slack'},{value:'meeting',label:'Meeting'},{value:'teams',label:'Teams'}]}
+                      />
+                      <Select size="small" value={filterDirectQ} onChange={setFilterDirectQ} style={{ width: 140 }}
+                        options={[{value:'all',label:'All'},{value:'question',label:'Direct question'},{value:'no_question',label:'No question'}]}
+                      />
+                    </div>
+                    <Button type="link" onClick={() => setMissedOpen(true)} style={{ color: '#1890ff', fontSize: '14px' }}>
                       View all messages
-                    </a>
+                    </Button>
                   </div>
                 </div>
               </Card>

@@ -63,11 +63,8 @@ export default function BriefingDigest({
   const fetchBriefing = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock data aligned to proposed TechFlow outage scenario
-      setBriefing({
+      // Default mock aligned to TechFlow outage scenario (fallback)
+      const defaultMock: BriefingData = {
         updates: [
           {
             title: 'TechFlow Outage – Executive Summary',
@@ -114,6 +111,25 @@ export default function BriefingDigest({
           { date: new Date().toISOString(), title: '10:00 Root Cause Review', description: 'Prevention mapping' },
           { date: new Date().toISOString(), title: '11:00 Retention Strategy', description: 'Exec package review' },
         ],
+      };
+
+      // Try API first; fall back to defaultMock
+      let apiData: Partial<BriefingData> | null = null;
+      try {
+        const res = await fetch('/api/briefs/current', { cache: 'no-store' });
+        if (res.ok) {
+          apiData = await res.json();
+        }
+      } catch (_) {
+        // ignore network errors and use fallback
+      }
+
+      setBriefing({
+        ...defaultMock,
+        ...(apiData ?? {}),
+        // Ensure concise view fields exist even if API doesn't provide them
+        updates: (apiData as any)?.updates ?? defaultMock.updates,
+        actionItems: (apiData as any)?.actionItems ?? defaultMock.actionItems,
       });
     } catch (err) {
       setError('Failed to load briefing data');
