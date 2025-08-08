@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, ArrowRight, CheckCircle, Mail, Calendar, Clock, Zap, Sun, Moon, Coffee, Loader2 } from 'lucide-react';
 import { isDevSession } from '@/lib/dev-auth';
 import { createDigestSchedule } from '@/lib/services/digestService';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 // Form values type
 type FormValues = {

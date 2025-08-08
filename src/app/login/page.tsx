@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { GoogleConnectButton } from '@/components/auth/GoogleConnectButton';
 import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { ReadonlyURLSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LoginPageProps {
   searchParams?: {
@@ -16,28 +16,68 @@ interface LoginPageProps {
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams() as ReadonlyURLSearchParams | null;
+  const searchParams = useSearchParams();
+  const { signIn, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   // Handle OAuth errors
   useEffect(() => {
-    if (!searchParams) return;
-    
-    const error = searchParams.get('error');
-    const errorDescription = searchParams.get('error_description');
-    
-    if (error) {
+    const error = searchParams?.get('error');
+    const errorDescription = searchParams?.get('error_description');
+
+    if (error === 'OAuthSignin') {
+      setError('There was an error signing in with Google. Please try again.');
       toast({
-        title: 'Authentication Error',
-        description: errorDescription || 'An error occurred during authentication',
+        title: 'Error signing in',
+        description: 'There was an error signing in with Google. Please try again.',
         variant: 'destructive',
       });
-      
-      // Clean up the URL
-      const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete('error');
-      cleanUrl.searchParams.delete('error_description');
-      window.history.replaceState({}, '', cleanUrl.toString());
+    } else if (error === 'OAuthCallback') {
+      const message = errorDescription || 'There was an error during authentication.';
+      setError(message);
+      toast({
+        title: 'Authentication error',
+        description: message,
+        variant: 'destructive',
+      });
+    } else if (error === 'OAuthAccountNotLinked') {
+      setError('This email is already registered with a different provider.');
+      toast({
+        title: 'Account not linked',
+        description: 'This email is already registered with a different provider.',
+        variant: 'destructive',
+      });
+    } else if (error === 'EmailSignin') {
+      setError('There was an error sending the login email. Please try again.');
+      toast({
+        title: 'Could not send email',
+        description: 'There was an error sending the login email. Please try again.',
+        variant: 'destructive',
+      });
+    } else if (error === 'CredentialsSignin') {
+      setError('The email or password you entered is incorrect.');
+      toast({
+        title: 'Invalid credentials',
+        description: 'The email or password you entered is incorrect.',
+        variant: 'destructive',
+      });
+    } else if (error === 'SessionRequired') {
+      setError('Please sign in again to continue.');
+      toast({
+        title: 'Session expired',
+        description: 'Please sign in again to continue.',
+        variant: 'default',
+      });
+    } else if (error === 'OAuthCreateAccount') {
+      setError('Unable to create user account. Please try again.');
+      toast({
+        title: 'Account creation failed',
+        description: 'Unable to create user account. Please try again.',
+        variant: 'destructive',
+      });
     }
   }, [searchParams]);
 

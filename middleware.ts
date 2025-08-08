@@ -75,14 +75,22 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = [
     '/', // Home page
     '/login', 
+    '/signin',
+    '/signup',
     '/register', 
     '/forgot-password', 
-    '/reset-password', 
+    '/reset-password',
+    '/dev/login', // Dev login route
     '/api/auth/callback',
     '/_next/static',
     '/_next/image',
     '/favicon.ico',
   ];
+  
+  // Check for dev session in development
+  const isDevMode = process.env.NODE_ENV === 'development';
+  const devSessionCookie = request.cookies.get('devSession');
+  const hasDevSession = isDevMode && devSessionCookie?.value === 'true';
 
   const isPublicRoute = publicRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
@@ -94,10 +102,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is not signed in and the current route is not public, redirect to login
-  if (!user && !isPublicRoute) {
-    const redirectUrl = new URL('/login', request.url);
-    // Only set redirectedFrom if we're not already on the login page
-    if (!request.nextUrl.pathname.startsWith('/login')) {
+  if (!user && !isPublicRoute && !hasDevSession) {
+    const redirectUrl = new URL(isDevMode ? '/dev/login' : '/login', request.url);
+    // Only set redirectedFrom if we're not already on a login page
+    if (!request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/dev/login')) {
       redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname);
     }
     return NextResponse.redirect(redirectUrl);

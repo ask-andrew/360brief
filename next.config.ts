@@ -4,7 +4,6 @@ import path from 'path';
 const nextConfig: NextConfig = {
   // Enable React Strict Mode for better development practices
   reactStrictMode: true,
-  swcMinify: true,
   
   // Enable server components and app directory
   experimental: {
@@ -13,10 +12,11 @@ const nextConfig: NextConfig = {
       allowedOrigins: []
     },
     // Ensure proper layout handling
-    externalDir: true,
-    // Enable app directory with proper typing
-    serverComponentsExternalPackages: ['@supabase/supabase-js']
+    externalDir: true
   },
+  
+  // External packages for server components
+  serverExternalPackages: ['@supabase/supabase-js'],
   
   // Configure webpack
   webpack: (config, { isServer }) => {

@@ -316,109 +316,112 @@ export const EnhancedActionCenter = ({ data }: EnhancedActionCenterProps) => {
       } 
       className="action-center"
     >
-      <Tabs defaultActiveKey="pending" type="card">
-        <Tabs.TabPane
-          key="pending"
-          tab={
-            <span>
-              <IssuesCloseOutlined />
-              Needs Your Reply
-              <Badge count={data.messageCounts.pending} style={{ marginLeft: 8 }} />
-            </span>
-          }
-        >
-          <div style={{ marginTop: 16 }}>
-            {data.topics.pending.map(topic => (
-              <div key={topic.id} style={{ marginBottom: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
-                <div style={{ padding: 12, background: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                    <h4 style={{ margin: 0 }}>{topic.title}</h4>
-                    <Tag color="blue">{topic.project}</Tag>
-                  </div>
-                  <div style={{ marginTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: '#666' }}>
-                    <span>👥 {topic.participants.slice(0, 3).join(', ')}{topic.participants.length > 3 ? '...' : ''}</span>
-                    <span>🕒 {new Date(topic.lastActivity).toLocaleDateString()}</span>
-                    <MessageTypeBadges types={topic.messageTypes} />
-                  </div>
-                </div>
-                {topic.items && topic.items.length > 0 && (
-                  <List
-                    itemLayout="horizontal"
-                    dataSource={topic.items}
-                    renderItem={(item: MessageItem) => (
-                      <List.Item
-                        key={item.id}
-                        actions={[
-                          <Space key={`actions-${item.id}`}>
-                            <a 
-                              href={getDirectMessageUrl(item)} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              title="Open in original app"
-                              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-                            >
-                              {getPlatformIcon(item.type)}
-                              <span>Open</span>
-                            </a>
-                            <span>{new Date(item.timestamp).toLocaleString()}</span>
-                            <Tag 
-                              color={item.type === 'email' ? 'blue' : item.type === 'slack' ? 'green' : 'purple'}
-                              style={{ cursor: 'pointer' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(getDirectMessageUrl(item), '_blank', 'noopener,noreferrer');
-                              }}
-                            >
-                              {item.type}
-                            </Tag>
-                          </Space>
-                        ]}
-                      >
-                        <List.Item.Meta
-                          title={
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              {getPlatformIcon(item.type)}
-                              <span>{item.title}</span>
-                            </div>
-                          }
-                          description={
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              {getMessagePreview(item.preview || '')}
-                            </div>
-                          }
-                        />
-                      </List.Item>
+      <Tabs
+        defaultActiveKey="pending"
+        type="card"
+        items={[
+          {
+            key: 'pending',
+            label: (
+              <span>
+                <IssuesCloseOutlined />
+                Needs Your Reply
+                <Badge count={data.messageCounts.pending} style={{ marginLeft: 8 }} />
+              </span>
+            ),
+            children: (
+              <div style={{ marginTop: 16 }}>
+                {data.topics.pending.map(topic => (
+                  <div key={topic.id} style={{ marginBottom: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
+                    <div style={{ padding: 12, background: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <h4 style={{ margin: 0 }}>{topic.title}</h4>
+                        <Tag color="blue">{topic.project}</Tag>
+                      </div>
+                      <div style={{ marginTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: '#666' }}>
+                        <span>👥 {topic.participants.slice(0, 3).join(', ')}{topic.participants.length > 3 ? '...' : ''}</span>
+                        <span>🕒 {new Date(topic.lastActivity).toLocaleDateString()}</span>
+                        <MessageTypeBadges types={topic.messageTypes} />
+                      </div>
+                    </div>
+                    {topic.items && topic.items.length > 0 && (
+                      <List
+                        itemLayout="horizontal"
+                        dataSource={topic.items}
+                        renderItem={(item: MessageItem) => (
+                          <List.Item
+                            key={item.id}
+                            actions={[
+                              <Space key={`actions-${item.id}`}>
+                                <a 
+                                  href={getDirectMessageUrl(item)} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Open in original app"
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+                                >
+                                  {getPlatformIcon(item.type)}
+                                  <span>Open</span>
+                                </a>
+                                <span>{new Date(item.timestamp).toLocaleString()}</span>
+                                <Tag 
+                                  color={item.type === 'email' ? 'blue' : item.type === 'slack' ? 'green' : 'purple'}
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.open(getDirectMessageUrl(item), '_blank', 'noopener,noreferrer');
+                                  }}
+                                >
+                                  {item.type}
+                                </Tag>
+                              </Space>
+                            ]}
+                          >
+                            <List.Item.Meta
+                              title={
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                  {getPlatformIcon(item.type)}
+                                  <span>{item.title}</span>
+                                </div>
+                              }
+                              description={
+                                <div style={{ fontSize: '12px', color: '#666' }}>
+                                  {getMessagePreview(item.preview || '')}
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
                     )}
-                  />
-                )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          tab={
-            <span>
-              <CommentOutlined />
-              Sentiment by Project
-            </span>
-          }
-          key="sentiment-project"
-        >
-          <SentimentByProject projects={data.sentimentByProject} />
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          tab={
-            <span>
-              <UserOutlined />
-              Sentiment by Contact
-            </span>
-          }
-          key="sentiment-contact"
-        >
-          <SentimentByContact contacts={data.sentimentByContact} />
-        </Tabs.TabPane>
-      </Tabs>
+            ),
+          },
+          {
+            key: 'sentiment-project',
+            label: (
+              <span>
+                <CommentOutlined />
+                Sentiment by Project
+              </span>
+            ),
+            children: <SentimentByProject projects={data.sentimentByProject} />,
+          },
+          {
+            key: 'sentiment-contact',
+            label: (
+              <span>
+                <UserOutlined />
+                Sentiment by Contact
+              </span>
+            ),
+            children: <SentimentByContact contacts={data.sentimentByContact} />,
+          },
+        ]}
+      />
 
       {/* Project Summary Modal */}
       <Modal

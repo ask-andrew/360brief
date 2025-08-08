@@ -25,8 +25,7 @@ export default function AnalyticsPage() {
   return (
     <div className="w-full">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">Key metrics and insights from your communications</p>
+        <h1 className="text-2xl font-bold text-primary">Analytics Dashboard</h1>
       </div>
       
       <Suspense fallback={

@@ -6,6 +6,7 @@ import { Dosis } from "next/font/google";
 import "./globals.css";
 import { isDevSession } from '@/lib/dev-auth';
 import Script from 'next/script';
+import { Toaster } from '@/components/ui/toaster';
 
 const dosis = Dosis({
   subsets: ["latin"],
@@ -50,8 +51,10 @@ export default function RootLayout({
   if (isLoading) {
     return (
       <html lang="en">
-        <body className="flex items-center justify-center min-h-screen">
-          <div className="text-lg">Loading...</div>
+        <body className={dosis.className}>
+          <div className="flex h-screen w-full items-center justify-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
+          </div>
         </body>
       </html>
     );
@@ -70,6 +73,7 @@ export default function RootLayout({
       <body className={`${dosis.variable} font-sans antialiased`}>
         <div id="one-tap-container" className="fixed top-4 right-4 z-50"></div>
         {children}
+        <Toaster />
       </body>
     </html>
   );

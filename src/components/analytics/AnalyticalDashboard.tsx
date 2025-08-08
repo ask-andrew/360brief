@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Col, Row, Spin, Typography, Tabs, Alert, Image, Tooltip, Switch, Space } from 'antd';
 import { LoadingOutlined, ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined, MailOutlined, MailFilled } from '@ant-design/icons';
 import NextImage from 'next/image';
+import { useBriefData } from '../../hooks/useBriefData';
 
 // Import components
 import CommunicationPulse from './metrics/CommunicationPulse';
@@ -77,6 +78,24 @@ const AnalyticalDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('actions'); // Set 'actions' as default tab
   const dashboardRef = useRef<HTMLDivElement>(null);
+  const [useDemoData, setUseDemoData] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return (localStorage.getItem('analytics:dataSource') || 'demo') === 'demo';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('analytics:dataSource', useDemoData ? 'demo' : 'real');
+    }
+  }, [useDemoData]);
+
+  // Fetch real data (unified API). The structure should align with charts; when unavailable, we fall back to demo data.
+  const { data: realData, loading: realLoading, error: realError } = useBriefData<any>({});
+
+  // Selected data source
+  const selectedData = useDemoData ? mockAnalyticsData : (realData ?? null);
+
+  
 
   // Format response time to show hours if > 60 minutes
   const formatResponseTime = (minutes: number) => {
@@ -233,6 +252,35 @@ const AnalyticalDashboard: React.FC = () => {
   
   const hasMissedMessages = missedMessagesData.length > 0;
 
+  // Derived metrics (with safe fallbacks) - placed after supporting data to avoid use-before-define
+  const inboundCount: number = selectedData?.inbound_count ?? 0;
+  const outboundCount: number = selectedData?.outbound_count ?? 0;
+  const avgResponseMin: number = selectedData?.avg_response_time_minutes ?? 0;
+  const meetingsByType: Record<string, number> = selectedData?.meetings_by_type ?? {};
+  const totalMeetings: number = Object.values(meetingsByType).reduce((a: number, b: number) => a + b, 0);
+  // Use a proxy for focus time ratio when only meeting counts exist
+  const focusRatio: number = (() => {
+    const workBlocks = 40; // proxy weekly blocks
+    const used = Math.min(totalMeetings, workBlocks);
+    return Math.max(0, Math.min(100, Math.round(((workBlocks - used) / workBlocks) * 100)));
+  })();
+  type NodeInfo = { is_external: boolean; messageCount?: number };
+  const nodes: NodeInfo[] = (selectedData?.nodes as NodeInfo[]) ?? [];
+  const extIntPct = (() => {
+    if (!nodes.length) return { externalPct: 0, internalPct: 100 };
+    const total = nodes.reduce((s: number, n: NodeInfo) => s + (n.messageCount ?? 0), 0) || 1;
+    const ext = nodes.filter((n: NodeInfo) => n.is_external).reduce((s: number, n: NodeInfo) => s + (n.messageCount ?? 0), 0);
+    const externalPct = Math.round((ext / total) * 100);
+    return { externalPct, internalPct: 100 - externalPct };
+  })();
+  type ProjectInfo = { id: string; name: string; messageCount?: number };
+  const topProjects: ProjectInfo[] = ((selectedData?.projects as ProjectInfo[]) ?? [])
+    .slice()
+    .sort((a: ProjectInfo, b: ProjectInfo) => (b.messageCount ?? 0) - (a.messageCount ?? 0))
+    .slice(0, 3);
+  const reconnectCount: number = peopleToReconnect.length;
+  const missedCount: number = missedMessagesData.length;
+
   // Simulate data loading
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -282,69 +330,155 @@ const AnalyticalDashboard: React.FC = () => {
       key: 'metrics',
       label: 'Metrics',
       children: (
-        <div style={{ padding: '16px 8px' }}>
-          {/* Top Row - Primary Metric Tiles */}
-          <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
-            <Col xs={24} md={6}>
-              <div 
-                style={{
-                  background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  color: 'white',
-                  height: '100%',
-                  boxShadow: '0 4px 12px rgba(24, 144, 255, 0.2)'
-                }}
+        <div style={{ padding: '16px 0' }}>
+          {/* BLUF Summary */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col span={24}>
+              <Card
+                style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
+                headStyle={{ borderBottom: '1px solid #f0f0f0', padding: '16px 24px' }}
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>Summary (BLUF)</span>
+                    <Tooltip title="Bottom Line Up Front: quick read-out of what's most important.">
+                      <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+                    </Tooltip>
+                  </div>
+                }
+                bodyStyle={{ padding: '16px 24px' }}
               >
-                <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>TOTAL MESSAGES</div>
-                <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
-                  {mockAnalyticsData.total_count.toLocaleString()}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <ArrowUpOutlined style={{ color: '#52c41a' }} />
+                    <span><strong>{(selectedData?.total_count ?? mockAnalyticsData.total_count).toLocaleString()}</strong> total messages — <span style={{ color: '#52c41a' }}>+12% vs prior</span></span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {missedCount > 0 ? (
+                      <ArrowDownOutlined style={{ color: '#faad14' }} />
+                    ) : (
+                      <ArrowUpOutlined style={{ color: '#52c41a' }} />
+                    )}
+                    <span><strong>{missedCount}</strong> potential missed/overdue — <a href="#missed-messages">review and clear now</a></span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <ArrowUpOutlined style={{ color: '#722ed1' }} />
+                    <span><strong>{extIntPct.externalPct}%</strong> external mix — lean into partner/customer threads</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', opacity: 0.9 }}>
-                  <span style={{ marginRight: '8px' }}>↑ 12% from last week</span>
-                  <ArrowUpOutlined />
-                </div>
-              </div>
-            </Col>
-            <Col xs={24} md={6}>
-              <div 
-                style={{
-                  background: 'linear-gradient(135deg, #722ed1 0%, #531dab 100%)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  color: 'white',
-                  height: '100%',
-                  boxShadow: '0 4px 12px rgba(114, 46, 209, 0.2)',
-                  position: 'relative'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <span style={{ fontSize: '14px', opacity: 0.9, marginBottom: '8px' }}>ENGAGEMENT SCORE</span>
-                  <Tooltip 
-                    title="Measures your responsiveness and interaction patterns. Higher scores indicate better engagement with your network." 
-                    placement="top"
-                  >
-                    <InfoCircleOutlined style={{ marginLeft: '8px', cursor: 'pointer', opacity: 0.8 }} />
-                  </Tooltip>
-                </div>
-                <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
-                  87/100
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px', opacity: 0.9 }}>
-                  <span style={{ marginRight: '8px' }}>↑ 5% from last week</span>
-                  <ArrowUpOutlined />
-                </div>
-              </div>
+              </Card>
             </Col>
           </Row>
-          
-          {/* Second Row - Actionable Tiles */}
-          <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+
+          {/* First Row - Primary Tiles */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+            <Col xs={24} sm={12} lg={6}>
+              <Card
+                bordered
+                style={{ borderRadius: 12, height: '100%' }}
+                bodyStyle={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}
+              >
+                <div style={{ fontSize: 12, letterSpacing: 0.4, color: '#8c8c8c' }}>TOTAL MESSAGES</div>
+                <div style={{ fontSize: 32, fontWeight: 700 }}>
+                  {(selectedData?.total_count ?? 0).toLocaleString()}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#389e0d', fontSize: 13 }}>
+                  <ArrowUpOutlined />
+                  <span>12% vs prior</span>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card
+                bordered
+                style={{ borderRadius: 12, height: '100%' }}
+                bodyStyle={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 12, letterSpacing: 0.4, color: '#8c8c8c' }}>AVG RESPONSE TIME</div>
+                  <Tooltip title="Average time to first response." placement="top">
+                    <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+                  </Tooltip>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 700 }}>{formatResponseTime(avgResponseMin)}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#cf1322', fontSize: 13 }}>
+                  <ArrowDownOutlined />
+                  <span>2% slower vs prior</span>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card bordered style={{ borderRadius: 12, height: '100%' }} bodyStyle={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 12, letterSpacing: 0.4, color: '#8c8c8c' }}>INBOX RISK</div>
+                <div style={{ fontSize: 28, fontWeight: 700 }}>{missedCount}</div>
+                <div style={{ fontSize: 12, color: '#8c8c8c' }}>Potential missed/overdue responses</div>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card bordered style={{ borderRadius: 12, height: '100%' }} bodyStyle={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 12, letterSpacing: 0.4, color: '#8c8c8c' }}>INBOUND VS OUTBOUND</div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{inboundCount.toLocaleString()}</div>
+                  <span style={{ color: '#8c8c8c' }}>/</span>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{outboundCount.toLocaleString()}</div>
+                </div>
+                <div style={{ fontSize: 12, color: '#8c8c8c' }}>Inbound / Outbound</div>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Second Row - Secondary Tiles */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={12} lg={6}>
+              <Card bordered style={{ borderRadius: 12, height: '100%' }} bodyStyle={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 12, letterSpacing: 0.4, color: '#8c8c8c' }}>FOCUS VS MEETINGS</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <div style={{ fontSize: 28, fontWeight: 700 }}>{focusRatio}%</div>
+                  <div style={{ fontSize: 12, color: '#8c8c8c' }}>focus time</div>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card bordered style={{ borderRadius: 12, height: '100%' }} bodyStyle={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 12, letterSpacing: 0.4, color: '#8c8c8c' }}>EXTERNAL VS INTERNAL</div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{extIntPct.externalPct}%</div>
+                  <span style={{ color: '#8c8c8c' }}>/</span>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{extIntPct.internalPct}%</div>
+                </div>
+                <div style={{ fontSize: 12, color: '#8c8c8c' }}>External / Internal</div>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card bordered style={{ borderRadius: 12, height: '100%' }} bodyStyle={{ padding: 20 }}>
+                <div style={{ fontSize: 12, letterSpacing: 0.4, color: '#8c8c8c', marginBottom: 8 }}>TOP PROJECTS</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {topProjects.length === 0 ? (
+                    <div style={{ fontSize: 12, color: '#8c8c8c' }}>No project activity</div>
+                  ) : (
+                    topProjects.map((p: any) => (
+                      <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>{p.name}</span>
+                        <span style={{ color: '#8c8c8c' }}>{p.messageCount}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card bordered style={{ borderRadius: 12, height: '100%' }} bodyStyle={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 12, letterSpacing: 0.4, color: '#8c8c8c' }}>NETWORK HEALTH</div>
+                <div style={{ fontSize: 28, fontWeight: 700 }}>{reconnectCount}</div>
+                <div style={{ fontSize: 12, color: '#8c8c8c' }}>Contacts &gt;30 days since last touch</div>
+              </Card>
+            </Col>
+          </Row>
+          <Row gutter={[24, 24]}>
             <Col xs={24} lg={12}>
               <Card 
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>Potential Missed Messages</span>
+                    <span id="missed-messages">Potential Missed Messages</span>
                     <Tooltip title="Messages that may need your attention based on priority and response time">
                       <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
                     </Tooltip>
@@ -406,7 +540,7 @@ const AnalyticalDashboard: React.FC = () => {
                             textTransform: 'uppercase',
                             alignSelf: 'flex-start',
                             marginTop: '2px',
-                            minWidth: msg.priority === 'high' ? '50px' : '60px',
+                            width: '64px',
                             textAlign: 'center',
                             boxShadow: msg.isUrgent ? '0 0 0 1px #ffccc7' : 'none'
                           }}>
@@ -418,7 +552,7 @@ const AnalyticalDashboard: React.FC = () => {
                               marginBottom: '6px',
                               lineHeight: '1.4',
                               display: 'flex',
-                              alignItems: 'flex-start',
+                              alignItems: 'center',
                               gap: '6px'
                             }}>
                               <span style={{
@@ -440,7 +574,8 @@ const AnalyticalDashboard: React.FC = () => {
                                     backgroundColor: '#e6f7ff',
                                     padding: '0 6px',
                                     borderRadius: '2px',
-                                    border: '1px solid #91d5ff'
+                                    border: '1px solid #91d5ff',
+                                    lineHeight: '18px'
                                   }}>
                                     Response needed
                                   </span>
@@ -500,7 +635,9 @@ const AnalyticalDashboard: React.FC = () => {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'flex-end',
-                          gap: '2px'
+                          gap: '2px',
+                          flex: '0 0 auto',
+                          minWidth: '96px'
                         }}>
                           <span>{`${msg.daysOld} day${msg.daysOld !== 1 ? 's' : ''} ago`}</span>
                           {msg.isUrgent && (
@@ -559,11 +696,7 @@ const AnalyticalDashboard: React.FC = () => {
                         padding: '12px',
                         borderRadius: '8px',
                         border: '1px solid #f0f0f0',
-                        transition: 'all 0.3s',
-                        ':hover': {
-                          backgroundColor: '#fafafa',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                        }
+                        transition: 'all 0.3s'
                       }}
                     >
                       <div>
@@ -612,7 +745,7 @@ const AnalyticalDashboard: React.FC = () => {
                 bodyStyle={{ padding: '16px 24px' }}
               >
                 <div style={{ minHeight: '300px' }}>
-                  <CommunicationVolume data={mockAnalyticsData} />
+                  <CommunicationVolume data={selectedData ?? mockAnalyticsData} />
                 </div>
               </Card>
             </Col>
@@ -624,7 +757,7 @@ const AnalyticalDashboard: React.FC = () => {
                 bodyStyle={{ padding: '16px 24px' }}
               >
                 <div style={{ minHeight: '300px' }}>
-                  <TimeAllocation data={mockAnalyticsData} />
+                  <TimeAllocation data={selectedData ?? mockAnalyticsData} />
                 </div>
               </Card>
             </Col>
@@ -684,9 +817,29 @@ const AnalyticalDashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <DashboardDownload dashboardRef={dashboardRef} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Tooltip title={useDemoData ? 'Showing sample analytics. Toggle to load your real data.' : 'Showing your real analytics.'}>
+              <Space align="center">
+                <span style={{ color: 'rgba(255,255,255,0.85)' }}>Demo data</span>
+                <Switch checked={useDemoData} onChange={setUseDemoData} />
+              </Space>
+            </Tooltip>
+            <DashboardDownload dashboardRef={dashboardRef} />
+          </div>
         </div>
       </div>
+
+      {!useDemoData && realError && (
+        <div style={{ margin: '12px 0' }}>
+          <Alert type="error" message="Failed to load analytics" description={realError} showIcon />
+        </div>
+      )}
+
+      {!useDemoData && realLoading && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px' }}>
+          <Spin indicator={<LoadingOutlined spin />} />
+        </div>
+      )}
 
       <Tabs 
         activeKey={activeTab} 
