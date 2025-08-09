@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useGoogleOAuth } from '@/hooks/use-google-oauth';
 import { Button } from '@/components/ui/button';
-import { Github, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 // No toast import needed as it's already handled in the hook
 
 interface GoogleConnectButtonProps {
@@ -13,6 +12,7 @@ interface GoogleConnectButtonProps {
   redirectPath?: string;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
+  disabled?: boolean;
 }
 
 export function GoogleConnectButton({
@@ -22,21 +22,37 @@ export function GoogleConnectButton({
   redirectPath = '/dashboard',
   onSuccess,
   onError,
+  disabled = false,
 }: GoogleConnectButtonProps) {
-  const { startOAuthFlow, isLoading, error } = useGoogleOAuth();
   const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Handle button click
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
-      await startOAuthFlow(redirectPath);
+      const res = await fetch(`/api/auth/google/authorize?redirect=${encodeURIComponent(redirectPath)}`);
+      if (res.status === 401) {
+        // Not signed in — send to login and then back to redirectPath
+        const next = encodeURIComponent(redirectPath);
+        window.location.href = `/login?next=${next}`;
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || 'Failed to start Google OAuth');
+      }
+
+      // Redirect to Google consent screen (server-generated URL)
+      window.location.href = data.url;
       
       // onSuccess will be called after successful authentication in the callback
       // No need to show success toast here as it's handled in the hook
     } catch (err) {
       console.error('Error connecting Google account:', err);
-      
+      setError(err instanceof Error ? err.message : String(err));
       if (onError) {
         onError(err instanceof Error ? err : new Error(String(err)));
       }
@@ -68,10 +84,10 @@ export function GoogleConnectButton({
       variant={variant}
       size={size}
       onClick={handleConnect}
-      disabled={isLoading || isConnecting}
+      disabled={isConnecting || disabled}
       className={`flex items-center gap-2 ${className}`}
     >
-      {isLoading || isConnecting ? (
+      {isConnecting ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <svg className="h-4 w-4" viewBox="0 0 24 24">

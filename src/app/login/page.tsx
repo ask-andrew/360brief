@@ -17,7 +17,7 @@ interface LoginPageProps {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn, loading: authLoading } = useAuth();
+  const { signIn, loading: authLoading, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -91,6 +91,63 @@ export default function LoginPage() {
         </div>
         
         <div className="mt-8 space-y-6">
+          {/* Email/password form */}
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setIsLoading(true);
+              setError(null);
+              try {
+                const { error } = await signIn(email, password);
+                if (error) {
+                  setError(error.message);
+                  toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
+                  return;
+                }
+                const next = searchParams?.get('next') || '/dashboard';
+                router.push(next);
+              } catch (err: any) {
+                setError(err?.message || 'Failed to sign in');
+                toast({ title: 'Login failed', description: err?.message || 'Failed to sign in', variant: 'destructive' });
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+          >
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading || authLoading}>
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            </Button>
+          </form>
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300" />
@@ -106,6 +163,7 @@ export default function LoginPage() {
             <GoogleConnectButton
               variant="outline"
               className="w-full"
+              disabled={!user}
               onError={(error) => {
                 console.error('Google OAuth error:', error);
                 toast({
@@ -115,6 +173,11 @@ export default function LoginPage() {
                 });
               }}
             />
+            {!user && (
+              <p className="mt-2 text-center text-sm text-gray-500">
+                Sign in with email/password first, then connect Google.
+              </p>)
+            }
           </div>
         </div>
       </div>

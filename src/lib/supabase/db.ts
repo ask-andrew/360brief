@@ -1,4 +1,4 @@
-import { Database } from '@/lib/types/database.types';
+import { Database } from '@/lib/supabase/database.types';
 import { createClient } from '@supabase/supabase-js';
 import env from '@/lib/env';
 
@@ -44,39 +44,15 @@ export const updateProfile = async (userId: string, updates: Partial<Database['p
   return data;
 };
 
-// User preferences related functions
-export const getUserPreference = async (userId: string, key: string) => {
-  const { data, error } = await supabase
-    .from('user_preferences')
-    .select('value')
-    .eq('user_id', userId)
-    .eq('key', key)
-    .single();
-    
-  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-    console.error('Error fetching user preference:', error);
-    throw error;
-  }
-  
-  return data?.value;
+// User preferences helpers (deprecated here):
+// Preferences are managed as a single row per user via /api/user/preferences.
+// Use that API route from the client; use server route logic for server operations.
+export const getUserPreference = async (_userId: string, _key: string) => {
+  throw new Error('getUserPreference is deprecated. Use /api/user/preferences instead.');
 };
 
-export const setUserPreference = async (userId: string, key: string, value: any) => {
-  const { data, error } = await supabase
-    .from('user_preferences')
-    .upsert(
-      { user_id: userId, key, value },
-      { onConflict: 'user_id,key' }
-    )
-    .select()
-    .single();
-    
-  if (error) {
-    console.error('Error setting user preference:', error);
-    throw error;
-  }
-  
-  return data;
+export const setUserPreference = async (_userId: string, _key: string, _value: any) => {
+  throw new Error('setUserPreference is deprecated. Use /api/user/preferences instead.');
 };
 
 // Auth related functions

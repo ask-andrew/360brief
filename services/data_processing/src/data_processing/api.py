@@ -4,13 +4,18 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 import uuid
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from .models import EmailMessage, ProcessedMessage, CalendarEvent
-from .orchestrator import ProcessingOrchestrator
-from .services import EmailService
+# Optional heavy imports; allow app to boot without them for lightweight endpoints
+try:
+    from .orchestrator import ProcessingOrchestrator
+    from .services import EmailService
+except Exception:  # pragma: no cover - boot resilience
+    ProcessingOrchestrator = None  # type: ignore
+    EmailService = None  # type: ignore
 
 app = FastAPI(
     title="360Brief Data Processing API",
@@ -27,9 +32,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize services
-orchestrator = ProcessingOrchestrator()
-email_service = EmailService()
+# Initialize services if available
+orchestrator = ProcessingOrchestrator() if ProcessingOrchestrator else None  # type: ignore
+email_service = EmailService() if EmailService else None  # type: ignore
 
 # Request/Response Models
 class ProcessEmailsRequest(BaseModel):
@@ -69,6 +74,8 @@ async def process_emails(request: ProcessEmailsRequest):
     Raises:
         HTTPException: If there's an error processing the emails.
     """
+    if orchestrator is None:
+        raise HTTPException(status_code=503, detail="ProcessingOrchestrator unavailable")
     try:
         return await orchestrator.process_emails(request.emails)
     except Exception as e:
@@ -94,6 +101,8 @@ async def generate_digest(
     Raises:
         HTTPException: If there's an error starting the digest generation.
     """
+    if orchestrator is None:
+        raise HTTPException(status_code=503, detail="ProcessingOrchestrator unavailable")
     try:
         digest_id = str(uuid.uuid4())
         
@@ -156,6 +165,28 @@ async def health_check():
         "status": "healthy",
         "version": "0.1.0",
         "timestamp": datetime.utcnow().isoformat()
+    }
+
+@app.get("/api/unified")
+async def get_unified(
+    start: Optional[str] = Query(None, description="ISO8601 start datetime"),
+    end: Optional[str] = Query(None, description="ISO8601 end datetime"),
+):
+    """Return unified data for emails, incidents, calendar events, and tickets.
+
+    This is a stub implementation that returns empty arrays in the correct shape.
+    Wire this to your real data aggregation (Gmail/Calendar/PM tools) to populate results.
+    """
+    # TODO: Parse and use start/end to bound data collection
+    _ = start
+    _ = end
+
+    return {
+        "emails": [],
+        "incidents": [],
+        "calendarEvents": [],
+        "tickets": [],
+        "generated_at": datetime.utcnow().isoformat(),
     }
 
 async def _generate_digest_background(digest_id: str, request: GenerateDigestRequest):

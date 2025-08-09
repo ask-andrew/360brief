@@ -6,6 +6,7 @@ import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
 import { PodcastSection } from '@/components/landing/PodcastSection';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { GetStartedSection } from '@/components/landing/GetStartedSection';
+import { BetaWaitlist } from '@/components/marketing/BetaWaitlist';
 
 export default function Home() {
   return (
@@ -13,6 +14,9 @@ export default function Home() {
       <Navbar />
       <main className="overflow-hidden">
         <HeroSection />
+        <div className="py-8">
+          <BetaWaitlist />
+        </div>
         <StatsSection />
         <HowItWorksSection />
         <TestimonialsSection />

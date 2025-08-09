@@ -40,6 +40,7 @@
     "date-fns": "^4.1.0",
     "echarts": "^6.0.0",
     "framer-motion": "^12.23.12",
+    "googleapis": "^155.0.1",
     "handlebars": "^4.7.8",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.536.0",

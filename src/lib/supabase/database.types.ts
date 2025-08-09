@@ -7,123 +7,243 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
-      "public.profiles": {
+      digest_items: {
         Row: {
-          created_at: string
-          id: number
+          content: string | null
+          created_at: string | null
+          digest_id: string
+          id: string
+          metadata: Json | null
+          priority: number | null
+          source_id: string
+          source_type: string
+          title: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
-          id?: number
+          content?: string | null
+          created_at?: string | null
+          digest_id: string
+          id?: string
+          metadata?: Json | null
+          priority?: number | null
+          source_id: string
+          source_type: string
+          title: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
-          id?: number
+          content?: string | null
+          created_at?: string | null
+          digest_id?: string
+          id?: string
+          metadata?: Json | null
+          priority?: number | null
+          source_id?: string
+          source_type?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      digests: {
+        Row: {
+          created_at: string | null
+          id: string
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          timezone?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
       user_preferences: {
         Row: {
           created_at: string | null
-          digest_frequency:
-            | Database["public"]["Enums"]["digest_frequency"]
-            | null
-          digest_style: Database["public"]["Enums"]["digest_style"] | null
-          digest_time: string | null
+          digest_frequency: string
+          digest_style: string
+          digest_time: string
+          digest_timezone: string
           email_notifications: boolean | null
           id: string
-          key_contacts: string[] | null
-          preferred_format:
-            | Database["public"]["Enums"]["preferred_format"]
-            | null
-          priority_keywords: string[] | null
+          key_contacts: Json | null
+          preferred_format: string
+          priority_keywords: Json | null
+          push_notifications: boolean | null
+          theme_preference: string | null
           timezone: string | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
-          digest_frequency?:
-            | Database["public"]["Enums"]["digest_frequency"]
-            | null
-          digest_style?: Database["public"]["Enums"]["digest_style"] | null
-          digest_time?: string | null
+          digest_frequency?: string
+          digest_style?: string
+          digest_time?: string
+          digest_timezone?: string
           email_notifications?: boolean | null
-          id?: string
-          key_contacts?: string[] | null
-          preferred_format?:
-            | Database["public"]["Enums"]["preferred_format"]
-            | null
-          priority_keywords?: string[] | null
+          id: string
+          key_contacts?: Json | null
+          preferred_format?: string
+          priority_keywords?: Json | null
+          push_notifications?: boolean | null
+          theme_preference?: string | null
           timezone?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
-          digest_frequency?:
-            | Database["public"]["Enums"]["digest_frequency"]
-            | null
-          digest_style?: Database["public"]["Enums"]["digest_style"] | null
-          digest_time?: string | null
+          digest_frequency?: string
+          digest_style?: string
+          digest_time?: string
+          digest_timezone?: string
           email_notifications?: boolean | null
           id?: string
-          key_contacts?: string[] | null
-          preferred_format?:
-            | Database["public"]["Enums"]["preferred_format"]
-            | null
-          priority_keywords?: string[] | null
+          key_contacts?: Json | null
+          preferred_format?: string
+          priority_keywords?: Json | null
+          push_notifications?: boolean | null
+          theme_preference?: string | null
           timezone?: string | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_tokens: {
         Row: {
-          access_token: string | null
+          access_token: string
           created_at: string | null
-          expires_at: number | null
+          expires_at: string | null
           id: string
-          provider: Database["public"]["Enums"]["provider_type"]
-          refresh_token: string
-          scopes: string[] | null
-          token_metadata: Json | null
+          provider: string
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          access_token?: string | null
+          access_token: string
           created_at?: string | null
-          expires_at?: number | null
+          expires_at?: string | null
           id?: string
-          provider: Database["public"]["Enums"]["provider_type"]
-          refresh_token: string
-          scopes?: string[] | null
-          token_metadata?: Json | null
+          provider: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          access_token?: string | null
+          access_token?: string
           created_at?: string | null
-          expires_at?: number | null
+          expires_at?: string | null
           id?: string
-          provider?: Database["public"]["Enums"]["provider_type"]
-          refresh_token?: string
-          scopes?: string[] | null
-          token_metadata?: Json | null
+          provider?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -133,10 +253,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      digest_frequency: "daily" | "weekly" | "weekdays" | "custom"
-      digest_style: "management" | "executive" | "minimal" | "detailed"
-      preferred_format: "email" | "web" | "both"
-      provider_type: "google" | "microsoft" | "slack" | "asana" | "notion"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -262,12 +379,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
-    Enums: {
-      digest_frequency: ["daily", "weekly", "weekdays", "custom"],
-      digest_style: ["management", "executive", "minimal", "detailed"],
-      preferred_format: ["email", "web", "both"],
-      provider_type: ["google", "microsoft", "slack", "asana", "notion"],
-    },
+    Enums: {},
   },
 } as const
+

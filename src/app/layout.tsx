@@ -7,6 +7,7 @@ import "./globals.css";
 import { isDevSession } from '@/lib/dev-auth';
 import Script from 'next/script';
 import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const dosis = Dosis({
   subsets: ["latin"],
@@ -33,11 +34,18 @@ export default function RootLayout({
     
     const checkAuth = () => {
       const isLoggedIn = isDevSession();
-      const isLoginPage = pathname?.startsWith('/dev/login');
-      
-      if (!isLoggedIn && !isLoginPage) {
+      const isDevLogin = pathname?.startsWith('/dev/login');
+      // Public routes that should not be redirected
+      const isPublic = pathname?.startsWith('/login') || pathname?.startsWith('/signup');
+
+      if (isPublic) {
+        setIsLoading(false);
+        return;
+      }
+
+      if (!isLoggedIn && !isDevLogin) {
         router.push('/dev/login');
-      } else if (isLoggedIn && isLoginPage) {
+      } else if (isLoggedIn && isDevLogin) {
         router.push('/dashboard');
       }
       
@@ -72,7 +80,9 @@ export default function RootLayout({
       </head>
       <body className={`${dosis.variable} font-sans antialiased`}>
         <div id="one-tap-container" className="fixed top-4 right-4 z-50"></div>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster />
       </body>
     </html>
