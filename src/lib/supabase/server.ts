@@ -21,8 +21,9 @@ function getEnvVar(key: EnvKey): string {
   return value;
 }
 
-export function createServerSupabaseClient() {
-  const cookieStore = cookies() as any;
+export async function createServerSupabaseClient() {
+  // Next.js dynamic APIs must be awaited in route handlers
+  const cookieStore = await cookies();
 
   return createServerClient(
     getEnvVar('NEXT_PUBLIC_SUPABASE_URL'),
@@ -52,6 +53,6 @@ export function createServerSupabaseClient() {
 }
 
 // Alias to satisfy imports expecting `createClient`
-export function createClient() {
+export async function createClient() {
   return createServerSupabaseClient();
 }

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Try cookie-based auth first
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     let { data: { user } } = await supabase.auth.getUser();
 
     // If missing, try Authorization: Bearer <jwt> using service role
@@ -39,7 +39,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     if (error) throw error;
 
     const now = Date.now();
-    const accounts = (data || []).map((row) => {
+    type Row = {
+      id: string;
+      email: string | null;
+      account_type: string | null;
+      scopes: string[] | null;
+      access_token: string | null;
+      refresh_token: string | null;
+      expires_at: string | null;
+    };
+    const accounts = (data || []).map((row: Row) => {
       const exp = row.expires_at ? new Date(row.expires_at).getTime() : 0;
       const isValid = !!row.access_token && (!!exp ? exp - now > 60_000 : true);
       return {

@@ -5,7 +5,7 @@ import { exchangeCodeForTokens, getOAuthClient } from '@/server/google/client';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const rawState = url.searchParams.get('state') || '';

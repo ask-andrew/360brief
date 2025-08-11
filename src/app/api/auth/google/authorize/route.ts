@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     let { data: { user } } = await supabase.auth.getUser();
 
     // Fallback: Authorization: Bearer <jwt>
