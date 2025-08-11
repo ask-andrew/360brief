@@ -1,4 +1,5 @@
 import { Navbar } from '@/components/layout/Navbar';
+import Link from 'next/link';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { StatsSection } from '@/components/landing/StatsSection';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
@@ -40,6 +41,17 @@ export default function Home() {
             <div className="flex justify-center md:justify-end">
               <BetaWaitlist />
             </div>
+          </div>
+        </section>
+        {/* Relatable Story Section (mirrored for consistency) */}
+        <section className="mx-auto my-8 max-w-5xl px-6 sm:my-12">
+          <div className="prose prose-lg max-w-none text-foreground/90">
+            <p className="mb-6 leading-relaxed">
+              Beyond my own experience, I kept seeing friends and coworkers struggle to keep their <span className="font-semibold text-blue-600">professional and personal worlds</span> straight — <span className="font-semibold text-blue-600">family athletic events</span>, <span className="font-semibold text-blue-600">work travel</span>, <span className="font-semibold text-blue-600">pickup responsibilities</span>, <span className="font-semibold text-blue-600">client issues</span>. The constant <span className="font-semibold text-blue-600">context‑switching</span> across inboxes, calendars, and chat apps made even simple follow‑ups easy to miss.
+            </p>
+            <p className="mb-0 leading-relaxed">
+              That's exactly the chaos <span className="font-semibold text-blue-600">360Brief</span> was built to calm: one place to surface <span className="font-semibold text-blue-600">what actually matters today</span>, so you can <span className="font-semibold text-blue-600">act with confidence</span> and <span className="font-semibold text-blue-600">enjoy the moments that matter</span> outside of work, too. If that resonates, I'd love for you to <Link href="/signup" className="text-blue-600 font-semibold underline underline-offset-4 hover:text-blue-700">try 360Brief</Link> and tell me what would make it indispensable for you.
+            </p>
           </div>
         </section>
         <HowItWorksSection />
