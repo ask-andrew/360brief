@@ -1,6 +1,7 @@
 "use client";
 
 import Image from 'next/image';
+import dashboardPreview from '@/assets/images/dashboard-preview.webp';
 
 export function ProductPreviewSection() {
   return (
@@ -19,10 +20,11 @@ export function ProductPreviewSection() {
         <div className="relative mx-auto h-[420px] max-w-5xl overflow-hidden rounded-2xl border bg-background/50 shadow-xl">
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
           <Image
-            src="/images/dashboard-preview.webp"
+            src={dashboardPreview}
             alt="Analytics dashboard preview"
             fill
             className="object-cover bg-white pan-vert"
+            placeholder="blur"
             sizes="(max-width: 768px) 100vw, 1080px"
             priority
           />

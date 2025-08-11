@@ -10,6 +10,10 @@ const STYLES = [
     key: 'mission_brief',
     name: 'Mission Brief',
     blurb: 'BLUF, status → action. Zero ambiguity.',
+    philosophy: 'Maximum efficiency, zero ambiguity',
+    tone: 'Direct, authoritative, urgent',
+    structure: 'BLUF (Bottom Line Up Front), status → action format',
+    bestFor: 'Crisis management, operations-focused executives',
     preview:
       'BLUF: Product launch on track. Risks: vendor delay. Actions: approve budget, unblock API dependency.'
   },
@@ -17,6 +21,10 @@ const STYLES = [
     key: 'management_consulting',
     name: 'Management Consulting',
     blurb: 'Executive summary + supporting analysis.',
+    philosophy: 'Strategic frameworks, data-driven insights',
+    tone: 'Professional, analytical, confident',
+    structure: 'Executive summary + supporting analysis',
+    bestFor: 'Strategy-focused leaders, board preparation',
     preview:
       'Executive Summary: CSAT rising, churn risk localized to SMB. Drivers: onboarding gaps. Recommended: playbook revamp.'
   },
@@ -24,6 +32,10 @@ const STYLES = [
     key: 'startup_velocity',
     name: 'Startup Velocity',
     blurb: 'Speed, growth, action bias.',
+    philosophy: 'Speed and agility focus',
+    tone: 'Casual, energetic, growth-minded',
+    structure: 'Metrics-driven with action bias',
+    bestFor: 'Fast-moving founders, product leaders',
     preview:
       'Growth: +12% WoW leads. Bottleneck: handoffs. Next: automate triage, ship weekly metrics digest.'
   },
@@ -31,6 +43,10 @@ const STYLES = [
     key: 'newspaper_newsletter',
     name: 'Newspaper Newsletter',
     blurb: 'Headlines + feature story + roundup.',
+    philosophy: 'Editorial depth with narrative storytelling',
+    tone: 'Journalistic, informative, engaging',
+    structure: 'Headlines + feature story + news roundup',
+    bestFor: 'Content-savvy executives, comprehensive coverage',
     preview:
       'Headlines: Deal closed, release slipped. Feature: Q3 roadmap tradeoffs. Roundup: team wins + blockers.'
   }
@@ -135,19 +151,46 @@ export function BriefStyleSelectorSection() {
                   Close
                 </button>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {STYLES.map((s) => (
-                  <div key={s.key} className={cn('rounded-xl border p-4', selected === s.key && 'border-primary/40')}> 
-                    <div className="mb-1 text-sm font-medium text-muted-foreground">{s.name}</div>
-                    <div className="text-sm">{s.preview}</div>
-                    <button
-                      onClick={() => { setSelected(s.key); setShowCompare(false); }}
-                      className="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                      Choose
-                    </button>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-muted/50 text-left">
+                      <th className="sticky left-0 z-10 bg-muted/50 p-3 font-semibold">Style</th>
+                      <th className="p-3 font-semibold">Core Philosophy</th>
+                      <th className="p-3 font-semibold">Tone</th>
+                      <th className="p-3 font-semibold">Structure</th>
+                      <th className="p-3 font-semibold">Best For</th>
+                      <th className="p-3" aria-hidden></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {STYLES.map((s, idx) => (
+                      <tr key={s.key} className={cn(idx % 2 === 0 ? 'bg-background' : 'bg-muted/20')}> 
+                        <td className="sticky left-0 z-10 bg-inherit p-3 font-medium">{s.name}</td>
+                        <td className="p-3 align-top text-foreground/90">{s.philosophy}</td>
+                        <td className="p-3 align-top text-foreground/90">{s.tone}</td>
+                        <td className="p-3 align-top text-foreground/90">{s.structure}</td>
+                        <td className="p-3 align-top text-foreground/90">{s.bestFor}</td>
+                        <td className="p-3 text-right">
+                          <button
+                            onClick={() => { setSelected(s.key); setShowCompare(false); }}
+                            className={cn(
+                              'inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium',
+                              selected === s.key
+                                ? 'bg-primary text-primary-foreground'
+                                : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                            )}
+                          >
+                            {selected === s.key ? 'Selected' : 'Choose'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 rounded-md bg-muted/30 p-3 text-xs text-muted-foreground">
+                Tip: You can also preview the writing style in the cards above and pick "Use this style".
               </div>
             </div>
           </div>
