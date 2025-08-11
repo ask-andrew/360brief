@@ -97,7 +97,7 @@ export default function RootLayout({
           onError={(e) => console.error('Failed to load Google Identity Services', e)}
         />
       </head>
-      <body className={`${dosis.variable} font-sans antialiased`}>
+      <body className={`${dosis.variable} font-sans antialiased tracking-[0.01em]`}>
         <div id="one-tap-container" className="fixed top-4 right-4 z-50"></div>
         <AuthProvider>
           {children}

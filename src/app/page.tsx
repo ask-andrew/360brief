@@ -34,6 +34,7 @@ export default function Home() {
                 <li className="flex items-start gap-2"><span className="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-500" /> Influence features</li>
                 <li className="flex items-start gap-2"><span className="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-500" /> Privacy-first design</li>
                 <li className="flex items-start gap-2"><span className="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-500" /> Web, Email, Audio</li>
+                <li className="flex items-start gap-2"><span className="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-500" /> Business + Personal profiles</li>
               </ul>
             </div>
             <div className="flex justify-center md:justify-end">

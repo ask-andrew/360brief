@@ -39,6 +39,9 @@ export function HowItWorksSection() {
           <p className="text-lg text-muted-foreground">
             See how 360Brief transforms your communication overload into clear, actionable insights, giving you back hours every day.
           </p>
+          <p className="mt-3 text-base text-muted-foreground">
+            Blend business and personal signals into a single, clear daily briefing—filter anytime.
+          </p>
         </div>
 
         {/* Data Flow Animation */}

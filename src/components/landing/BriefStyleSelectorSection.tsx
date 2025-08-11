@@ -40,6 +40,7 @@ type StyleKey = typeof STYLES[number]['key'];
 
 export function BriefStyleSelectorSection() {
   const [selected, setSelected] = useState<StyleKey>('mission_brief');
+  const [showCompare, setShowCompare] = useState(false);
 
   // load persisted selection
   useEffect(() => {
@@ -108,13 +109,49 @@ export function BriefStyleSelectorSection() {
           >
             Use this style
           </Link>
-          <a
-            href="#style-comparison"
+          <button
+            onClick={() => setShowCompare(true)}
             className="inline-flex items-center justify-center rounded-xl border border-input bg-background px-6 py-4 text-base font-medium hover:bg-accent hover:text-accent-foreground"
           >
             Compare styles
-          </a>
+          </button>
         </div>
+
+        {showCompare && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowCompare(false)} />
+            <div className="relative z-10 w-full max-w-3xl rounded-2xl border bg-background p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold">Compare styles</h3>
+                <button
+                  onClick={() => setShowCompare(false)}
+                  className="rounded-md px-3 py-1 text-sm hover:bg-muted"
+                  aria-label="Close"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {STYLES.map((s) => (
+                  <div key={s.key} className={cn('rounded-xl border p-4', selected === s.key && 'border-primary/40')}> 
+                    <div className="mb-1 text-sm font-medium text-muted-foreground">{s.name}</div>
+                    <div className="text-sm">{s.preview}</div>
+                    <button
+                      onClick={() => { setSelected(s.key); setShowCompare(false); }}
+                      className="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                      Choose
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

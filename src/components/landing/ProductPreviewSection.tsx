@@ -1,11 +1,10 @@
 "use client";
 
 import Image from 'next/image';
-import dashboardPreview from '@/assets/images/dashboard-preview.webp';
 
 export function ProductPreviewSection() {
   return (
-    <section className="py-20 bg-background">
+    <section id="features" className="py-20 bg-background">
       <div className="container">
         <div className="mx-auto max-w-4xl text-center mb-10">
           <div className="inline-flex items-center justify-center px-4 py-1.5 mb-4 text-sm font-medium rounded-full border border-primary/20 bg-primary/10 text-primary">
@@ -20,11 +19,10 @@ export function ProductPreviewSection() {
         <div className="relative mx-auto h-[420px] max-w-5xl overflow-hidden rounded-2xl border bg-background/50 shadow-xl">
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/30 to-transparent" />
           <Image
-            src={dashboardPreview}
+            src="/images/dashboard-preview.webp"
             alt="Analytics dashboard preview"
             fill
             className="object-cover bg-white pan-vert"
-            placeholder="blur"
             sizes="(max-width: 768px) 100vw, 1080px"
             priority
           />
@@ -45,6 +43,11 @@ export function ProductPreviewSection() {
               .pan-vert { animation: none; }
             }
           `}</style>
+        </div>
+
+        {/* Filter hint */}
+        <div className="mx-auto mt-4 max-w-5xl text-center text-xs text-muted-foreground">
+          Filter: <span className="font-medium">Business</span> · <span className="font-medium">Personal</span> · <span className="font-medium">Both</span>
         </div>
 
         {/* Analytics highlights */}

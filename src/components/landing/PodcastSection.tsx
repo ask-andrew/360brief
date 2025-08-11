@@ -61,13 +61,16 @@ export function PodcastSection() {
               </li>
             </ul>
             
-            <div className="pt-4 flex flex-wrap gap-4">
-              <Button className="mt-4" size="lg" disabled>
+            <div className="pt-4 flex flex-row flex-wrap items-center gap-3">
+              <Button size="lg" disabled>
                 <Play className="mr-2 h-4 w-4" /> Coming Soon
               </Button>
-              <Button variant="outline" size="lg">
+              <a
+                href="/on-the-go-briefings"
+                className="inline-flex items-center justify-center rounded-lg border border-input bg-background px-6 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground"
+              >
                 Learn More
-              </Button>
+              </a>
             </div>
           </div>
           

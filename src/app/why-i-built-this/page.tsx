@@ -68,7 +68,7 @@ export default function WhyIBuiltThis() {
                 <div className="relative w-full aspect-square max-w-xs mx-auto">
                   <div className="rounded-2xl overflow-hidden border-4 border-white shadow-xl">
                     <Image
-                      src="/images/headshotcolor.JPG"
+                      src="/images/headshot.jpeg"
                       alt="Andrew Ledet, Founder & CEO"
                       width={400}
                       height={400}
