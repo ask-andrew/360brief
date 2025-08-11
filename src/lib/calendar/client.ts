@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { getValidAccessToken } from './oauth';
+import { getValidAccessToken } from '@/lib/gmail/oauth';
 
 // Types for Google Calendar API responses
 export interface CalendarEvent {
