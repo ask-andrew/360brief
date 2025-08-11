@@ -4,7 +4,7 @@ import { refreshAccessToken } from '@/server/google/client';
 // Returns a valid Google access token for the user's primary connected Google account.
 // Requires to be called from a server context (Next.js route/loader) so cookies are available.
 export async function getValidAccessToken(userId: string): Promise<string> {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
 
   // Load the user's Google connected account (pick the first for now)
   const { data: accounts, error } = await supabase

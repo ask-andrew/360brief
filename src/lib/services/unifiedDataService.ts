@@ -84,7 +84,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     // Resolve current user id if not provided
     let userId = _userId;
     if (!userId) {
-      const supabase = createServerSupabaseClient();
+      const supabase = await createServerSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return empty;
       userId = user.id;

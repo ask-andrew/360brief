@@ -7,7 +7,7 @@ import { generateWeeklyDigest } from '@/lib/digest/generator';
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     
     // Get all users who should receive a digest
     const { data: users, error: usersError } = await supabase

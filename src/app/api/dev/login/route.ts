@@ -16,7 +16,7 @@ export async function POST() {
 
   try {
     console.log('Attempting dev login with email:', testEmail);
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     
     // Sign in with password (will create user if doesn't exist)
     const { data, error } = await supabase.auth.signInWithPassword({

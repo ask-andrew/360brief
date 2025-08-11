@@ -3,7 +3,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function signOut() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   await supabase.auth.signOut();
   return { message: 'Signed out successfully' };
 }

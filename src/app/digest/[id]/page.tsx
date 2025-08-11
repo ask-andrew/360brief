@@ -6,7 +6,7 @@ import { Icons } from '@/components/icons';
 
 export default async function DigestPage(props: any) {
   const { params } = props || { params: {} };
-  const supabase = createClient();
+  const supabase = await createClient();
   
   // Get the digest data from the database
   const { data: digest, error } = await supabase

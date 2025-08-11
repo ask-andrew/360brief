@@ -48,7 +48,7 @@ type Frequency = 'daily' | 'weekly' | 'weekdays' | 'custom';
 type DeliveryMode = 'email' | 'slack' | 'audio';
 
 export async function GET() {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
   
   try {
     // Get the current user
@@ -108,7 +108,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
   const updates = await request.json()
   
   try {
