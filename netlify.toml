@@ -6,6 +6,9 @@
 [build.environment]
   NEXT_USE_NETLIFY_EDGE = "true"
   NEXT_TELEMETRY_DISABLED = "1"
+  # Supabase anon key is intentionally public and embedded in client bundles.
+  # Prevent Netlify secret scanner from blocking builds due to this known public key.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_ANON_KEY"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
