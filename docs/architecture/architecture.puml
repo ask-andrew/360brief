@@ -67,4 +67,19 @@ note right of auth0
   • JWT Token Based
 end note
 
+note right of cache
+  == Privacy-First ==
+  • Derived insights + ephemeral cache only
+  • No long-term raw content storage
+  • Process-and-discard sensitive data
+end note
+
+note right of slack
+  Planned integration
+end note
+
+note right of project_tools
+  Planned integration
+end note
+
 @enduml

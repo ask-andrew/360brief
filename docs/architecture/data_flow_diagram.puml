@@ -21,7 +21,7 @@ rectangle "360Brief System" {
 
 ' Define data stores
 database "User Data" as user_db
-database "Processed Data" as data_db
+database "Derived Insights/Cache" as data_db
 
 ' Define data flows
 user --> auth : Login Credentials
@@ -51,6 +51,13 @@ note right of process
   • Applies business rules
   • Identifies key information
   • Categorizes content
+end note
+
+note right of data_db
+  == Privacy-First Storage ==
+  • Stores derived insights and cache only
+  • No long-term storage of raw content
+  • Process-and-discard for sensitive data
 end note
 
 @enduml

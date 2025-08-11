@@ -12,10 +12,10 @@ package "Frontend Components" {
 }
 
 package "Backend Services" {
-    [API Gateway] as api_gateway
-    [Auth Service] as auth_service
-    [Digest Service] as digest_service
-    [Data Processing] as data_processing
+    [Next.js API Routes] as api_gateway
+    [Auth0] as auth_service
+    [Digest Generator] as digest_service
+    [UnifiedDataService] as data_processing
     [Cache Service] as cache_service
 }
 
@@ -76,6 +76,14 @@ note right of digest_service
   • Creates executive summaries
   • Applies user preferences
   • Handles scheduling
+end note
+
+note right of slack
+  Planned integration
+end note
+
+note right of project_tools
+  Planned integration
 end note
 
 @enduml

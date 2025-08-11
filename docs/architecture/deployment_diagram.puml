@@ -15,7 +15,7 @@ rectangle "Client Layer" as clients {
 
 ' CDN Layer
 rectangle "CDN" as cdn {
-  [CloudFront] as cloudfront
+  [Netlify CDN] as netlify_cdn
 }
 
 ' Web Server Layer
@@ -27,7 +27,7 @@ rectangle "Web Server" as web {
 ' Serverless Layer
 rectangle "Serverless" as serverless {
   [Auth0] as auth0
-  [AWS Lambda] as lambda
+  [Netlify Functions] as netlify_fn
 }
 
 ' Database Layer
@@ -46,14 +46,14 @@ rectangle "External Services" as external {
 }
 
 ' Define relationships
-browser --> cloudfront : HTTPS
-mobile --> cloudfront : HTTPS
+browser --> netlify_cdn : HTTPS
+mobile --> netlify_cdn : HTTPS
 
 ' Internal connections
-cloudfront --> nextjs : HTTPS
+netlify_cdn --> nextjs : HTTPS
 nextjs --> api : Internal
 api --> auth0 : OAuth 2.0
-api --> lambda : Invokes
+api --> netlify_fn : Invokes
 api --> supabase : REST/GraphQL
 
 ' Database connections
@@ -62,13 +62,13 @@ supabase --> supabase_auth : Handles Auth
 supabase --> storage : Manages
 
 ' External service connections
-lambda --> gmail : API Calls
-lambda --> calendar : API Calls
-lambda --> slack : API Calls
-lambda --> supabase : Data Access
+netlify_fn --> gmail : API Calls
+netlify_fn --> calendar : API Calls
+netlify_fn --> slack : API Calls
+netlify_fn --> supabase : Data Access
 
 ' Add notes
-note right of cloudfront
+note right of netlify_cdn
   == CDN ==
   • Global content delivery
   • DDoS protection
