@@ -88,7 +88,12 @@ export default function DashboardPage() {
       const userId = await getUserId();
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const url = `${origin}/api/user/${userId}/google/status`;
-      const res = await fetch(url, { credentials: 'include' });
+      // Attach Supabase access token as Bearer for server auth
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const headers: Record<string, string> = {};
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+      const res = await fetch(url, { credentials: 'include', headers });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to check connection');
       setIsGoogleConnected(Boolean(data?.isConnected));

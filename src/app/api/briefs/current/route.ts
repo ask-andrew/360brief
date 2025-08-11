@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const endDate = searchParams.get('end');
 
     // Resolve authenticated user
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -1,36 +1,37 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseServerClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest) {
   try {
-    // Try cookie-based auth first
-    const supabase = await createServerSupabaseClient();
-    let { data: { user } } = await supabase.auth.getUser();
-
-    // If missing, try Authorization: Bearer <jwt> using service role
-    if (!user) {
-      const authz = req.headers.get('authorization') || req.headers.get('Authorization');
-      const match = authz?.match(/^Bearer\s+(.+)$/i);
-      const jwt = match?.[1];
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (jwt && url && serviceKey) {
-        const admin = createSupabaseServerClient(url, serviceKey);
-        const { data, error } = await admin.auth.getUser(jwt);
-        if (!error) user = data.user as any;
-      }
+    // Prefer Authorization: Bearer <jwt> and avoid cookies() entirely in this route
+    const authz = req.headers.get('authorization') || req.headers.get('Authorization');
+    const match = authz?.match(/^Bearer\s+(.+)$/i);
+    const jwt = match?.[1];
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!jwt || !url || !serviceKey) {
+      return NextResponse.json({ error: 'Unauthorized: Auth session missing' }, { status: 401 });
     }
 
-    if (!user) return NextResponse.json({ error: 'Unauthorized: Auth session missing' }, { status: 401 });
+    const admin = createSupabaseServerClient(url, serviceKey);
+    const { data: authData, error: authErr } = await admin.auth.getUser(jwt);
+    if (authErr || !authData?.user) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
+    }
+    const user = authData.user as any;
 
-    const userId = params.id;
+    // Derive userId directly from the request URL to avoid strict context typing issues in some build environments
+    const { pathname } = new URL(req.url);
+    const segments = pathname.split('/').filter(Boolean);
+    // Expecting: ["api","user","<id>","google","status"]
+    const userIndex = segments.indexOf('user');
+    const userId = userIndex >= 0 && segments.length > userIndex + 1 ? segments[userIndex + 1] : '';
     // Only allow a user to query their own status
     if (user.id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from('user_connected_accounts')
       .select('id, provider, provider_account_id, email, account_type, scopes, access_token, refresh_token, expires_at')
       .eq('user_id', userId)
