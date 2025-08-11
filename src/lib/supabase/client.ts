@@ -3,13 +3,15 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from './database.types';
 
-type EnvKey = 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_ANON_KEY';
+// IMPORTANT: Next.js only inlines env when referenced directly, e.g. process.env.NEXT_PUBLIC_*
+// Do NOT use dynamic indexing like process.env[key] in client code.
+const PUBLIC_ENV = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+} as const;
 
-/**
- * Safely gets an environment variable with fallback for development
- */
-function getEnvVar(key: EnvKey): string {
-  const value = process.env[key as string];
+function getEnvVar<K extends keyof typeof PUBLIC_ENV>(key: K): string {
+  const value = PUBLIC_ENV[key];
   if (!value) {
     throw new Error(`Missing required environment variable: ${key}`);
   }
