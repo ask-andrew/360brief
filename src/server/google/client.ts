@@ -24,14 +24,27 @@ export const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
-export function generateAuthUrl(state = ''): string {
+export function generateAuthUrl(state?: { redirect?: string; account_type?: 'personal' | 'business' }): string {
   const oauth2Client = getOAuthClient();
-  return oauth2Client.generateAuthUrl({
+  const params: any = {
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent',
-    state,
-  });
+  };
+
+  if (state) {
+    try {
+      const payload = Buffer.from(JSON.stringify({
+        redirect: state.redirect || '/dashboard',
+        account_type: state.account_type || 'personal',
+      }), 'utf-8').toString('base64');
+      params.state = encodeURIComponent(payload);
+    } catch {
+      // ignore if serialization fails
+    }
+  }
+
+  return oauth2Client.generateAuthUrl(params);
 }
 
 export async function exchangeCodeForTokens(code: string) {

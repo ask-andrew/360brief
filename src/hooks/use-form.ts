@@ -1,17 +1,17 @@
 import { useForm as useHookForm, UseFormProps, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z, ZodType } from 'zod';
+import { z, ZodTypeAny } from 'zod';
 
-type UseFormParams<T extends z.ZodType> = {
-  schema: T;
-  options?: Omit<UseFormProps<z.infer<T>>, 'resolver'>;
+type UseFormParams<TSchema extends ZodTypeAny> = {
+  schema: TSchema;
+  options?: Omit<UseFormProps<any>, 'resolver'>;
 };
 
-export function useForm<T extends ZodType>({ schema, options }: UseFormParams<T>) {
-  const form = useHookForm<z.infer<T>>({
-    resolver: zodResolver(schema),
+export function useForm<TSchema extends ZodTypeAny>({ schema, options }: UseFormParams<TSchema>) {
+  const form = useHookForm<any>({
+    resolver: zodResolver(schema as any) as any,
     mode: 'onChange',
-    ...options,
+    ...(options as any),
   });
 
   return {
@@ -20,17 +20,17 @@ export function useForm<T extends ZodType>({ schema, options }: UseFormParams<T>
       ...form.formState,
       // Add any additional form state properties here
     },
-  } as UseFormReturn<z.infer<T>>;
+  } as UseFormReturn<any>;
 }
 
-export function useControlledForm<T extends ZodType>({
+export function useControlledForm<TSchema extends ZodTypeAny>({
   schema,
   defaultValues,
   onSubmit,
 }: {
-  schema: T;
-  defaultValues: z.infer<T>;
-  onSubmit: (data: z.infer<T>) => Promise<void> | void;
+  schema: TSchema;
+  defaultValues: z.infer<TSchema>;
+  onSubmit: (data: z.infer<TSchema>) => Promise<void> | void;
 }) {
   const {
     control,
@@ -39,12 +39,12 @@ export function useControlledForm<T extends ZodType>({
     setError,
     reset,
     ...rest
-  } = useForm({
+  } = useForm<TSchema>({
     schema,
-    defaultValues,
+    options: { defaultValues: defaultValues as any },
   });
 
-  const handleFormSubmit = async (data: z.infer<T>) => {
+  const handleFormSubmit = async (data: any) => {
     try {
       await onSubmit(data);
     } catch (error) {

@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/custom-client';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-// This is a development-only endpoint
+// This is a development-only endpoint, also gated by explicit flag
 export async function POST() {
-  if (process.env.NODE_ENV !== 'development') {
+  const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
+  if (process.env.NODE_ENV !== 'development' || !devAuthEnabled) {
     return NextResponse.json(
-      { error: 'This endpoint is only available in development mode' },
+      { error: 'This endpoint is disabled' },
       { status: 403 }
     );
   }
@@ -15,6 +16,7 @@ export async function POST() {
 
   try {
     console.log('Attempting dev login with email:', testEmail);
+    const supabase = createServerSupabaseClient();
     
     // Sign in with password (will create user if doesn't exist)
     const { data, error } = await supabase.auth.signInWithPassword({

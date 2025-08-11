@@ -21,7 +21,7 @@ export function GetStartedSection() {
           </h2>
           
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-10">
-            Join forward-thinking executives who've already transformed their workflow. Get your first executive briefing in minutes—no credit card required.
+            Be among the first to shape 360Brief. Get your first executive briefing in minutes—no credit card required.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-6 mb-12">
@@ -87,17 +87,7 @@ export function GetStartedSection() {
               </div>
             ))}
           </div>
-          
-          <div className="mt-16 pt-8 border-t border-border/50">
-            <p className="text-muted-foreground mb-6">Trusted by executives at leading companies</p>
-            <div className="flex flex-wrap justify-center items-center gap-8 opacity-70">
-              {['TechCorp', 'InnoVate', 'GlobalX', 'NextGen', 'EliteGroup'].map((company, i) => (
-                <div key={i} className="text-xl font-medium text-muted-foreground/80">
-                  {company}
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Trusted-by logos intentionally removed for early launch authenticity */}
         </div>
       </div>
     </section>

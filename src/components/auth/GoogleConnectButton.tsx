@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 // No toast import needed as it's already handled in the hook
+import { supabase } from '@/lib/supabase/client';
 
 interface GoogleConnectButtonProps {
   variant?: 'default' | 'outline' | 'ghost' | 'link' | 'destructive';
@@ -31,7 +32,15 @@ export function GoogleConnectButton({
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
-      const res = await fetch(`/api/auth/google/authorize?redirect=${encodeURIComponent(redirectPath)}`);
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const authUrl = `${origin}/api/auth/google/authorize?redirect=${encodeURIComponent(redirectPath)}`;
+      // Try to include Supabase access token for server auth fallback
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const res = await fetch(authUrl, {
+        credentials: 'include',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      });
       if (res.status === 401) {
         // Not signed in — send to login and then back to redirectPath
         const next = encodeURIComponent(redirectPath);
@@ -123,7 +132,14 @@ export function GoogleConnectionStatus({ userId }: { userId: string }) {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        const response = await fetch(`/api/user/${userId}/google/status`);
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const statusUrl = `${origin}/api/user/${userId}/google/status`;
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        const response = await fetch(statusUrl, {
+          credentials: 'include',
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        });
         const data = await response.json();
         
         if (!response.ok) {

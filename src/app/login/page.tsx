@@ -2,10 +2,10 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { GoogleConnectButton } from '@/components/auth/GoogleConnectButton';
 import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase/client';
 
 interface LoginPageProps {
   searchParams?: {
@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const ssoDomain = process.env.NEXT_PUBLIC_SSO_DOMAIN;
   const [error, setError] = useState<string | null>(null);
 
   // Handle OAuth errors
@@ -81,6 +82,59 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
+  // If already authenticated, leave /login immediately
+  useEffect(() => {
+    if (user) {
+      const redirectedFrom = searchParams?.get('redirectedFrom');
+      const target = redirectedFrom && redirectedFrom !== '/login' ? redirectedFrom : (searchParams?.get('next') || '/dashboard');
+      router.replace(target);
+    }
+  }, [user, router, searchParams]);
+
+  const handleSSOSignIn = async () => {
+    try {
+      if (!ssoDomain) {
+        toast({ title: 'SSO not configured', description: 'Set NEXT_PUBLIC_SSO_DOMAIN to enable Enterprise SSO.', variant: 'destructive' });
+        return;
+      }
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithSSO({
+        domain: ssoDomain,
+        options: { redirectTo: `${window.location.origin}/dashboard` },
+      } as any);
+      if (error) {
+        console.error('SSO sign-in error:', error);
+        toast({ title: 'SSO sign-in failed', description: error.message, variant: 'destructive' });
+      }
+    } catch (e: any) {
+      console.error('SSO sign-in exception:', e);
+      toast({ title: 'SSO sign-in failed', description: e.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      const next = searchParams?.get('next') || '/dashboard';
+      const redirectTo = `${window.location.origin}${next && next.startsWith('/') ? next : '/dashboard'}`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+      if (error) {
+        console.error('Google sign-in error:', error);
+        toast({ title: 'Google sign-in failed', description: error.message, variant: 'destructive' });
+      }
+    } catch (e: any) {
+      console.error('Google sign-in exception:', e);
+      toast({ title: 'Google sign-in failed', description: e.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
@@ -105,8 +159,25 @@ export default function LoginPage() {
                   toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
                   return;
                 }
-                const next = searchParams?.get('next') || '/dashboard';
-                router.push(next);
+                // Wait briefly for session to be established on the client
+                const redirectedFrom = searchParams?.get('redirectedFrom');
+                const target = redirectedFrom && redirectedFrom !== '/login' ? redirectedFrom : (searchParams?.get('next') || '/dashboard');
+
+                const waitForUser = async (timeoutMs = 3000) => {
+                  const start = Date.now();
+                  while (Date.now() - start < timeoutMs) {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) return true;
+                    await new Promise(r => setTimeout(r, 100));
+                  }
+                  return false;
+                };
+
+                const gotUser = await waitForUser();
+                if (!gotUser) {
+                  console.warn('Login: session not yet visible, proceeding to navigate');
+                }
+                router.replace(target);
               } catch (err: any) {
                 setError(err?.message || 'Failed to sign in');
                 toast({ title: 'Login failed', description: err?.message || 'Failed to sign in', variant: 'destructive' });
@@ -160,24 +231,9 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-6">
-            <GoogleConnectButton
-              variant="outline"
-              className="w-full"
-              disabled={!user}
-              onError={(error) => {
-                console.error('Google OAuth error:', error);
-                toast({
-                  title: 'Authentication Error',
-                  description: error.message || 'Failed to sign in with Google',
-                  variant: 'destructive',
-                });
-              }}
-            />
-            {!user && (
-              <p className="mt-2 text-center text-sm text-gray-500">
-                Sign in with email/password first, then connect Google.
-              </p>)
-            }
+            <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || authLoading}>
+              Continue with Google
+            </Button>
           </div>
         </div>
       </div>

@@ -70,7 +70,13 @@ export const ProjectSummary: React.FC<ProjectSummaryProps> = ({
       setSummary(data);
     } catch (err) {
       console.error('Error generating summary:', err);
-      setError(err.message || 'Failed to generate summary');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to generate summary');
+      } else if (typeof err === 'string') {
+        setError(err);
+      } else {
+        setError('Failed to generate summary');
+      }
     } finally {
       setIsLoading(false);
     }

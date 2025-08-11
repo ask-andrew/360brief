@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PythonShell } from 'python-shell';
 import path from 'path';

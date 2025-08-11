@@ -20,6 +20,7 @@ export default function RootLayout({
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
 
   // Set mounted state on client-side
   useEffect(() => {
@@ -30,15 +31,19 @@ export default function RootLayout({
   useEffect(() => {
     if (typeof window === 'undefined' || !pathname) return;
     
-    // If not in dev session and not on login page, redirect to login
-    if (!isDevSession() && !pathname.startsWith('/dev/login')) {
-      router.push('/dev/login');
+    if (devAuthEnabled) {
+      // If not in dev session and not on login page, redirect to dev login
+      if (!isDevSession() && !pathname.startsWith('/dev/login')) {
+        router.push('/dev/login');
+        return;
+      }
+      // If in dev session and on login page, redirect to dashboard
+      if (isDevSession() && pathname === '/dev/login') {
+        router.push('/dashboard');
+        return;
+      }
     }
-    // If in dev session and on login page, redirect to dashboard
-    else if (isDevSession() && pathname === '/dev/login') {
-      router.push('/dashboard');
-    }
-  }, [pathname, router]);
+  }, [pathname, router, devAuthEnabled]);
 
   // Don't render anything until we've checked auth state
   if (!mounted) {

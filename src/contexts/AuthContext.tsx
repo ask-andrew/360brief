@@ -34,26 +34,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions and set the user
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    // Eagerly load existing session, then subscribe to changes
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (!isMounted) return;
+        setSession(data.session ?? null);
+        setUser(data.session?.user ?? null);
+      } catch (e) {
+        console.warn('AuthContext: getSession failed', e);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    );
+    })();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+    if (!error) {
+      setUser(data.user ?? null);
+      setSession(data.session ?? null);
+    }
+    return { error, user: data?.user ?? null, session: data?.session ?? null };
   };
 
   const signUp = async (email: string, password: string, metadata: Record<string, any> = {}) => {

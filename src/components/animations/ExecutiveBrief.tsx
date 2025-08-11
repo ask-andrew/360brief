@@ -8,7 +8,20 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
-const projects = [
+type ProjectStatus = 'on_track' | 'at_risk' | 'blocked';
+
+type Project = {
+  id: string;
+  name: string;
+  status: ProjectStatus;
+  lastUpdated: string;
+  owner: string;
+  priority: 'low' | 'medium' | 'high';
+  nextStep?: string;
+  blockedReason?: string;
+};
+
+const projects: Project[] = [
   {
     id: '1',
     name: 'Q3 Product Launch',
@@ -38,10 +51,10 @@ const projects = [
   },
 ];
 
-const statusConfig = {
+const statusConfig: Record<ProjectStatus, { icon: typeof CheckCircleIcon; color: string }> = {
   on_track: { icon: CheckCircleIcon, color: 'bg-green-100 text-green-800' },
   at_risk: { icon: ExclamationTriangleIcon, color: 'bg-yellow-100 text-yellow-800' },
-  blocked: { icon: ArrowPathIcon, color: 'bg-red-100 text-red-800' }
+  blocked: { icon: ArrowPathIcon, color: 'bg-red-100 text-red-800' },
 };
 
 export default function ExecutiveBrief() {

@@ -1,0 +1,38 @@
+{
+  "userId": "sarah.martinez@example.com",
+  "generatedAt": "2025-08-10T16:30:00Z",
+  "style": "mission_brief",
+  "version": "1.0",
+  "subject": "\ud83d\udd34 IMMEDIATE ACTION REQUIRED - TechFlow Corp Service Critical",
+  "tldr": "TechFlow outage (6h). $2.4M ARR at risk. CEO demanding answers by 12:00.",
+  "context": {
+    "client": { "name": "TechFlow Corp", "revenueARR": 2400000, "revenueSharePct": 20 },
+    "outageDurationHours": 6,
+    "scenario": "Service outages threatening renewal"
+  },
+  "missionBrief": {
+    "currentStatus": {
+      "primaryIssue": "6-hour outage; CEO requesting briefing",
+      "businessImpact": [
+        "$2.4M ARR at risk",
+        "Renewal probability reduced"
+      ]
+    },
+    "immediateActions": [
+      { "title": "0900 hours: Conference call with TechFlow CTO" },
+      { "title": "1000 hours: Technical team damage assessment" },
+      { "title": "1100 hours: Customer retention strategy with Account Management" },
+      { "title": "1200 hours: Executive briefing for CEO" }
+    ],
+    "resourceAuthorization": {
+      "totalAmount": 40000,
+      "items": [
+        { "category": "Emergency Technical Resources", "amount": 15000 },
+        { "category": "Service Credits / Retention", "amount": 25000 }
+      ]
+    },
+    "escalationContacts": [
+      { "role": "Engineering Lead", "name": "Mike Chen", "note": "Standing by for approval" }
+    ]
+  }
+}

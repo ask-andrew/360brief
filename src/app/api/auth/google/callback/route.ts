@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { exchangeCodeForTokens } from '@/server/google/client';
+import { exchangeCodeForTokens, getOAuthClient } from '@/server/google/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +8,22 @@ export async function GET(req: NextRequest) {
   const supabase = createServerSupabaseClient();
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state') || '/dashboard';
+  const rawState = url.searchParams.get('state') || '';
+
+  // Default redirect + account type
+  let redirectPath = '/dashboard';
+  let accountType: 'personal' | 'business' = 'personal';
+  if (rawState) {
+    try {
+      const decoded = decodeURIComponent(rawState);
+      const obj = JSON.parse(Buffer.from(decoded, 'base64').toString('utf-8')) as any;
+      if (obj?.redirect && typeof obj.redirect === 'string') redirectPath = obj.redirect;
+      if (obj?.account_type === 'personal' || obj?.account_type === 'business') accountType = obj.account_type;
+    } catch {
+      // If state isn't structured, treat as simple path if it starts with '/'
+      if (rawState.startsWith('/')) redirectPath = rawState;
+    }
+  }
 
   if (!code) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || ''}/login?error=missing_code`);
@@ -22,28 +37,39 @@ export async function GET(req: NextRequest) {
 
     const tokens = await exchangeCodeForTokens(code);
 
-    // Persist tokens (server-side, RLS protects by user_id)
-    // Normalize scope to a space-delimited string or null
-    const scopeStr = Array.isArray((tokens as any).scope)
-      ? ((tokens as any).scope as string[]).join(' ')
-      : (tokens as any).scope ?? null;
+    // Verify ID token to get Google identity
+    const idToken = (tokens as any).id_token as string | undefined;
+    if (!idToken) throw new Error('Missing Google ID token');
+    const oauth = getOAuthClient();
+    const ticket = await oauth.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    const payload = ticket.getPayload();
+    const email = payload?.email;
+    const providerAccountId = payload?.sub;
+    if (!email || !providerAccountId) throw new Error('Unable to resolve Google identity');
 
-    await supabase
-      .from('user_tokens')
+    // Upsert into multi-account table
+    const scopesArr = (typeof (tokens as any).scope === 'string')
+      ? ((tokens as any).scope as string).split(' ').filter(Boolean)
+      : Array.isArray((tokens as any).scope) ? (tokens as any).scope as string[] : [];
+
+    const { error } = await supabase
+      .from('user_connected_accounts')
       .upsert({
         user_id: user.id,
         provider: 'google',
-        access_token: tokens.access_token ?? null,
-        // Keep existing refresh_token if Google didn't return a new one
-        refresh_token: tokens.refresh_token ?? undefined,
-        expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
-        token_type: tokens.token_type ?? null,
-        scope: scopeStr,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,provider' });
+        provider_account_id: providerAccountId,
+        email,
+        account_type: accountType,
+        scopes: scopesArr,
+        access_token: (tokens as any).access_token ?? null,
+        refresh_token: (tokens as any).refresh_token ?? null,
+        expires_at: (tokens as any).expiry_date ? new Date((tokens as any).expiry_date).toISOString() : null,
+        token_type: (tokens as any).token_type ?? null,
+      }, { onConflict: 'user_id,provider,provider_account_id' });
+    if (error) throw error;
 
     // Redirect back to original path
-    const redirectTo = state.startsWith('/') ? state : '/dashboard';
+    const redirectTo = redirectPath.startsWith('/') ? redirectPath : '/dashboard';
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || ''}${redirectTo}`);
   } catch (e: any) {
     const msg = encodeURIComponent(e?.message || 'oauth_failed');

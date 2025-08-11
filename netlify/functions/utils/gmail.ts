@@ -105,7 +105,10 @@ export async function getUnreadEmails(accessToken: string, maxResults = 10) {
   }
 }
 
-export async function getGoogleAuthUrl(redirectUri: string) {
+export async function getGoogleAuthUrl(
+  redirectUri: string,
+  state?: { redirect?: string; account_type?: 'personal' | 'business' }
+) {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -119,11 +122,25 @@ export async function getGoogleAuthUrl(redirectUri: string) {
     'https://www.googleapis.com/auth/userinfo.profile',
   ];
 
-  return oauth2Client.generateAuthUrl({
+  const params: any = {
     access_type: 'offline',
     scope: scopes,
     prompt: 'consent',
-  });
+  };
+
+  if (state) {
+    try {
+      const payload = Buffer.from(JSON.stringify({
+        redirect: state.redirect || redirectUri,
+        account_type: state.account_type || 'personal',
+      }), 'utf-8').toString('base64');
+      params.state = encodeURIComponent(payload);
+    } catch (e) {
+      // ignore state if it fails to serialize
+    }
+  }
+
+  return oauth2Client.generateAuthUrl(params);
 }
 
 export async function getGoogleTokens(code: string, redirectUri: string) {

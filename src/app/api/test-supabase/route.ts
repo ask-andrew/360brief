@@ -2,50 +2,33 @@ import { supabase } from '@/lib/supabase/client';
 
 export async function GET() {
   try {
-    // Test connection by fetching server timestamp
-    const { data, error } = await supabase.rpc('get_server_timestamp');
-    
-    if (error) {
-      // If the function doesn't exist, try a simple query
-      if (error.code === 'PGRST116') {
-        const { data: testData, error: queryError } = await supabase
-          .from('test_table')
-          .select('*')
-          .limit(1);
-          
-        if (queryError) throw queryError;
-        
-        return Response.json({
-          success: true,
-          data: testData || [],
-          message: 'Successfully connected to Supabase! (Using test_table)',
-          connectionInfo: {
-            url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-            key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '***' + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.slice(-4) : 'Not set'
-          }
-        });
-      }
-      throw error;
-    }
+    // Simple query against a known table to validate connection
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .limit(1);
+
+    if (error) throw error as any;
 
     return Response.json({
       success: true,
-      data: data,
-      message: 'Successfully connected to Supabase! (Using RPC)',
+      data: data || [],
+      message: 'Successfully connected to Supabase!',
       connectionInfo: {
         url: process.env.NEXT_PUBLIC_SUPABASE_URL,
         key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '***' + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.slice(-4) : 'Not set'
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Supabase connection error:', error);
+    const err = error as any;
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Unknown error',
-        details: error.details || null,
-        hint: error.hint || null,
-        code: error.code || null,
+        error: err?.message || 'Unknown error',
+        details: err?.details || null,
+        hint: err?.hint || null,
+        code: err?.code || null,
         message: 'Failed to connect to Supabase',
         connectionInfo: {
           url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'Not set',

@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/custom-client';
+import { supabase } from '@/lib/supabase/client';
 
 export default function AuthTestPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
 
   useEffect(() => {
     // Check if there's an active session
@@ -22,24 +23,24 @@ export default function AuthTestPage() {
           setUser(session.user);
         } else {
           // If no session, redirect to login
-          router.push('/dev/login');
+          router.push(devAuthEnabled ? '/dev/login' : '/login');
         }
       } catch (error) {
         console.error('Error checking session:', error);
-        router.push('/dev/login');
+        router.push(devAuthEnabled ? '/dev/login' : '/login');
       } finally {
         setLoading(false);
       }
     };
 
     checkSession();
-  }, [router]);
+  }, [router, devAuthEnabled]);
 
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      router.push('/dev/login');
+      router.push(devAuthEnabled ? '/dev/login' : '/login');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -125,7 +126,7 @@ export default function AuthTestPage() {
           <div className="text-center">
             <p className="text-gray-600">Not authenticated</p>
             <button
-              onClick={() => router.push('/dev/login')}
+              onClick={() => router.push(devAuthEnabled ? '/dev/login' : '/login')}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Go to Login

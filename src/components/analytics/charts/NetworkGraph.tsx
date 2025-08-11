@@ -245,12 +245,6 @@ const NetworkGraph: React.FC<NetworkGraphProps> = ({
             color: 'source',
             curveness: 0.2,
           },
-          emphasis: {
-            focus: 'adjacency',
-            lineStyle: {
-              width: 2,
-            },
-          },
           force: {
             repulsion: viewMode === 'projects' ? 200 : 100,
             edgeLength: viewMode === 'projects' ? [100, 200] : [50, 150],

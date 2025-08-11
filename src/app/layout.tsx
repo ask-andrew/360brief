@@ -24,6 +24,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -33,22 +34,40 @@ export default function RootLayout({
     if (typeof window === 'undefined') return;
     
     const checkAuth = () => {
-      const isLoggedIn = isDevSession();
-      const isDevLogin = pathname?.startsWith('/dev/login');
-      // Public routes that should not be redirected
-      const isPublic = pathname?.startsWith('/login') || pathname?.startsWith('/signup');
-
+      // Public routes (marketing + auth) always allowed
+      const publicPrefixes = [
+        '/',
+        '/login',
+        '/signup',
+        '/signin',
+        '/why-i-built-this',
+        '/demo',
+        '/solution-demo',
+        '/consolidated-demo',
+        '/email-preview',
+        '/notification-demo',
+        '/test',
+      ];
+      const isPublic = publicPrefixes.some((p) => pathname === p || pathname?.startsWith(p + '/'));
       if (isPublic) {
         setIsLoading(false);
         return;
       }
 
-      if (!isLoggedIn && !isDevLogin) {
-        router.push('/dev/login');
-      } else if (isLoggedIn && isDevLogin) {
-        router.push('/dashboard');
+      // Optional dev-only auth redirect (disabled unless explicitly enabled)
+      if (devAuthEnabled) {
+        const isLoggedIn = isDevSession();
+        const isDevLogin = pathname?.startsWith('/dev/login');
+        if (!isLoggedIn && !isDevLogin) {
+          router.push('/dev/login');
+          return;
+        }
+        if (isLoggedIn && isDevLogin) {
+          router.push('/dashboard');
+          return;
+        }
       }
-      
+
       setIsLoading(false);
     };
     

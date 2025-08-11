@@ -10,20 +10,14 @@ export default function TestPage() {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        // First test the connection with a simple RPC call
-        setStatus('Testing connection...');
-        const { error: pingError } = await supabase.rpc('version');
-        
-        if (pingError) {
-          // If RPC fails, try a simple table query as fallback
-          setStatus('Querying database...');
-          const { error: queryError } = await supabase
-            .from('profiles')
-            .select('*')
-            .limit(1);
-            
-          if (queryError) throw queryError;
-        }
+        // Query a known table to verify connectivity
+        setStatus('Querying database...');
+        const { error: queryError } = await supabase
+          .from('profiles')
+          .select('id')
+          .limit(1);
+          
+        if (queryError) throw queryError;
         
         setStatus('✅ Successfully connected to Supabase!');
       } catch (err) {

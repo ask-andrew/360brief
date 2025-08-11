@@ -4,17 +4,26 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isDevSession, clearDevSession, getDevSession } from '@/lib/dev-auth';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, AlertCircle, Plus, Clock, Mail, Pencil, Trash2, Loader2 } from 'lucide-react';
-import { format, addDays, isWeekend } from 'date-fns';
+import { CheckCircle2, AlertCircle, Plus, Clock, Loader2, Pencil, Trash2, Mail } from 'lucide-react';
+import { format, isWeekend } from 'date-fns';
 import { getDigestSchedules, deleteDigestSchedule } from '@/lib/services/digestService';
+import { GoogleConnectButton, GoogleConnectionStatus } from '@/components/auth/GoogleConnectButton';
 import { notification } from 'antd';
 import type { NotificationPlacement } from 'antd/es/notification/interface';
 import { supabase } from '@/lib/supabase/client';
 
-// Mock data - will be replaced with real data
-const mockConnections = [
-  { id: 'gmail', name: 'Gmail', connected: true },
-  { id: 'calendar', name: 'Google Calendar', connected: true },
+// Connection status state will replace mocks
+// Coming soon integrations (placeholders)
+const comingSoonConnections = [
+  { id: 'slack', name: 'Slack' },
+  { id: 'notion', name: 'Notion' },
+  { id: 'asana', name: 'Asana' },
+  { id: 'jira', name: 'Jira' },
+  { id: 'github', name: 'GitHub' },
+  { id: 'linear', name: 'Linear' },
+  { id: 'zoom', name: 'Zoom' },
+  { id: 'hubspot', name: 'HubSpot' },
+  { id: 'salesforce', name: 'Salesforce' },
 ];
 
 // Type for scheduled digests
@@ -61,6 +70,7 @@ function calculateNextDelivery(time: string, frequency: 'daily' | 'weekly' | 'we
 
 export default function DashboardPage() {
   const router = useRouter();
+  const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
   const [api, contextHolder] = notification.useNotification();
   
   // Helper function to show notifications
@@ -72,13 +82,32 @@ export default function DashboardPage() {
       duration: 3,
     });
   };
+
+  const fetchConnectionStatus = async () => {
+    try {
+      const userId = await getUserId();
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const url = `${origin}/api/user/${userId}/google/status`;
+      const res = await fetch(url, { credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to check connection');
+      setIsGoogleConnected(Boolean(data?.isConnected));
+    } catch (e) {
+      console.error('Failed to load connection status', e);
+      setIsGoogleConnected(false);
+    } finally {
+      setIsCheckingConn(false);
+    }
+  };
   const [isLoading, setIsLoading] = useState(true);
   const [scheduledDigests, setScheduledDigests] = useState<ScheduledDigest[]>([]);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isCheckingConn, setIsCheckingConn] = useState(true);
+  const [isGoogleConnected, setIsGoogleConnected] = useState<boolean>(false);
   
   // Get user ID from session
   const getUserId = async () => {
-    if (isDevSession()) {
+    if (devAuthEnabled && isDevSession()) {
       // In dev mode, use the dev user ID
       const session = getDevSession();
       return session?.userId || '123e4567-e89b-12d3-a456-426614174000';
@@ -95,11 +124,11 @@ export default function DashboardPage() {
     return user.id;
   };
   
-  // Fetch scheduled digests
+  // Fetch scheduled briefs
   const fetchScheduledDigests = async () => {
     try {
       const userId = await getUserId();
-      console.log('Fetching digests for user:', userId);
+      console.log('Fetching briefs for user:', userId);
       const digests = await getDigestSchedules(userId);
       
       // Transform the data to include nextDelivery
@@ -113,8 +142,8 @@ export default function DashboardPage() {
       
       setScheduledDigests(transformedDigests);
     } catch (error) {
-      console.error('Error fetching scheduled digests:', error);
-      showNotification('error', 'Error', error instanceof Error ? error.message : 'Failed to delete digest schedule');
+      console.error('Error fetching scheduled briefs:', error);
+      showNotification('error', 'Error', error instanceof Error ? error.message : 'Failed to load brief schedule');
     } finally {
       setIsLoading(false);
     }
@@ -122,22 +151,22 @@ export default function DashboardPage() {
 
   const handleEditDigest = (digestId: string | undefined) => {
     if (!digestId) {
-      console.error('Cannot edit digest: No digest ID provided');
+      console.error('Cannot edit brief: No brief ID provided');
       return;
     }
-    // In a real app, this would navigate to an edit page with the digest ID
-    console.log('Edit digest:', digestId);
+    // In a real app, this would navigate to an edit page with the brief ID
+    console.log('Edit brief:', digestId);
     // For now, we'll just show an alert
-    alert(`Would navigate to edit page for digest ${digestId}`);
+    alert(`Would navigate to edit page for brief ${digestId}`);
   };
 
   const handleDeleteDigest = async (digestId: string | undefined) => {
     if (!digestId) {
-      console.error('Cannot delete digest: No digest ID provided');
+      console.error('Cannot delete brief: No brief ID provided');
       return;
     }
     
-    if (!confirm('Are you sure you want to delete this digest? This action cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this brief? This action cannot be undone.')) {
       return;
     }
 
@@ -148,26 +177,53 @@ export default function DashboardPage() {
       // Update local state
       setScheduledDigests(prev => prev.filter(digest => digest.id !== digestId));
       
-      showNotification('success', 'Success', 'Digest schedule deleted successfully');
+      showNotification('success', 'Success', 'Brief schedule deleted successfully');
     } catch (error) {
-      console.error('Error deleting digest:', error);
-      showNotification('error', 'Error', error instanceof Error ? error.message : 'Failed to delete digest schedule');
+      console.error('Error deleting brief:', error);
+      showNotification('error', 'Error', error instanceof Error ? error.message : 'Failed to delete brief schedule');
     } finally {
       setIsDeleting(null);
     }
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !isDevSession()) {
+    if (typeof window === 'undefined') return;
+
+    // Only enforce dev login when explicitly enabled
+    if (devAuthEnabled) {
+      if (!isDevSession()) {
+        window.location.href = '/dev/login';
+        return;
+      }
+    }
+
+    // If dev-auth is disabled, ensure we have a real Supabase session.
+    // If not authenticated, redirect to /login instead of attempting data fetches.
+    if (!devAuthEnabled) {
+      (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          router.replace('/login');
+          return;
+        }
+        fetchScheduledDigests();
+        fetchConnectionStatus();
+      })();
+      return;
+    }
+    // In dev-auth mode, skip Supabase-backed fetches to avoid RLS errors
+    setIsLoading(false);
+    setIsCheckingConn(false);
+  }, [router, devAuthEnabled]);
+
+  const handleLogout = async () => {
+    if (devAuthEnabled) {
+      clearDevSession();
       window.location.href = '/dev/login';
     } else {
-      fetchScheduledDigests();
+      await supabase.auth.signOut();
+      router.push('/login');
     }
-  }, [router]);
-
-  const handleLogout = () => {
-    clearDevSession();
-    window.location.href = '/dev/login';
   };
 
   const handleCreateDigest = () => {
@@ -179,7 +235,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center">
           <Loader2 className="h-8 w-8 animate-spin text-gray-500 mb-2" />
-          <div className="text-gray-600">Loading your digests...</div>
+          <div className="text-gray-600">Loading your briefs...</div>
         </div>
       </div>
     );
@@ -187,17 +243,23 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Dev Mode Banner */}
-      <div className="w-full bg-yellow-200 text-yellow-900 py-2 px-4 text-center font-semibold flex items-center justify-center">
-        <span>⚠️ Dev Mode: Authentication is bypassed. Not secure.</span>
-        <button
-          onClick={handleLogout}
-          className="ml-4 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm flex items-center"
-        >
-          Logout
-        </button>
-      </div>
-
+      {/* Dev Mode Banner (only when enabled and session present) */}
+      {devAuthEnabled && isDevSession() && (
+        <div className="w-full bg-yellow-200 text-yellow-900 py-2 px-4 text-center font-semibold flex items-center justify-center">
+          <span>⚠️ Dev Mode: Authentication is bypassed. Not secure.</span>
+          <button
+            onClick={handleLogout}
+            className="ml-4 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm flex items-center"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+      {devAuthEnabled && (
+        <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+          Dev Auth enabled: Supabase-backed data (digests, connection status) is disabled. Set NEXT_PUBLIC_DEV_AUTH_ENABLED=false to test live data.
+        </div>
+      )}
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
@@ -205,13 +267,70 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <Button onClick={handleCreateDigest}>
               <Plus className="mr-2 h-4 w-4" />
-              New Digest
+              New Brief
             </Button>
           </div>
 
-          {/* Next Scheduled Digests */}
+          {/* Connected Accounts */}
           <div className="bg-white shadow rounded-lg p-6 mb-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Scheduled Digests</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Connected Accounts</h2>
+            <div className="space-y-4">
+              {/* Gmail */}
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center">
+                  {isGoogleConnected ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-3" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-yellow-500 mr-3" />
+                  )}
+                  <span className="font-medium">Gmail</span>
+                </div>
+                <span className={`text-sm ${isGoogleConnected ? 'text-green-600' : 'text-yellow-600'}`}>
+                  {isCheckingConn ? 'Checking…' : isGoogleConnected ? 'Connected' : 'Not Connected'}
+                </span>
+              </div>
+              {/* Calendar (same Google connection) */}
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center">
+                  {isGoogleConnected ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-3" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-yellow-500 mr-3" />
+                  )}
+                  <span className="font-medium">Google Calendar</span>
+                </div>
+                <span className={`text-sm ${isGoogleConnected ? 'text-green-600' : 'text-yellow-600'}`}>
+                  {isCheckingConn ? 'Checking…' : isGoogleConnected ? 'Connected' : 'Not Connected'}
+                </span>
+              </div>
+            </div>
+
+            {!isGoogleConnected && !isCheckingConn && (
+              <div className="mt-4">
+                <GoogleConnectButton variant="outline" className="w-full" redirectPath="/dashboard" />
+                <p className="mt-2 text-sm text-gray-600 text-center">
+                  Connect Google to enable Gmail and Calendar processing.
+                </p>
+              </div>
+            )}
+
+            {/* Coming Soon integrations */}
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">More integrations</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {comingSoonConnections.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                    <span className="text-gray-700">{c.name}</span>
+                    <span className="text-xs font-medium text-gray-600 bg-gray-200 px-2 py-0.5 rounded-full">Coming Soon</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Scheduled Briefs */}
+          <div className="bg-white shadow rounded-lg p-6 mb-8">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Scheduled Briefs</h2>
             {scheduledDigests.length > 0 ? (
               <div className="space-y-4">
                 {scheduledDigests.map((digest) => (
@@ -265,45 +384,23 @@ export default function DashboardPage() {
             ) : (
               <div className="text-center py-8">
                 <Mail className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No scheduled digests</h3>
-                <p className="mt-1 text-sm text-gray-500">Get started by creating your first digest.</p>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No scheduled briefs</h3>
+                <p className="mt-1 text-sm text-gray-500">Get started by creating your first brief.</p>
                 <div className="mt-6">
                   <Button onClick={handleCreateDigest}>
                     <Plus className="mr-2 h-4 w-4" />
-                    New Digest
+                    New Brief
                   </Button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Connection Status */}
-          <div className="bg-white shadow rounded-lg p-6 mb-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Connected Accounts</h2>
-            <div className="space-y-4">
-              {mockConnections.map((connection) => (
-                <div key={connection.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center">
-                    {connection.connected ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500 mr-3" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-yellow-500 mr-3" />
-                    )}
-                    <span className="font-medium">{connection.name}</span>
-                  </div>
-                  <span className={`text-sm ${connection.connected ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {connection.connected ? 'Connected' : 'Not Connected'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Digests - Only show if we have digests */}
+          {/* Recent Briefs - Only show if we have briefs */}
           {scheduledDigests.length > 0 && (
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Recent Digests</h2>
+                <h2 className="text-lg font-medium text-gray-900">Recent Briefs</h2>
               </div>
               <div className="space-y-4">
                 {scheduledDigests.slice(0, 3).map(digest => (
@@ -324,7 +421,7 @@ export default function DashboardPage() {
                 ))}
                 {scheduledDigests.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    <p>No digests created yet. Create your first digest to get started.</p>
+                    <p>No briefs created yet. Create your first brief to get started.</p>
                   </div>
                 )}
               </div>

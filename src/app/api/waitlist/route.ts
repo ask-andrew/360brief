@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// Ensure Node.js runtime (not Edge) so service role behaves as expected
+export const runtime = 'nodejs';
+
 // Server-only env vars
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
@@ -37,9 +40,9 @@ export async function POST(request: Request) {
       name: (body?.name || '').toString().slice(0, 120) || null,
       role: (body?.role || '').toString().slice(0, 120) || null,
       company_size: (body?.company_size || '').toString().slice(0, 50) || null,
-      tools: Array.isArray(body?.tools) ? body.tools.slice(0, 20) : [],
+      tools: Array.isArray(body?.tools) ? (body.tools as any[]).slice(0, 20).map(String) : [],
       pain_point: (body?.pain_point || '').toString().slice(0, 1000) || null,
-      must_haves: Array.isArray(body?.must_haves) ? body.must_haves.slice(0, 20) : [],
+      must_haves: Array.isArray(body?.must_haves) ? (body.must_haves as any[]).slice(0, 20).map(String) : [],
       delivery_pref: (body?.delivery_pref || '').toString().slice(0, 50) || null,
       style_pref: (body?.style_pref || '').toString().slice(0, 50) || null,
       willing_call: !!body?.willing_call,
@@ -54,7 +57,21 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Waitlist insert error:', error);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+      const dev = process.env.NODE_ENV !== 'production';
+      return NextResponse.json(
+        {
+          error: 'Database error',
+          details: dev
+            ? {
+                code: (error as any).code,
+                message: (error as any).message,
+                details: (error as any).details,
+                hint: (error as any).hint,
+              }
+            : undefined,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ ok: true, id: data?.id, email: data?.email });

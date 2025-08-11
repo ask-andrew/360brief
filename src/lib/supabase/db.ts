@@ -1,16 +1,5 @@
+import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
-import { createClient } from '@supabase/supabase-js';
-import env from '@/lib/env';
-
-if (!env.supabaseUrl || !env.supabaseAnonKey) {
-  throw new Error('Missing required Supabase environment variables');
-}
-
-// Create a single supabase client for interacting with your database
-export const supabase = createClient<Database>(
-  env.supabaseUrl,
-  env.supabaseAnonKey
-);
 
 // Profile related functions
 export const getProfile = async (userId: string) => {

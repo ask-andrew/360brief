@@ -9,7 +9,8 @@ import {
   IssuesCloseOutlined,
   ArrowRightOutlined,
   CommentOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -39,6 +40,29 @@ interface MessageTypeCounts {
   meeting: number;
   teams: number;
   total: number;
+}
+
+// Define TopicGroup used throughout the component
+interface TopicItem {
+  id: string;
+  type: 'email' | 'slack' | 'teams' | 'meeting';
+  link: string;
+  title: string;
+  timestamp?: string;
+  preview?: string;
+  participants: string[];
+}
+
+interface TopicGroup {
+  id: string;
+  title: string;
+  project: string;
+  urgency: 'high' | 'medium' | 'low';
+  lastActivity: string;
+  participants: string[];
+  messageTypes: MessageTypeCounts;
+  sentiment: number;
+  items: TopicItem[];
 }
 
 interface ActionCenterProps {
@@ -87,6 +111,62 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ data }) => {
         return null;
     }
   };
+
+  const renderActionItem = (item: any) => (
+    <List.Item 
+      key={item.id}
+      actions={[
+        <Space key="time" direction="vertical" align="end">
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {dayjs(item.lastActivity).fromNow()}
+          </Text>
+          {getUrgencyTag(item.urgency)}
+        </Space>
+      ]}
+    >
+      <List.Item.Meta
+        avatar={
+          item.type === 'email' ? <MailOutlined style={{ fontSize: 20 }} /> :
+          item.type === 'slack' ? <MessageOutlined style={{ fontSize: 20 }} /> :
+          <TeamOutlined style={{ fontSize: 20 }} />
+        }
+        title={
+          <Space>
+            <a 
+              href={item.link} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ fontWeight: 500 }}
+            >
+              {item.title}
+            </a>
+            {getStatusBadge(item.status)}
+          </Space>
+        }
+        description={
+          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+            <Text type="secondary" ellipsis>
+              {item.excerpt}
+            </Text>
+            <div>
+              <Tag color="geekblue" icon={<TeamOutlined />}>
+                {item.project || 'No Project'}
+              </Tag>
+              {item.participants.map((p: string, i: number) => (
+                <Tag key={i} color="blue">{p}</Tag>
+              ))}
+            </div>
+            {item.sentiment !== undefined && (
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ marginRight: 8 }}>Sentiment:</Text>
+                {getSentimentBadge(item.sentiment)}
+              </div>
+            )}
+          </Space>
+        }
+      />
+    </List.Item>
+  );
 
   const getUrgencyTag = (urgency: string) => {
     switch (urgency) {
@@ -227,60 +307,6 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ data }) => {
       </div>
     </div>
   );
-    <List.Item 
-      key={item.id}
-      actions={[
-        <Space key="time" direction="vertical" align="end">
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {dayjs(item.lastActivity).fromNow()}
-          </Text>
-          {getUrgencyTag(item.urgency)}
-        </Space>
-      ]}
-    >
-      <List.Item.Meta
-        avatar={
-          item.type === 'email' ? <MailOutlined style={{ fontSize: 20 }} /> :
-          item.type === 'slack' ? <MessageOutlined style={{ fontSize: 20 }} /> :
-          <TeamOutlined style={{ fontSize: 20 }} />
-        }
-        title={
-          <Space>
-            <a 
-              href={item.link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ fontWeight: 500 }}
-            >
-              {item.title}
-            </a>
-            {getStatusBadge(item.status)}
-          </Space>
-        }
-        description={
-          <Space direction="vertical" size={4} style={{ width: '100%' }}>
-            <Text type="secondary" ellipsis>
-              {item.excerpt}
-            </Text>
-            <div>
-              <Tag color="geekblue" icon={<TeamOutlined />}>
-                {item.project || 'No Project'}
-              </Tag>
-              {item.participants.map((p, i) => (
-                <Tag key={i} color="blue">{p}</Tag>
-              ))}
-            </div>
-            {item.sentiment !== undefined && (
-              <div style={{ marginTop: 8 }}>
-                <Text type="secondary" style={{ marginRight: 8 }}>Sentiment:</Text>
-                {getSentimentBadge(item.sentiment)}
-              </div>
-            )}
-          </Space>
-        }
-      />
-    </List.Item>
-  );
 
   return (
     <Card 
@@ -297,14 +323,14 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ data }) => {
           tab={
             <span>
               <CommentOutlined />
-              Needs Your Reply ({data.pending.length})
+              Needs Your Reply ({data.topics.pending.length})
             </span>
           }
           key="1"
         >
           <List
             itemLayout="horizontal"
-            dataSource={data.pending}
+            dataSource={data.topics.pending}
             renderItem={renderActionItem}
             pagination={{
               pageSize: 5,
@@ -318,14 +344,14 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ data }) => {
           tab={
             <span>
               <ClockCircleOutlined />
-              Awaiting Response ({data.awaiting.length})
+              Awaiting Response ({data.topics.awaiting.length})
             </span>
           }
           key="2"
         >
           <List
             itemLayout="horizontal"
-            dataSource={data.awaiting}
+            dataSource={data.topics.awaiting}
             renderItem={renderActionItem}
             pagination={{
               pageSize: 5,

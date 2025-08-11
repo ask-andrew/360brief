@@ -69,7 +69,6 @@ export class DigestGenerator {
     return emailTemplateRenderer.renderMissionBriefEmail({
       style: 'detailed',
       subject,
-      summary: data.summary || 'Your daily mission briefing with key updates and action items.',
       situation: {
         detailed: data.situation?.detailed || 'No detailed situation available.',
         metrics: data.situation?.metrics || []
@@ -91,7 +90,6 @@ export class DigestGenerator {
         details: update.details,
         metrics: update.metrics || []
       })) || [],
-      nextSteps: data.nextSteps || ['Review the information above and take necessary actions.'],
       cta: data.cta || { text: 'View Full Report', url: '#' },
       secondaryCta: data.secondaryCta
     }).then(html => ({

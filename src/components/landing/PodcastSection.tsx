@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PodcastPhoneGraphic } from '@/components/landing/PodcastPhoneGraphic';
 
 export function PodcastSection() {
   return (
@@ -74,14 +75,7 @@ export function PodcastSection() {
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative w-full max-w-xs">
               <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 to-primary/5 rounded-3xl -z-10 blur-xl"></div>
-              <Image
-                src="/images/podcast-phone.svg"
-                alt="360Brief podcast player on mobile"
-                width={300}
-                height={600}
-                className="w-full h-auto drop-shadow-2xl"
-                priority
-              />
+              <PodcastPhoneGraphic className="w-full h-auto drop-shadow-2xl" />
             </div>
           </div>
         </div>

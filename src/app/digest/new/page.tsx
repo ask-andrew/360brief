@@ -154,11 +154,13 @@ export default function NewDigestPage() {
 
   // If not in dev session, redirect to login
   useEffect(() => {
-    if (typeof window !== 'undefined' && !isDevSession()) {
+    if (typeof window === 'undefined') return;
+    const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
+    if (devAuthEnabled && !isDevSession()) {
       router.push('/dev/login');
-    } else {
-      setIsLoading(false);
+      return;
     }
+    setIsLoading(false);
   }, [router]);
   
   if (isLoading) {

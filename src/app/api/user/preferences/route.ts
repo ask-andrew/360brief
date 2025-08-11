@@ -7,14 +7,43 @@ const DEFAULT_PREFERENCES = {
   timezone: 'UTC',
   digest_frequency: 'daily',
   digest_time: '07:00',
-  digest_style: 'executive',
-  preferred_format: 'email',
+  // Use a valid BriefStyle as default
+  digest_style: 'mission_brief',
+  // Reuse preferred_format to optionally store 'concise' | 'detailed' view choice for UI
+  preferred_format: 'concise',
   email_notifications: true,
   priority_keywords: [],
   key_contacts: []
 }
 
-type DigestStyle = 'mission-brief' | 'management-consulting' | 'startup-velocity' | 'newsletter';
+// Helpers
+function normalizeStyle(input?: DigestStyleInput): DigestStyleDb | undefined {
+  if (!input) return undefined;
+  const v = String(input).toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
+  switch (v) {
+    case 'mission_brief':
+    case 'mission':
+    case 'bluf':
+      return 'mission_brief';
+    case 'management_consulting':
+    case 'consulting':
+    case 'mckinsey':
+      return 'management_consulting';
+    case 'startup_velocity':
+    case 'startup':
+    case 'velocity':
+      return 'startup_velocity';
+    case 'newsletter':
+    case 'newspaper':
+    case 'editorial':
+      return 'newsletter';
+    default:
+      return undefined;
+  }
+}
+
+type DigestStyleInput = 'mission-brief' | 'management-consulting' | 'startup-velocity' | 'newsletter' | string;
+type DigestStyleDb = 'mission_brief' | 'management_consulting' | 'startup_velocity' | 'newsletter';
 type Frequency = 'daily' | 'weekly' | 'weekdays' | 'custom';
 type DeliveryMode = 'email' | 'slack' | 'audio';
 
@@ -113,10 +142,14 @@ export async function POST(request: Request) {
       ? { ...DEFAULT_PREFERENCES }
       : currentPrefs || { ...DEFAULT_PREFERENCES }
 
+    // Normalize style input to DB-safe value if provided
+    const normalizedStyle = normalizeStyle(updates.digest_style);
+
     // Merge updates with current preferences
     const updatedPreferences = {
       ...currentPreferences,
       ...updates,
+      ...(normalizedStyle ? { digest_style: normalizedStyle } : {}),
       // Ensure arrays are properly set
       priority_keywords: Array.isArray(updates.priority_keywords) 
         ? updates.priority_keywords 

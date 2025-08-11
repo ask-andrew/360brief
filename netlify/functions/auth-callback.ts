@@ -1,4 +1,4 @@
-import { Handler } from '@netlify/functions';
+// Netlify types are optional; using any to avoid type dependency
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
 
@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
-export const handler: Handler = async (event, context) => {
+export const handler = async (event: any, context: any) => {
   // Only allow GET requests
   if (event.httpMethod !== 'GET') {
     return {
@@ -23,15 +23,37 @@ export const handler: Handler = async (event, context) => {
 
   try {
     const { code, state } = event.queryStringParameters || {};
-    
+
     if (!code) {
       throw new Error('Authorization code is required');
     }
 
-    // Get the original redirect URI from the state or use a default
-    const redirectUri = state 
-      ? decodeURIComponent(state) 
-      : `${process.env.APP_URL}/dashboard`;
+    // Parse state which may be either a plain redirect URL or a base64-encoded JSON
+    // { redirect: string, account_type?: 'personal'|'business' }
+    let redirectUri = `${process.env.APP_URL}/dashboard`;
+    let accountType: 'personal' | 'business' = 'personal';
+    if (state) {
+      try {
+        const decoded = decodeURIComponent(state);
+        // Try JSON first
+        const maybeJson = JSON.parse(Buffer.from(decoded, 'base64').toString('utf-8'));
+        if (maybeJson && typeof maybeJson === 'object') {
+          if (maybeJson.redirect && typeof maybeJson.redirect === 'string') {
+            redirectUri = maybeJson.redirect;
+          }
+          if (maybeJson.account_type === 'personal' || maybeJson.account_type === 'business') {
+            accountType = maybeJson.account_type;
+          }
+        }
+      } catch {
+        // Fallback: treat state as a plain redirect URL
+        try {
+          redirectUri = decodeURIComponent(state);
+        } catch {
+          // keep default
+        }
+      }
+    }
 
     // Exchange the authorization code for tokens
     const oauth2Client = new google.auth.OAuth2(
@@ -54,9 +76,10 @@ export const handler: Handler = async (event, context) => {
     
     const payload = ticket.getPayload();
     const email = payload?.email;
+    const providerAccountId = payload?.sub; // Google account id
     
-    if (!email) {
-      throw new Error('Could not get user email from Google');
+    if (!email || !providerAccountId) {
+      throw new Error('Could not get user identity from Google');
     }
 
     // Get the Supabase user ID from the email
@@ -72,25 +95,29 @@ export const handler: Handler = async (event, context) => {
       throw new Error('User not found');
     }
 
-    // Store the tokens in the database
-    const { error: tokenError } = await supabase
-      .from('user_tokens')
+    // Store the tokens in the new connected accounts table to support multiple accounts
+    const scopes = tokens.scope ? tokens.scope.split(' ') : [];
+    const { error: accountError } = await supabase
+      .from('user_connected_accounts')
       .upsert(
         {
           user_id: userData.id,
           provider: 'google',
+          provider_account_id: providerAccountId,
+          email,
+          account_type: accountType,
+          scopes,
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
           expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
           token_type: tokens.token_type,
-          scope: tokens.scope,
         },
-        { onConflict: 'user_id,provider' }
+        { onConflict: 'user_id,provider,provider_account_id' }
       );
 
-    if (tokenError) {
-      console.error('Error storing tokens:', tokenError);
-      throw tokenError;
+    if (accountError) {
+      console.error('Error storing connected account:', accountError);
+      throw accountError;
     }
 
     // Redirect back to the application with success status
@@ -108,7 +135,7 @@ export const handler: Handler = async (event, context) => {
     return {
       statusCode: 302,
       headers: {
-        Location: `/?auth=error&message=${encodeURIComponent(error.message)}`,
+        Location: `/?auth=error&message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`,
       },
       body: '',
     };

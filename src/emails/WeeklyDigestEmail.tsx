@@ -50,13 +50,13 @@ export const WeeklyDigestEmail = ({
 }: WeeklyDigestEmailProps) => (
   <Html>
     <Head />
-    <Preview>Your Weekly Digest - {dateRange}</Preview>
+    <Preview>Your Weekly Brief - {dateRange}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Text style={logo}>360Brief</Text>
         <Text style={greeting}>Hi {userName},</Text>
         <Text style={paragraph}>
-          Here's your weekly digest for {dateRange}. You had {summary.emailCount} emails and {summary.eventCount} events this week.
+          Here's your weekly brief for {dateRange}. You had {summary.emailCount} emails and {summary.eventCount} events this week.
         </Text>
         
         {/* Summary Section */}
@@ -120,12 +120,12 @@ export const WeeklyDigestEmail = ({
 
         <Section style={ctaSection}>
           <Button style={button} href={`${baseUrl}/digest`}>
-            View Full Digest
+            View Full Brief
           </Button>
         </Section>
 
         <Text style={footer}>
-          You're receiving this email because you're subscribed to weekly digests from 360Brief.
+          You're receiving this email because you're subscribed to weekly briefs from 360Brief.
           <br />
           <a href={`${baseUrl}/preferences`} style={link}>
             Update preferences

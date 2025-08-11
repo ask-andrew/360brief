@@ -71,6 +71,9 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
 
+  // Feature flag to enable dev bypass routes
+  const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
+
   // Define public routes that don't require authentication
   const publicRoutes = [
     '/', // Home page
@@ -80,17 +83,19 @@ export async function middleware(request: NextRequest) {
     '/register', 
     '/forgot-password', 
     '/reset-password',
-    '/dev/login', // Dev login route
+    '/dashboard', // Allow dashboard to load and let client-side auth guard handle redirects
     '/api/auth/callback',
     '/_next/static',
     '/_next/image',
     '/favicon.ico',
   ];
+  // Only allow /dev/login as public when dev auth is enabled
+  if (devAuthEnabled) publicRoutes.push('/dev/login');
   
-  // Check for dev session in development
+  // Check for dev session in development (only if enabled)
   const isDevMode = process.env.NODE_ENV === 'development';
   const devSessionCookie = request.cookies.get('devSession');
-  const hasDevSession = isDevMode && devSessionCookie?.value === 'true';
+  const hasDevSession = devAuthEnabled && isDevMode && devSessionCookie?.value === 'true';
 
   const isPublicRoute = publicRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
@@ -103,7 +108,8 @@ export async function middleware(request: NextRequest) {
 
   // If user is not signed in and the current route is not public, redirect to login
   if (!user && !isPublicRoute && !hasDevSession) {
-    const redirectUrl = new URL(isDevMode ? '/dev/login' : '/login', request.url);
+    const redirectPath = devAuthEnabled && isDevMode ? '/dev/login' : '/login';
+    const redirectUrl = new URL(redirectPath, request.url);
     // Only set redirectedFrom if we're not already on a login page
     if (!request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/dev/login')) {
       redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname);

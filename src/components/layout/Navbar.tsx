@@ -9,8 +9,8 @@ import { useState, useEffect } from 'react';
 const navItems = [
   { name: 'Features', href: '#features' },
   { name: 'How It Works', href: '#how-it-works' },
-  { name: 'Pricing', href: '#pricing' },
-  { name: 'Why I Built This', href: '/why-i-built-this' },
+  { name: 'Pricing', href: '/pricing' },
+  { name: "Why I'm Building This", href: '/why-i-built-this' },
 ];
 
 export function Navbar() {

@@ -1,5 +1,4 @@
-import { Database } from '@/lib/types/database.types';
-import { supabase } from '@/lib/supabase/db';
+import { supabase } from '@/lib/supabase/client';
 
 export interface DigestSchedule {
   id?: string;
@@ -17,7 +16,7 @@ export interface DigestSchedule {
 }
 
 export const createDigestSchedule = async (digest: Omit<DigestSchedule, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('digest_schedules')
     .insert([{
       user_id: digest.userId,
@@ -50,33 +49,53 @@ export const getDigestSchedules = async (userId: string): Promise<DigestSchedule
   console.log('Fetching digest schedules for user:', userId);
   
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('digest_schedules')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error:', error);
-      throw new Error(`Failed to fetch digest schedules: ${error.message}`);
+      // Log as much detail as possible for debugging
+      console.error('Supabase error fetching digest_schedules', {
+        error,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        message: (error as any)?.message,
+      });
+
+      const code = (error as any)?.code;
+      const message = (error as any)?.message || 'Unknown error';
+
+      // Common causes:
+      //  - 42P01: relation does not exist (migrations not applied)
+      //  - 42501 / permission denied: RLS blocking because user not authenticated
+      if (code === '42P01' || /relation .* does not exist/i.test(message)) {
+        throw new Error('Digest schedules table is missing. Run Supabase migrations locally: "supabase migration up".');
+      }
+      if (code === '42501' || /permission denied/i.test(message)) {
+        throw new Error('Permission denied reading digest schedules. Ensure you are signed in and RLS policies are applied.');
+      }
+      throw new Error(`Failed to fetch digest schedules: ${message}`);
     }
 
     console.log('Fetched digest schedules:', data);
     
     // Transform the data to match our frontend types
-    return (data || []).map(item => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      frequency: item.frequency,
-      time: item.time,
-      timezone: item.timezone,
-      includeEmails: item.include_emails,
-      includeCalendar: item.include_calendar,
-      summaryLength: item.summary_length,
-      userId: item.user_id,
-      createdAt: item.created_at,
-      updatedAt: item.updated_at
+    return (data || []).map((raw: any) => ({
+      id: raw.id,
+      name: raw.name,
+      description: raw.description,
+      frequency: raw.frequency,
+      time: raw.time,
+      timezone: raw.timezone,
+      includeEmails: raw.include_emails,
+      includeCalendar: raw.include_calendar,
+      summaryLength: raw.summary_length,
+      userId: raw.user_id,
+      createdAt: raw.created_at,
+      updatedAt: raw.updated_at
     }));
   } catch (error) {
     console.error('Error in getDigestSchedules:', error);
@@ -89,7 +108,7 @@ export const getDigestSchedules = async (userId: string): Promise<DigestSchedule
 };
 
 export const updateDigestSchedule = async (id: string, updates: Partial<DigestSchedule>) => {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('digest_schedules')
     .update({
       name: updates.name,
@@ -115,7 +134,7 @@ export const updateDigestSchedule = async (id: string, updates: Partial<DigestSc
 };
 
 export const deleteDigestSchedule = async (id: string) => {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('digest_schedules')
     .delete()
     .eq('id', id);

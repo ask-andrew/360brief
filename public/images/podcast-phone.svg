@@ -1,37 +1,67 @@
 <svg width="300" height="600" viewBox="0 0 300 600" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>360Brief Podcast Player</title>
   <!-- Phone body -->
   <rect x="20" y="20" width="260" height="560" rx="40" fill="#0F172A" stroke="#1E293B" stroke-width="2"/>
   
   <!-- Screen -->
   <rect x="30" y="40" width="240" height="520" rx="20" fill="#0F172A"/>
   
-  <!-- Screen content -->
-  <rect x="40" y="60" width="220" height="440" rx="10" fill="#1E293B"/>
-  
-  <!-- 360Brief Logo on Screen -->
-  <g transform="translate(100, 120) scale(0.35)">
-    <path d="M150,0C67.2,0,0,67.2,0,150s67.2,150,150,150s150-67.2,150-150S232.8,0,150,0z M150,270c-66.3,0-120-53.7-120-120S83.7,30,150,30s120,53.7,120,120S216.3,270,150,270z" fill="#0EA5E9"/>
-    <path d="M150,90c-33.1,0-60,26.9-60,60s26.9,60,60,60s60-26.9,60-60S183.1,90,150,90z M150,180c-16.6,0-30-13.4-30-30s13.4-30,30-30s30,13.4,30,30S166.6,180,150,180z" fill="#0EA5E9"/>
+  <!-- Screen content container -->
+  <rect x="40" y="60" width="220" height="440" rx="14" fill="#0B1220"/>
+
+  <!-- Status bar -->
+  <g opacity="0.9">
+    <text x="50" y="84" font-family="Inter, sans-serif" font-size="10" fill="#94A3B8">9:41</text>
+    <g transform="translate(220,72)">
+      <rect x="0" y="0" width="14" height="8" rx="2" stroke="#94A3B8" fill="none" stroke-width="1"/>
+      <rect x="1.5" y="1.5" width="10" height="5" rx="1" fill="#94A3B8"/>
+    </g>
+    <g transform="translate(200,72)">
+      <rect x="0" y="0" width="14" height="8" rx="2" fill="#94A3B8"/>
+    </g>
+    <g transform="translate(180,72)">
+      <rect x="0" y="0" width="14" height="8" rx="2" fill="#94A3B8"/>
+    </g>
   </g>
-  
-  <!-- Podcast artwork -->
-  <circle cx="150" cy="180" r="80" fill="#0EA5E9"/>
-  <path d="M150 270C162.426 270 174.5 266.843 185.355 260.74C196.21 254.638 205.543 245.76 212.678 234.813C219.814 223.866 224.545 211.12 226.494 197.674C228.444 184.229 227.558 170.448 223.902 157.5" stroke="white" stroke-width="10" stroke-linecap="round"/>
-  <path d="M150 250C159.389 250 168.617 247.766 176.968 243.481C185.32 239.197 192.584 232.96 198.195 225.188C203.807 217.417 207.632 208.303 209.359 198.601C211.085 188.899 210.669 178.887 208.147 169.419" stroke="white" stroke-width="8" stroke-linecap="round"/>
-  <path d="M150 230C156.627 230 163.106 228.733 169.066 226.286C175.026 223.84 180.349 220.264 184.678 215.757C189.007 211.25 192.255 205.903 194.197 200.066C196.14 194.23 196.734 188.045 195.939 181.967" stroke="white" stroke-width="6" stroke-linecap="round"/>
-  
-  <!-- Progress bar -->
-  <rect x="50" y="520" width="200" height="4" rx="2" fill="#334155"/>
-  <rect x="50" y="520" width="70" height="4" rx="2" fill="#0EA5E9"/>
-  
-  <!-- Time indicators -->
-  <text x="50" y="550" font-family="Inter, sans-serif" font-size="12" fill="#94A3B8">1:24</text>
-  <text x="230" y="550" text-anchor="end" font-family="Inter, sans-serif" font-size="12" fill="#94A3B8">4:37</text>
-  
+
+  <!-- Album art card -->
+  <g>
+    <rect x="55" y="96" width="190" height="190" rx="16" fill="url(#gradArt)"/>
+    <!-- Subtle overlay and logo -->
+    <rect x="55" y="96" width="190" height="190" rx="16" fill="#000" fill-opacity="0.12"/>
+    <!-- Exact 360Brief logo -->
+    <image href="/images/360logo.svg" xlink:href="/images/360logo.svg" x="90" y="131" width="120" height="120" preserveAspectRatio="xMidYMid meet" image-rendering="optimizeQuality"/>
+  </g>
+
+  <!-- Episode title and show name -->
+  <text x="60" y="312" font-family="Inter, sans-serif" font-size="14" fill="#E5E7EB" font-weight="600">Multiplying Time: Inbox to Insight</text>
+  <text x="60" y="332" font-family="Inter, sans-serif" font-size="12" fill="#9CA3AF">360Brief • Executive Signals</text>
+
+  <!-- Progress bar with knob -->
+  <rect x="60" y="360" width="180" height="4" rx="2" fill="#1F2937"/>
+  <rect x="60" y="360" width="84" height="4" rx="2" fill="#0EA5E9"/>
+  <circle cx="144" cy="362" r="6" fill="#0EA5E9" stroke="#93C5FD" stroke-width="1"/>
+  <text x="60" y="378" font-family="Inter, sans-serif" font-size="11" fill="#9CA3AF">1:24</text>
+  <text x="240" y="378" text-anchor="end" font-family="Inter, sans-serif" font-size="11" fill="#9CA3AF">4:37</text>
+
   <!-- Playback controls -->
-  <circle cx="150" cy="490" r="30" fill="#0EA5E9" fill-opacity="0.2"/>
-  <path d="M140 480V500L160 490L140 480Z" fill="#0EA5E9"/>
-  
+  <g transform="translate(60,400)">
+    <!-- Back 15 -->
+    <circle cx="30" cy="30" r="22" fill="#111827"/>
+    <path d="M38 22L22 30L38 38V22Z" fill="#9CA3AF"/>
+  </g>
+  <g transform="translate(120,392)">
+    <!-- Play/Pause -->
+    <circle cx="30" cy="38" r="30" fill="#0EA5E9"/>
+    <rect x="22" y="24" width="6" height="28" rx="2" fill="#0B1220"/>
+    <rect x="32" y="24" width="6" height="28" rx="2" fill="#0B1220"/>
+  </g>
+  <g transform="translate(180,400)">
+    <!-- Forward 15 -->
+    <circle cx="30" cy="30" r="22" fill="#111827"/>
+    <path d="M22 22L38 30L22 38V22Z" fill="#9CA3AF"/>
+  </g>
+
   <!-- Phone notch -->
   <rect x="120" y="20" width="60" height="20" rx="10" fill="#0F172A"/>
   <rect x="125" y="25" width="50" height="10" rx="5" fill="#1E293B"/>
@@ -45,4 +75,12 @@
   <path d="M270 40L40 40L40 60L270 60L270 40Z" fill="white" fill-opacity="0.03"/>
   <path d="M40 40L40 60L30 60L30 40L40 40Z" fill="white" fill-opacity="0.05"/>
   <path d="M40 40L30 40L30 50L40 50L40 40Z" fill="white" fill-opacity="0.02"/>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="gradArt" x1="55" y1="96" x2="245" y2="286" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
 </svg>

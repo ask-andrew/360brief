@@ -150,7 +150,11 @@ const EngagementMetrics: React.FC<EngagementMetricsProps> = ({ data, isMeeting =
           <Text strong>Activity Trend</Text>
           <div style={{ marginTop: 8 }}>
             <Text type="secondary">
-              {Object.values(data.volume_by_date).reduce((a: number, b: number) => a + b, 0) / Object.keys(data.volume_by_date).length > 1.5 ? (
+              {(() => {
+                const volumeByDate = data.volume_by_date as Record<string, number>;
+                const values = Object.values(volumeByDate);
+                const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+                return avg > 1.5 ? (
                 <>
                   <ArrowUpOutlined style={{ color: '#52c41a' }} /> Higher than usual
                 </>
@@ -158,7 +162,8 @@ const EngagementMetrics: React.FC<EngagementMetricsProps> = ({ data, isMeeting =
                 <>
                   <ArrowDownOutlined style={{ color: '#f5222d' }} /> Lower than usual
                 </>
-              )}
+              );
+              })()}
             </Text>
           </div>
         </div>

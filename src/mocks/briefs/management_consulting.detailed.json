@@ -1,0 +1,75 @@
+{
+  "userId": "sarah.martinez@example.com",
+  "generatedAt": "2025-08-10T16:30:00Z",
+  "style": "management_consulting",
+  "version": "1.0",
+  "audience": { "to": ["Sarah Martinez"], "from": "AI Chief of Staff" },
+  "subject": "Strategic Crisis Response: TechFlow Escalation Analysis & Revenue Risk Mitigation",
+  "tldr": "TechFlow disruption is a critical inflection point. $2.4M ARR (20%) at risk; our response sets precedent for crisis management and differentiation.",
+  "context": {
+    "client": { "name": "TechFlow Corp", "revenueARR": 2400000, "revenueSharePct": 20 },
+    "renewalProbability": { "before": 85, "after": 40 },
+    "usersAffected": 15000,
+    "rootCause": "DB cluster failure triggering cascading dependencies",
+    "scenario": "Escalation threatening renewal"
+  },
+  "consulting": {
+    "executiveSummary": "A strategic, executive-led response within 48 hours will determine renewal outcome and define our crisis playbook.",
+    "situationAnalysis": {
+      "financialImpact": [
+        "Direct revenue risk: $2.4M ARR; renewal probability 85% → 40%",
+        "LTV impact: 3-year value $7.8M now uncertain",
+        "Competitive vulnerability: window for displacement",
+        "Reputational risk extends to 3 other prospects"
+      ],
+      "rootCauseFramework": "Primary failure in DB infrastructure; prevention likely with enhanced monitoring and redundancy.",
+      "stakeholderMatrix": [
+        "15,000 end users experiencing interruption",
+        "TechFlow CEO/CTO evaluating reliability and alternatives",
+        "Internal operations under crisis load",
+        "Market observing our response capability"
+      ]
+    },
+    "strategyFramework": [
+      {
+        "phase": "Phase 1: Immediate Crisis Stabilization (Next 6 Hours)",
+        "description": "Technical resolution with transparent communication; executive-level engagement; document response effectiveness"
+      },
+      {
+        "phase": "Phase 2: Relationship Recovery & Trust Rebuilding (48-Hour Window)",
+        "description": "Comprehensive post-incident analysis, prevention commitments, intensive AM/CS engagement, competitive differentiation via response quality"
+      },
+      {
+        "phase": "Phase 3: Process Enhancement & Prevention (30-Day Implementation)",
+        "description": "Resilience investments, monitoring enhancements, and communication protocol optimization"
+      }
+    ],
+    "investmentRecommendation": {
+      "total": 40000,
+      "breakdown": [
+        {
+          "label": "Emergency technical resources",
+          "amount": 15000,
+          "bullets": ["Immediate capacity", "DB recovery specialists", "Eng overtime"]
+        },
+        {
+          "label": "Customer retention package",
+          "amount": 25000,
+          "bullets": ["Service credits", "Relationship recovery initiatives"]
+        }
+      ],
+      "roiNote": "$40K (1.67%) to protect $2.4M ARR; 70% success rate historically for similar escalations"
+    },
+    "criticalSuccessFactors": [
+      "Speed of executive response (first 12 hours)",
+      "Transparent communication and realistic timelines",
+      "Visible investment in relationship recovery",
+      "Learning integration to build competitive narrative"
+    ],
+    "recommendedActions": [
+      "Authorize $40K crisis budget and escalate executive engagement",
+      "Complete RCA, publish remediation and prevention plan",
+      "Implement trust-rebuilding cadence with TechFlow leadership"
+    ]
+  }
+}

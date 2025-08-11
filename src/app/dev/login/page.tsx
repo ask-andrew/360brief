@@ -6,12 +6,21 @@ import { setDevSession, isDevSession } from '@/lib/dev-auth';
 
 export default function DevLoginPage() {
   const router = useRouter();
+  const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && isDevSession()) {
+    if (typeof window === 'undefined') return;
+
+    // If dev auth is disabled, never allow access to this page
+    if (!devAuthEnabled) {
+      router.replace('/login');
+      return;
+    }
+
+    if (isDevSession()) {
       router.replace('/dashboard');
     }
-  }, [router]);
+  }, [router, devAuthEnabled]);
 
   const handleDevLogin = () => {
     setDevSession();

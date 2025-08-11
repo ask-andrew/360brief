@@ -21,10 +21,10 @@ const TOOLS = [
 ];
 
 const MUST_HAVES = [
-  "Unified digest",
+  "Unified brief",
   "Priority filtering",
   "Sentiment analysis",
-  "Reply from digest",
+  "Reply from brief",
   "Meeting summaries",
   "Dashboard",
 ];
@@ -120,7 +120,7 @@ export function BetaWaitlist() {
       <div className="flex justify-center">
         <button
           onClick={() => setOpen(true)}
-          className="rounded-md bg-primary px-5 py-3 text-white shadow hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-3 text-white shadow transition-colors duration-200 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
         >
           Request Beta Invite
         </button>
@@ -343,7 +343,7 @@ export function BetaWaitlist() {
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
-                      className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                      className="rounded-md border px-3 py-2 text-sm transition-colors hover:bg-gray-50"
                     >
                       Close
                     </button>
@@ -352,7 +352,7 @@ export function BetaWaitlist() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="rounded-md bg-primary px-4 py-2 text-white hover:opacity-90 disabled:opacity-60"
+                    className="rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-white transition-colors duration-200 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60"
                   >
                     {submitting ? "Submitting…" : "Request Invite"}
                   </button>

@@ -1,0 +1,80 @@
+{
+  "userId": "sarah.martinez@example.com",
+  "generatedAt": "2025-08-10T16:30:00Z",
+  "style": "mission_brief",
+  "version": "1.0",
+  "audience": { "to": ["Sarah Martinez"], "from": "AI Chief of Staff" },
+  "subject": "\uD83D\uDD34 CRITICAL - TechFlow Corp Service Disruption & Revenue Protection",
+  "tldr": "TechFlow 6-hour outage affecting 15,000 users; $2.4M ARR at risk; renewal probability now ~40%. Immediate executive engagement and $40K crisis investment recommended.",
+  "context": {
+    "client": { "name": "TechFlow Corp", "revenueARR": 2400000, "revenueSharePct": 20 },
+    "renewalProbability": { "before": 85, "after": 40 },
+    "usersAffected": 15000,
+    "outageDurationHours": 6,
+    "rootCause": "Database cluster failure triggering cascading system failures",
+    "reputationalRiskNote": "CEO reportedly evaluating alternatives",
+    "scenario": "Client escalation threatening contract renewal"
+  },
+  "missionBrief": {
+    "currentStatus": {
+      "primaryIssue": "TechFlow experiencing 6-hour service outage (started 03:47)",
+      "businessImpact": [
+        "Contract value: $2.4M ARR (20% of total)",
+        "Renewal probability: 85% \u2192 40%",
+        "15,000 end users affected",
+        "Reputational risk: CEO evaluating alternatives"
+      ]
+    },
+    "immediateActions": [
+      {
+        "title": "Required by 09:00 - Emergency Response Call",
+        "participants": ["VP Ops (You)", "TechFlow CTO David Kim", "Engineering Lead Susan/Mike Chen"],
+        "objective": "Technical status update and recovery timeline confirmation",
+        "preparation": "Engineering damage assessment ready by 08:45"
+      },
+      {
+        "title": "Required by 10:00 - Internal Damage Assessment",
+        "objective": "Root cause analysis; prevention measures",
+        "timelineNote": "Service restoration ETA 2 hours (by 12:00)"
+      },
+      {
+        "title": "Required by 11:00 - Account Retention Strategy",
+        "objective": "Retention offer framework, CS relationship recovery plan, legal review of credits"
+      },
+      {
+        "title": "Required by 12:00 - Executive Briefing for CEO",
+        "objective": "Complete incident summary, financial impact, mitigation and prevention recommendations"
+      }
+    ],
+    "resourceAuthorization": {
+      "totalAmount": 40000,
+      "items": [
+        {
+          "category": "Emergency Technical Resources",
+          "amount": 15000,
+          "bullets": [
+            "Additional infra capacity",
+            "Third-party database recovery specialists",
+            "Extended engineering overtime"
+          ]
+        },
+        {
+          "category": "Customer Retention Investment",
+          "amount": 25000,
+          "bullets": [
+            "Service credits for downtime",
+            "Intensive AM/CS support",
+            "Potential contract restructuring incentives"
+          ]
+        }
+      ]
+    },
+    "escalationContacts": [
+      { "role": "Engineering Lead", "name": "Mike Chen", "note": "Immediate resource decisions" },
+      { "role": "Account Manager", "name": "Lisa Rodriguez", "note": "Managing relationship" },
+      { "role": "CEO Office", "name": "—", "note": "Standing by for 12:00 briefing" },
+      { "role": "Legal", "name": "—", "note": "Prepared for credits/contract modifications" }
+    ],
+    "windowEmphasisNote": "First 48 hours determine long-term recovery success; executive engagement required."
+  }
+}
