@@ -34,6 +34,58 @@ export type Database = {
   }
   public: {
     Tables: {
+      user_connected_accounts: {
+        Row: {
+          id: string
+          user_id: string
+          provider: string
+          provider_account_id: string
+          email: string | null
+          account_type: string | null
+          scopes: string[] | null
+          access_token: string | null
+          refresh_token: string | null
+          expires_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          provider: string
+          provider_account_id: string
+          email?: string | null
+          account_type?: string | null
+          scopes?: string[] | null
+          access_token?: string | null
+          refresh_token?: string | null
+          expires_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          provider?: string
+          provider_account_id?: string
+          email?: string | null
+          account_type?: string | null
+          scopes?: string[] | null
+          access_token?: string | null
+          refresh_token?: string | null
+          expires_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_connected_accounts_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
       digest_items: {
         Row: {
           content: string | null

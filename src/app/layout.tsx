@@ -48,61 +48,48 @@ export default function RootLayout({
         '/notification-demo',
         '/test',
       ];
-      const isPublic = publicPrefixes.some((p) => pathname === p || pathname?.startsWith(p + '/'));
-      if (isPublic) {
+
+      const isPublicRoute = publicPrefixes.some(prefix => 
+        pathname === prefix || pathname.startsWith(`${prefix}/`)
+      );
+
+      if (isPublicRoute) {
         setIsLoading(false);
         return;
       }
 
-      // Optional dev-only auth redirect (disabled unless explicitly enabled)
-      if (devAuthEnabled) {
-        const isLoggedIn = isDevSession();
-        const isDevLogin = pathname?.startsWith('/dev/login');
-        if (!isLoggedIn && !isDevLogin) {
-          router.push('/dev/login');
-          return;
-        }
-        if (isLoggedIn && isDevLogin) {
-          router.push('/dashboard');
-          return;
-        }
-      }
+      // Check if user is authenticated
+      const isAuthenticated = devAuthEnabled 
+        ? isDevSession() 
+        : document.cookie.includes('sb-access-token=');
 
-      setIsLoading(false);
+      if (!isAuthenticated) {
+        router.push('/login');
+      } else {
+        setIsLoading(false);
+      }
     };
-    
+
     checkAuth();
   }, [pathname, router]);
 
-  // Show loading state while checking auth
   if (isLoading) {
     return (
-      <html lang="en">
-        <body className={dosis.className}>
-          <div className="flex h-screen w-full items-center justify-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
-          </div>
+      <html lang="en" className="h-full">
+        <body className={`${dosis.variable} font-sans h-full grid place-items-center`}>
+          <div className="animate-pulse">Loading...</div>
         </body>
       </html>
     );
   }
 
   return (
-    <html lang="en" className="h-full bg-white">
-      <head>
-        {/* Google Identity Services Library */}
-        <Script
-          src="https://accounts.google.com/gsi/client"
-          strategy="lazyOnload"
-          onError={(e) => console.error('Failed to load Google Identity Services', e)}
-        />
-      </head>
-      <body className={`${dosis.variable} font-sans antialiased tracking-[0.01em]`}>
-        <div id="one-tap-container" className="fixed top-4 right-4 z-50"></div>
+    <html lang="en" className="h-full">
+      <body className={`${dosis.variable} font-sans h-full`}>
         <AuthProvider>
           {children}
+          <Toaster />
         </AuthProvider>
-        <Toaster />
       </body>
     </html>
   );

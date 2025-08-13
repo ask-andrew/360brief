@@ -2,24 +2,36 @@ import { Clock, Calendar, Users, Zap } from 'lucide-react';
 
 const stats = [
   { 
-    icon: <Clock className="h-8 w-8 text-primary" />, 
-    value: "5.6 hours", 
-    label: "Average weekly time saved per executive" 
+    icon: <Clock className="h-8 w-8 text-blue-600" />, 
+    value: "62", 
+    label: "Meetings per month (average per employee)",
+    source: "Ambitions ABA (2023)",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-100"
   },
   { 
-    icon: <Calendar className="h-8 w-8 text-primary" />, 
-    value: "89%", 
-    label: "Of users report better meeting outcomes" 
+    icon: <Calendar className="h-8 w-8 text-emerald-600" />, 
+    value: "71%", 
+    label: "Of senior managers say meetings are unproductive",
+    source: "Ambitions ABA (2023)",
+    bgColor: "bg-emerald-50",
+    borderColor: "border-emerald-100"
   },
   { 
-    icon: <Users className="h-8 w-8 text-primary" />, 
-    value: "3.2x", 
-    label: "Faster decision making with 360Brief" 
+    icon: <Users className="h-8 w-8 text-amber-600" />, 
+    value: "23 hrs", 
+    label: "Per week executives spend in meetings",
+    source: "Harvard Business Review (via Ambitions ABA)",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-100"
   },
   { 
-    icon: <Zap className="h-8 w-8 text-primary" />, 
-    value: "94%", 
-    label: "User satisfaction rating from executives" 
+    icon: <Zap className="h-8 w-8 text-purple-600" />, 
+    value: "92%", 
+    label: "Of attendees multitask during meetings",
+    source: "UC Irvine (via Asana)",
+    bgColor: "bg-purple-50",
+    borderColor: "border-purple-100"
   },
 ];
 
@@ -35,7 +47,7 @@ export function StatsSection() {
             Measurable Impact on Executive Productivity
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Don't just take our word for it. See how 360Brief is transforming the way leaders work and make decisions.
+            Real data on workplace productivity challenges that 360Brief helps solve through better meeting management.
           </p>
         </div>
         
@@ -43,24 +55,20 @@ export function StatsSection() {
           {stats.map((stat, index) => (
             <div 
               key={index}
-              className="bg-background p-6 rounded-xl shadow-sm border border-border/50 hover:shadow-md transition-shadow"
+              className={`${stat.bgColor} p-6 rounded-xl shadow-sm border ${stat.borderColor} hover:shadow-md transition-all duration-300 transform hover:-translate-y-1`}
             >
-              <div className="flex flex-col items-center text-center">
-                <div className="p-3 bg-primary/10 rounded-full mb-4">
+              <div className="flex flex-col items-center text-center h-full">
+                <div className="p-3 rounded-full mb-4 bg-white shadow-sm">
                   {stat.icon}
                 </div>
-                <h3 className="text-3xl font-bold mb-2">{stat.value}</h3>
-                <p className="text-muted-foreground">{stat.label}</p>
+                <h3 className="text-3xl font-bold mb-2 text-gray-900">{stat.value}</h3>
+                <p className="text-gray-700 mb-2">{stat.label}</p>
+                <p className="text-xs text-gray-500 mt-auto">Source: {stat.source}</p>
               </div>
             </div>
           ))}
         </div>
-        
-        <div className="mt-12 text-center">
-          <p className="text-sm text-muted-foreground italic">
-            Sources: Harvard Business Review, The Muse, Atlassian, Doodle
-          </p>
-        </div>
+
       </div>
     </section>
   );

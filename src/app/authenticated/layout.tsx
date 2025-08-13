@@ -1,4 +1,4 @@
-'use client';
+'client';
 
 import { ReactNode } from 'react';
 import { AppSidebar } from '@/components/layout/AppSidebar';
