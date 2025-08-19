@@ -1,23 +1,18 @@
-// @ts-nocheck
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server';
 import { PythonShell } from 'python-shell';
 import path from 'path';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { messages, projectId } = req.body;
-
-  if (!messages || !Array.isArray(messages) || !projectId) {
-    return res.status(400).json({ error: 'Invalid request body' });
-  }
-
+export async function POST(request: Request) {
   try {
+    const { messages, projectId } = await request.json();
+
+    if (!messages || !Array.isArray(messages) || !projectId) {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
+
     const options = {
       mode: 'text' as const,
       pythonPath: process.env.PYTHON_PATH || 'python3',
@@ -42,36 +37,45 @@ export default async function handler(
     });
 
     return new Promise((resolve) => {
-      pyshell.end(function (err) {
+      pyshell.end(async function (err) {
         if (err || error) {
           console.error('PythonShell error:', err || error);
           return resolve(
-            res.status(500).json({
-              error: 'Failed to generate summary',
-              details: (err || error).toString()
-            })
+            NextResponse.json(
+              {
+                error: 'Failed to generate summary',
+                details: (err || error).toString()
+              },
+              { status: 500 }
+            )
           );
         }
 
         try {
           const result = JSON.parse(summary);
-          resolve(res.status(200).json(result));
-        } catch (e) {
+          resolve(NextResponse.json(result));
+        } catch (e: any) {
           console.error('Failed to parse Python output:', e);
           resolve(
-            res.status(500).json({
-              error: 'Failed to process summary',
-              details: e.message
-            })
+            NextResponse.json(
+              {
+                error: 'Failed to process summary',
+                details: e?.message || 'Unknown error occurred'
+              },
+              { status: 500 }
+            )
           );
         }
       });
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Summarization error:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      details: error.message
-    });
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error?.message || 'Unknown error occurred'
+      },
+      { status: 500 }
+    );
   }
 }
