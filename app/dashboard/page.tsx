@@ -14,6 +14,8 @@ export default function DashboardPage() {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
+    if (!searchParams) return;
+    
     // Check if a code parameter exists in the URL
     const code = searchParams.get('code');
 
