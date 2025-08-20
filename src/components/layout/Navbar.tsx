@@ -63,11 +63,12 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'text-sm font-medium text-muted-foreground transition-colors hover:text-foreground/90',
-                (pathname === item.href || (item.isHash && pathname === '/' && window.location.hash === `#${item.href.split('#')[1]}`)) 
+                'text-sm font-medium transition-colors',
+                (pathname === item.href || 
+                 (item.isHash && pathname === '/' && typeof window !== 'undefined' && window.location.hash === `#${item.href.split('#')[1]}`))
                   ? 'text-foreground font-semibold' 
-                  : 'hover:text-foreground/80',
-                'group relative py-2'
+                  : 'text-muted-foreground hover:text-foreground/90',
+                'group relative py-2 transition-colors duration-200'
               )}
               onClick={(e) => {
                 if (item.isHash && pathname === '/') {

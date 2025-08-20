@@ -21,14 +21,14 @@ const SecurityFeature = ({ icon: Icon, title, children }: { icon: React.Componen
 
 export default function SecurityPrivacyPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <main className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-sans">
-        <div className="text-center mb-16 space-y-6">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-tight tracking-wide">
+      <main className="max-w-5xl mx-auto py-16 px-4 sm:px-6 lg:px-8 font-sans">
+        <div className="text-center mb-20 space-y-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight">
             Security & Privacy
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed tracking-normal">
+          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Your trust is our top priority. We're committed to helping you manage your communication channels without keeping your data.
           </p>
         </div>

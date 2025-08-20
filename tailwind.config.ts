@@ -18,7 +18,7 @@ const config: Config = {
   	},
   	extend: {
   		fontFamily: {
-  				sans: ['Dosis', ...defaultTheme.fontFamily.sans],
+  				sans: ['Nunito', ...defaultTheme.fontFamily.sans],
   		},
   		letterSpacing: {
         	tight: '-0.015em',

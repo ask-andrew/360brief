@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Dosis } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import { isDevSession } from '@/lib/dev-auth';
 import Script from 'next/script';
@@ -10,12 +10,12 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 
-const dosis = Dosis({
+const nunito = Nunito({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
   weight: ['300', '400', '500', '600', '700'],
-  style: ['normal'],
+  style: ['normal', 'italic'],
   adjustFontFallback: true,
   fallback: ['system-ui', 'sans-serif'],
 });
@@ -90,7 +90,7 @@ export default function RootLayout({
   if (isLoading) {
     return (
       <html lang="en">
-        <body className={dosis.className}>
+        <body className={nunito.className}>
           <div className="flex h-screen w-full items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
           </div>
@@ -109,7 +109,7 @@ export default function RootLayout({
           onError={(e) => console.error('Failed to load Google Identity Services', e)}
         />
       </head>
-      <body className={`${dosis.variable} font-sans antialiased tracking-[0.01em]`}>
+      <body className={`${nunito.variable} font-sans antialiased tracking-[0.01em]`}>
         <div id="one-tap-container" className="fixed top-4 right-4 z-50"></div>
         <AuthProvider>
           {pathname?.startsWith('/dashboard') || 
