@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Navbar } from '@/components/layout/Navbar';
 import { ShieldCheck, Lock, EyeOff, Server, RefreshCw, Key, Database, Cpu, Shield, Mail, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -7,26 +8,30 @@ export const metadata: Metadata = {
 };
 
 const SecurityFeature = ({ icon: Icon, title, children }: { icon: React.ComponentType<{ className?: string }>, title: string, children: React.ReactNode }) => (
-  <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 h-full">
-    <div className="flex items-center gap-4 mb-5">
+  <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 h-full hover:border-blue-100">
+    <div className="flex items-center gap-4 mb-6">
       <div className="p-3 bg-blue-50 rounded-xl">
         <Icon className="w-7 h-7 text-blue-600" />
       </div>
-      <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+      <h3 className="text-xl font-semibold text-gray-900 tracking-wide">{title}</h3>
     </div>
-    <p className="text-gray-700 leading-relaxed">{children}</p>
+    <p className="text-gray-700 leading-relaxed tracking-normal">{children}</p>
   </div>
 );
 
 export default function SecurityPrivacyPage() {
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-12 space-y-4">
-        <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">Security & Privacy</h1>
-        <p className="text-xl text-gray-800 max-w-3xl mx-auto leading-relaxed">
-          Your trust is our top priority. We're committed to helping you manage your communication channels without keeping your data.
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <main className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-sans">
+        <div className="text-center mb-16 space-y-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-tight tracking-wide">
+            Security & Privacy
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed tracking-normal">
+            Your trust is our top priority. We're committed to helping you manage your communication channels without keeping your data.
+          </p>
+        </div>
 
       {/* Our Philosophy */}
       <div className="bg-blue-50 rounded-xl p-8 mb-16">
@@ -214,6 +219,7 @@ export default function SecurityPrivacyPage() {
           Contact Our Security Team
         </a>
       </div>
+      </main>
     </div>
   );
 }

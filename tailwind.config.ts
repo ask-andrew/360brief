@@ -18,8 +18,22 @@ const config: Config = {
   	},
   	extend: {
   		fontFamily: {
-  				sans: ['Inter', ...defaultTheme.fontFamily.sans],
+  				sans: ['Dosis', ...defaultTheme.fontFamily.sans],
   		},
+  		letterSpacing: {
+        	tight: '-0.015em',
+        	normal: '0.01em',
+        	wide: '0.025em',
+        	wider: '0.05em',
+        	widest: '0.1em',
+      	},
+      	lineHeight: {
+        	tight: '1.2',
+        	snug: '1.375',
+        	normal: '1.5',
+        	relaxed: '1.625',
+        	loose: '2',
+      	},
   		colors: {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
