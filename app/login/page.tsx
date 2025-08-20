@@ -117,19 +117,74 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
-      const next = searchParams?.get('next') || '/dashboard';
-      const redirectTo = `${window.location.origin}${next && next.startsWith('/') ? next : '/dashboard'}`;
-      const { error } = await supabase.auth.signInWithOAuth({
+      setError(null);
+      
+      // Clear any existing state
+      localStorage.removeItem('oauth_state');
+      
+      // Generate a secure random state parameter
+      const state = Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+      
+      // Store state in both localStorage and sessionStorage for redundancy
+      localStorage.setItem('oauth_state', state);
+      sessionStorage.setItem('oauth_state', state);
+      
+      // Set the redirect URL - use the OAuth callback page
+      const redirectTo = new URL('/oauth-callback.html', window.location.origin);
+      
+      console.log('Initiating Google OAuth with state:', state);
+      console.log('Redirect URL:', redirectTo.toString());
+      
+      // Start the OAuth flow with PKCE
+      const { error, data } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo },
+        options: {
+          redirectTo: redirectTo.toString(),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+            state: state,
+            // Include the redirect URL in the query params
+            redirect_uri: redirectTo.toString(),
+            // Force approval prompt to ensure we get a refresh token
+            approval_prompt: 'force'
+          },
+          scopes: 'openid profile email',
+          skipBrowserRedirect: true, // We'll handle the redirect manually
+          // Ensure we're using the PKCE flow
+          flowType: 'pkce'
+        },
       });
+      
       if (error) {
-        console.error('Google sign-in error:', error);
-        toast({ title: 'Google sign-in failed', description: error.message, variant: 'destructive' });
+        console.error('OAuth initialization error:', error);
+        // Clean up on error
+        localStorage.removeItem('oauth_state');
+        sessionStorage.removeItem('oauth_state');
+        throw error;
       }
+      
+      // Redirect manually to ensure PKCE flow works
+      if (data?.url) {
+        console.log('Redirecting to OAuth provider');
+        window.location.href = data.url;
+      } else {
+        throw new Error('Failed to get OAuth URL');
+      }
+      
     } catch (e: any) {
-      console.error('Google sign-in exception:', e);
-      toast({ title: 'Google sign-in failed', description: e.message || 'Unknown error', variant: 'destructive' });
+      console.error('Google sign-in error:', e);
+      // Clear the state cookie on error
+      document.cookie = 'oauth_state=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      
+      const errorMessage = e.error_description || e.message || 'Failed to initiate Google sign in';
+      setError(errorMessage);
+      toast({ 
+        title: 'Google sign-in failed', 
+        description: errorMessage, 
+        variant: 'destructive' 
+      });
     } finally {
       setIsLoading(false);
     }

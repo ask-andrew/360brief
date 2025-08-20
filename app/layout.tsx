@@ -8,6 +8,7 @@ import { isDevSession } from '@/lib/dev-auth';
 import Script from 'next/script';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { AppSidebar } from '@/components/layout/AppSidebar';
 
 const dosis = Dosis({
   subsets: ["latin"],
@@ -47,26 +48,37 @@ export default function RootLayout({
         '/email-preview',
         '/notification-demo',
         '/test',
+        '/dev/login',
+        '/dashboard',
+        '/auth/callback',
+        '/api/auth/callback'
       ];
-      const isPublic = publicPrefixes.some((p) => pathname === p || pathname?.startsWith(p + '/'));
+      
+      const isPublic = publicPrefixes.some((p) => 
+        pathname === p || 
+        pathname?.startsWith(p + '/') ||
+        pathname?.startsWith('/_next') ||
+        pathname?.startsWith('/favicon.ico')
+      );
+      
       if (isPublic) {
         setIsLoading(false);
         return;
       }
 
-      // Optional dev-only auth redirect (disabled unless explicitly enabled)
-      if (devAuthEnabled) {
-        const isLoggedIn = isDevSession();
-        const isDevLogin = pathname?.startsWith('/dev/login');
-        if (!isLoggedIn && !isDevLogin) {
-          router.push('/dev/login');
-          return;
-        }
-        if (isLoggedIn && isDevLogin) {
-          router.push('/dashboard');
-          return;
-        }
-      }
+      // Dev auth check is now handled by the middleware
+      // if (devAuthEnabled) {
+      //   const isLoggedIn = isDevSession();
+      //   const isDevLogin = pathname?.startsWith('/dev/login');
+      //   if (!isLoggedIn && !isDevLogin) {
+      //     router.push('/dev/login');
+      //     return;
+      //   }
+      //   if (isLoggedIn && isDevLogin) {
+      //     router.push('/dashboard');
+      //     return;
+      //   }
+      // }
 
       setIsLoading(false);
     };
@@ -100,7 +112,19 @@ export default function RootLayout({
       <body className={`${dosis.variable} font-sans antialiased tracking-[0.01em]`}>
         <div id="one-tap-container" className="fixed top-4 right-4 z-50"></div>
         <AuthProvider>
-          {children}
+          {pathname?.startsWith('/dashboard') || 
+           pathname?.startsWith('/analytics') || 
+           pathname?.startsWith('/briefs') ||
+           pathname?.startsWith('/preferences') ? (
+            <div className="flex h-screen overflow-hidden">
+              <AppSidebar />
+              <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                {children}
+              </main>
+            </div>
+          ) : (
+            <>{children}</>
+          )}
         </AuthProvider>
         <Toaster />
       </body>

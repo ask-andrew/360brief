@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Link from 'next/link';
+import useEmblaCarousel from 'embla-carousel-react';
+import * as Dialog from '@radix-ui/react-dialog';
 
 const STYLES = [
   {
@@ -15,7 +17,12 @@ const STYLES = [
     structure: 'BLUF (Bottom Line Up Front), status → action format',
     bestFor: 'Crisis management, operations-focused executives',
     preview:
-      'BLUF: Product launch on track. Risks: vendor delay. Actions: approve budget, unblock API dependency.'
+      'BLUF: Product launch on track. Risks: vendor delay. Actions: approve budget, unblock API dependency.',
+    examples: [
+      'BLUF: Q2 targets at risk. Actions: Reallocate 2 engineers to fix checkout flow by EOD.',
+      'Status: 3 blockers identified. Next: Escalate to VP Eng. ETA: 24h.',
+      'Action required: Sign off on budget by 5PM for vendor payment.'
+    ]
   },
   {
     key: 'management_consulting',
@@ -26,7 +33,12 @@ const STYLES = [
     structure: 'Executive summary + supporting analysis',
     bestFor: 'Strategy-focused leaders, board preparation',
     preview:
-      'Executive Summary: CSAT rising, churn risk localized to SMB. Drivers: onboarding gaps. Recommended: playbook revamp.'
+      'Executive Summary: CSAT rising, churn risk localized to SMB. Drivers: onboarding gaps. Recommended: playbook revamp.',
+    examples: [
+      'Strategic Insight: Customer segmentation reveals 80% of revenue from 20% of clients. Recommendation: Implement tiered service model.',
+      'Analysis: Support ticket resolution time increased by 35% QoQ. Root cause: New product complexity. Solution: Targeted training program.',
+      'Recommendation: Expand to mid-market segment. Rationale: 3.2x higher LTV than SMB with only 1.5x support cost.'
+    ]
   },
   {
     key: 'startup_velocity',
@@ -37,7 +49,12 @@ const STYLES = [
     structure: 'Metrics-driven with action bias',
     bestFor: 'Fast-moving founders, product leaders',
     preview:
-      'Growth: +12% WoW leads. Bottleneck: handoffs. Next: automate triage, ship weekly metrics digest.'
+      'Growth: +12% WoW leads. Bottleneck: handoffs. Next: automate triage, ship weekly metrics digest.',
+    examples: [
+      '🚀 15% more signups from new landing page! Next: A/B test CTA colors.',
+      '🔥 Hot lead from YC demo day! Following up tomorrow. Need pricing deck.',
+      '🔄 Shipped v1 of dashboard. Bugs: 3 minor. Next: User testing on Friday.'
+    ]
   },
   {
     key: 'newspaper_newsletter',
@@ -48,21 +65,96 @@ const STYLES = [
     structure: 'Headlines + feature story + news roundup',
     bestFor: 'Content-savvy executives, comprehensive coverage',
     preview:
-      'Headlines: Deal closed, release slipped. Feature: Q3 roadmap tradeoffs. Roundup: team wins + blockers.'
+      'Headlines: Deal closed, release slipped. Feature: Q3 roadmap tradeoffs. Roundup: team wins + blockers.',
+    examples: [
+      '📰 THE MORNING BRIEF: Enterprise deal closes at 2.1x ACV. Engineering delays push beta to Q3. Team Spotlight: Sales hits 142% of quota.',
+      'FEATURE: Behind the Pivot - How customer feedback reshaped our product roadmap. Key insights from 200+ user interviews.',
+      'IN DEPTH: Analyzing the 37% support ticket reduction. How automation and better docs moved the needle.'
+    ]
   }
 ] as const;
 
 type StyleKey = typeof STYLES[number]['key'];
 
+type StyleExampleProps = {
+  content: string;
+  index: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+};
+
+const StyleExample = ({ content, index, total, onPrev, onNext }: StyleExampleProps) => (
+  <div className="relative flex h-full flex-col">
+    <div className="mb-4 flex-1 overflow-auto rounded-lg border p-4 text-sm">
+      <div className="whitespace-pre-line">{content}</div>
+    </div>
+    <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <button 
+        onClick={onPrev}
+        className="flex items-center gap-1 rounded p-1 hover:bg-muted"
+        aria-label="Previous example"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        <span>Previous</span>
+      </button>
+      <span className="text-xs">Example {index + 1} of {total}</span>
+      <button 
+        onClick={onNext}
+        className="flex items-center gap-1 rounded p-1 hover:bg-muted"
+        aria-label="Next example"
+      >
+        <span>Next</span>
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  </div>
+);
+
+const StyleCard = ({ style, isSelected, onSelect }: { 
+  style: typeof STYLES[number]; 
+  isSelected: boolean;
+  onSelect: () => void;
+}) => (
+  <div 
+    className={cn(
+      'flex h-full flex-col rounded-lg border p-4 transition-colors',
+      isSelected ? 'border-primary/40 bg-primary/5' : 'border-border/50 hover:bg-muted/30'
+    )}
+  >
+    <h4 className="mb-2 text-lg font-semibold">{style.name}</h4>
+    <p className="mb-3 text-sm text-muted-foreground">{style.blurb}</p>
+    <div className="mt-auto">
+      <button
+        onClick={onSelect}
+        className={cn(
+          'w-full rounded-md px-3 py-2 text-sm font-medium transition-colors',
+          isSelected 
+            ? 'bg-primary text-primary-foreground' 
+            : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
+        )}
+      >
+        {isSelected ? 'Selected' : 'Select'}
+      </button>
+    </div>
+  </div>
+);
+
 export function BriefStyleSelectorSection() {
   const [selected, setSelected] = useState<StyleKey>('mission_brief');
   const [showCompare, setShowCompare] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState<StyleKey>('mission_brief');
+  const [selectedExampleIndex, setSelectedExampleIndex] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
 
   // load persisted selection
   useEffect(() => {
     try {
       const saved = localStorage.getItem('brief_style') as StyleKey | null;
-      if (saved) setSelected(saved);
+      if (saved) {
+        setSelected(saved);
+        setSelectedStyle(saved);
+      }
     } catch {}
   }, []);
 
@@ -74,6 +166,27 @@ export function BriefStyleSelectorSection() {
   }, [selected]);
 
   const selectedMeta = useMemo(() => STYLES.find(s => s.key === selected), [selected]);
+  const currentStyle = useMemo(() => 
+    STYLES.find(s => s.key === selectedStyle) || STYLES[0], 
+    [selectedStyle]
+  );
+
+  const navigateExample = useCallback((direction: 'prev' | 'next') => {
+    if (!currentStyle.examples) return;
+    
+    setSelectedExampleIndex(prev => {
+      if (direction === 'prev') {
+        return prev === 0 ? currentStyle.examples.length - 1 : prev - 1;
+      } else {
+        return prev === currentStyle.examples.length - 1 ? 0 : prev + 1;
+      }
+    });
+  }, [currentStyle.examples]);
+
+  const handleStyleSelect = (styleKey: StyleKey) => {
+    setSelectedStyle(styleKey);
+    setSelectedExampleIndex(0);
+  };
 
   return (
     <section className="py-20 bg-background" aria-labelledby="brief-style-heading">
@@ -133,68 +246,92 @@ export function BriefStyleSelectorSection() {
           </button>
         </div>
 
-        {showCompare && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          >
-            <div className="absolute inset-0 bg-black/50" onClick={() => setShowCompare(false)} />
-            <div className="relative z-10 w-full max-w-3xl rounded-2xl border bg-background p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Compare styles</h3>
-                <button
-                  onClick={() => setShowCompare(false)}
-                  className="rounded-md px-3 py-1 text-sm hover:bg-muted"
-                  aria-label="Close"
-                >
-                  Close
-                </button>
+        <Dialog.Root open={showCompare} onOpenChange={setShowCompare}>
+  <Dialog.Portal>
+    <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+    <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background p-6 shadow-2xl">
+      <div className="flex items-center justify-between mb-6">
+        <Dialog.Title className="text-2xl font-bold">Compare Communication Styles</Dialog.Title>
+        <Dialog.Close asChild>
+          <button className="rounded-full p-2 hover:bg-muted" aria-label="Close">
+            <X className="h-5 w-5" />
+          </button>
+        </Dialog.Close>
+      </div>
+      
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        {/* Style Selector */}
+        <div>
+          <h3 className="mb-4 text-lg font-semibold">Select a Style</h3>
+          <div className="space-y-3">
+            {STYLES.map((style) => (
+              <StyleCard 
+                key={style.key}
+                style={style}
+                isSelected={selectedStyle === style.key}
+                onSelect={() => handleStyleSelect(style.key)}
+              />
+            ))}
+          </div>
+        </div>
+        
+        {/* Style Details */}
+        <div className="md:col-span-2">
+          <div className="mb-6 rounded-lg border p-6">
+            <h3 className="mb-4 text-xl font-bold">{currentStyle.name}</h3>
+            <p className="mb-4 text-muted-foreground">{currentStyle.philosophy}</p>
+            
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground">Tone</h4>
+                <p>{currentStyle.tone}</p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr className="bg-muted/50 text-left">
-                      <th className="sticky left-0 z-10 bg-muted/50 p-3 font-semibold">Style</th>
-                      <th className="p-3 font-semibold">Core Philosophy</th>
-                      <th className="p-3 font-semibold">Tone</th>
-                      <th className="p-3 font-semibold">Structure</th>
-                      <th className="p-3 font-semibold">Best For</th>
-                      <th className="p-3" aria-hidden></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {STYLES.map((s, idx) => (
-                      <tr key={s.key} className={cn(idx % 2 === 0 ? 'bg-background' : 'bg-muted/20')}> 
-                        <td className="sticky left-0 z-10 bg-inherit p-3 font-medium">{s.name}</td>
-                        <td className="p-3 align-top text-foreground/90">{s.philosophy}</td>
-                        <td className="p-3 align-top text-foreground/90">{s.tone}</td>
-                        <td className="p-3 align-top text-foreground/90">{s.structure}</td>
-                        <td className="p-3 align-top text-foreground/90">{s.bestFor}</td>
-                        <td className="p-3 text-right">
-                          <button
-                            onClick={() => { setSelected(s.key); setShowCompare(false); }}
-                            className={cn(
-                              'inline-flex items-center justify-center rounded-md px-3 py-2 text-xs font-medium',
-                              selected === s.key
-                                ? 'bg-primary text-primary-foreground'
-                                : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
-                            )}
-                          >
-                            {selected === s.key ? 'Selected' : 'Choose'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground">Best For</h4>
+                <p>{currentStyle.bestFor}</p>
               </div>
-              <div className="mt-4 rounded-md bg-muted/30 p-3 text-xs text-muted-foreground">
-                Tip: You can also preview the writing style in the cards above and pick "Use this style".
+              <div className="col-span-2">
+                <h4 className="text-sm font-medium text-muted-foreground">Structure</h4>
+                <p>{currentStyle.structure}</p>
+              </div>
+            </div>
+            
+            {/* Example Carousel */}
+            <div>
+              <h4 className="mb-3 text-sm font-medium text-muted-foreground">Example</h4>
+              <div className="rounded-lg border p-4">
+                <StyleExample 
+                  content={currentStyle.examples[selectedExampleIndex]}
+                  index={selectedExampleIndex}
+                  total={currentStyle.examples.length}
+                  onPrev={() => navigateExample('prev')}
+                  onNext={() => navigateExample('next')}
+                />
               </div>
             </div>
           </div>
-        )}
+          
+          <div className="flex justify-end gap-3">
+            <Dialog.Close asChild>
+              <button className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted">
+                Cancel
+              </button>
+            </Dialog.Close>
+            <button
+              onClick={() => {
+                setSelected(selectedStyle);
+                setShowCompare(false);
+              }}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Use {currentStyle.name} Style
+            </button>
+          </div>
+        </div>
+      </div>
+    </Dialog.Content>
+  </Dialog.Portal>
+</Dialog.Root>
       </div>
     </section>
   );

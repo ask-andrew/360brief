@@ -7,10 +7,11 @@ import { Menu, X, BookOpen } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const navItems = [
-  { name: 'Features', href: '#features' },
-  { name: 'How It Works', href: '#how-it-works' },
-  { name: 'Pricing', href: '/pricing' },
-  { name: "Why I'm Building This", href: '/why-i-built-this' },
+  { name: 'Features', href: '/#features', isHash: true },
+  { name: 'How It Works', href: '/#how-it-works', isHash: true },
+  { name: 'Pricing', href: '/pricing', isHash: false },
+  { name: 'Security', href: '/security', isHash: false },
+  { name: "Why I'm Building This", href: '/why-i-built-this', isHash: false },
 ];
 
 export function Navbar() {
@@ -63,9 +64,21 @@ export function Navbar() {
               href={item.href}
               className={cn(
                 'text-sm font-medium text-muted-foreground transition-colors hover:text-foreground/90',
-                pathname === item.href ? 'text-foreground font-semibold' : 'hover:text-foreground/80',
+                (pathname === item.href || (item.isHash && pathname === '/' && window.location.hash === `#${item.href.split('#')[1]}`)) 
+                  ? 'text-foreground font-semibold' 
+                  : 'hover:text-foreground/80',
                 'group relative py-2'
               )}
+              onClick={(e) => {
+                if (item.isHash && pathname === '/') {
+                  e.preventDefault();
+                  const targetId = item.href.split('#')[1];
+                  const element = document.getElementById(targetId);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }
+              }}
             >
               {item.name}
               <span className={cn(
@@ -141,7 +154,17 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className="block rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:bg-accent"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={(e) => {
+                if (item.isHash && pathname === '/') {
+                  e.preventDefault();
+                  const targetId = item.href.split('#')[1];
+                  const element = document.getElementById(targetId);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }
+                setMobileMenuOpen(false);
+              }}
             >
               {item.name}
             </Link>

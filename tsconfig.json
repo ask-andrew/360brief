@@ -21,12 +21,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["node"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"],
-  "typeRoots": [
-    "./node_modules/@types",
-    "./src/types"
-  ]
+  "exclude": ["node_modules"]
 }

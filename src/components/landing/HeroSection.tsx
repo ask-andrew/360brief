@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowRight, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronRight, Shield } from 'lucide-react';
 
 export function HeroSection() {
   return (
@@ -14,8 +14,18 @@ export function HeroSection() {
       <div className="container relative py-20 md:py-32 lg:py-40">
         <div className="mx-auto max-w-4xl text-center">
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary ring-1 ring-inset ring-primary/20">
-            🚀 Now in beta — early access
+          <div className="flex flex-col items-center gap-4 mb-6 sm:flex-row sm:justify-center">
+            <div className="inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary ring-1 ring-inset ring-primary/20">
+              🚀 Now in beta — early access
+            </div>
+            <Link 
+              href="/security" 
+              className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+            >
+              <Shield className="mr-1.5 h-4 w-4 text-primary" />
+              Security & Privacy
+              <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
           
           {/* Main heading */}

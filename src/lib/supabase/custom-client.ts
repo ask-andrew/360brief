@@ -24,9 +24,13 @@ const setCookie = (name: string, value: string, days = 7) => {
   const date = new Date();
   date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
   const expires = `expires=${date.toUTCString()}`;
+  
+  // CRITICAL FIX: The `httponly` flag has been removed. This is because
+  // the client-side JavaScript needs to read this cookie to complete the
+  // PKCE flow, and `httponly` prevents that.
   document.cookie = `${name}=${value}; ${expires}; path=/; samesite=lax${
     process.env.NODE_ENV === 'production' ? '; secure' : ''
-  }; httponly`;
+  }`;
 };
 
 // Simple cookie remover
