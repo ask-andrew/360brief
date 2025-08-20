@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { PythonShell } from 'python-shell';
 import path from 'path';
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { messages, projectId } = await request.json();
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       error += err.toString();
     });
 
-    return new Promise((resolve) => {
+    return new Promise<NextResponse>((resolve) => {
       pyshell.end(async function (err) {
         if (err || error) {
           console.error('PythonShell error:', err || error);
@@ -68,12 +68,12 @@ export async function POST(request: Request) {
         }
       });
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Summarization error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
-        details: error?.message || 'Unknown error occurred'
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
       },
       { status: 500 }
     );
