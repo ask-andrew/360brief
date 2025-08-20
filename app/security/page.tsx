@@ -7,23 +7,23 @@ export const metadata: Metadata = {
 };
 
 const SecurityFeature = ({ icon: Icon, title, children }: { icon: React.ComponentType<{ className?: string }>, title: string, children: React.ReactNode }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-    <div className="flex items-center gap-3 mb-4">
-      <div className="p-2 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 text-blue-600" />
+  <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 h-full">
+    <div className="flex items-center gap-4 mb-5">
+      <div className="p-3 bg-blue-50 rounded-xl">
+        <Icon className="w-7 h-7 text-blue-600" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
     </div>
-    <p className="text-gray-600">{children}</p>
+    <p className="text-gray-700 leading-relaxed">{children}</p>
   </div>
 );
 
 export default function SecurityPrivacyPage() {
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Security & Privacy</h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+    <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-12 space-y-4">
+        <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">Security & Privacy</h1>
+        <p className="text-xl text-gray-800 max-w-3xl mx-auto leading-relaxed">
           Your trust is our top priority. We're committed to helping you manage your communication channels without keeping your data.
         </p>
       </div>
