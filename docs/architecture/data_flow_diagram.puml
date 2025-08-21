@@ -1,0 +1,63 @@
+@startuml 360Brief - Data Flow Diagram
+
+title 360Brief - Data Flow
+
+top to bottom direction
+
+' Define external entities
+actor "Executive User" as user
+entity "Email Provider" as email
+entity "Calendar Service" as calendar
+entity "Project Tools" as tools
+
+' Define processes
+rectangle "360Brief System" {
+    (1. Authentication) as auth
+    (2. Data Collection) as collect
+    (3. Data Processing) as process
+    (4. Digest Generation) as generate
+    (5. Delivery) as deliver
+}
+
+' Define data stores
+database "User Data" as user_db
+database "Derived Insights/Cache" as data_db
+
+' Define data flows
+user --> auth : Login Credentials
+user <-- auth : Auth Token
+
+email --> collect : Raw Emails
+calendar --> collect : Calendar Events
+tools --> collect : Project Updates
+
+collect --> process : Raw Data
+process --> data_db : Processed Data
+data_db --> generate : Structured Data
+
+generate --> deliver : Formatted Digest
+deliver --> user : Executive Briefing
+
+' Add notes
+note right of collect
+  == Data Collection ==
+  • Pulls from multiple sources
+  • Handles rate limiting
+  • Normalizes data formats
+end note
+
+note right of process
+  == Data Processing ==
+  • Applies business rules
+  • Identifies key information
+  • Categorizes content
+end note
+
+note right of data_db
+  == Privacy-First Storage ==
+  • Stores derived insights and cache only
+  • No long-term storage of raw content
+  • Process-and-discard for sensitive data
+end note
+
+@enduml

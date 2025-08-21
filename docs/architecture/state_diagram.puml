@@ -1,0 +1,61 @@
+@startuml 360Brief - State Diagram
+
+title 360Brief - Digest Generation State Machine
+
+skinparam state {
+  StartColor LightBlue
+  EndColor Red
+  BackgroundColor LightGray
+  BorderColor DarkSlateGray
+  ArrowColor DarkSlateGray
+}
+
+[*] --> Idle
+
+state "Idle" as idle : Waiting for trigger
+state "Authenticating" as auth : Validating credentials
+state "Collecting Data" as collect : Fetching from sources
+state "Processing" as process : Analyzing content
+state "Generating" as generate : Creating digest
+state "Delivering" as deliver : Sending to user
+state "Error" as error : Handling failure
+state "Completed" as done : Digest ready
+
+idle --> auth : Manual/Auto trigger
+auth --> collect : Success
+auth --> error : Invalid credentials
+
+collect --> process : Data collected
+collect --> error : Connection failed
+
+process --> generate : Processing complete
+process --> error : Processing failed
+
+generate --> deliver : Digest generated
+generate --> error : Generation failed
+
+deliver --> done : Delivery successful
+deliver --> error : Delivery failed
+
+error --> idle : Retry
+error --> done : Abort
+
+done --> idle : Reset
+
+' Add notes
+note right of idle
+  System waits for either:
+  • Scheduled time
+  • Manual trigger
+  • New data event
+end note
+
+note right of process
+  Processing includes:
+  • Text analysis
+  • Priority scoring
+  • Categorization
+  • Summarization
+end note
+
+@enduml

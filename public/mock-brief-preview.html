@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360 Brief - Preview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.24.8/antd.min.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 40px 20px;
+            color: #1a1a1a;
+            line-height: 1.5715;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .header h1 {
+            color: #1a1a1a;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .header-underline {
+            height: 4px;
+            width: 80px;
+            background-color: #1890ff;
+            margin: 12px auto 0;
+            border-radius: 2px;
+        }
+        .brief-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .brief-header {
+            padding: 16px 24px;
+            border-bottom: 2px solid #f0f0f0;
+            background-color: #fafafa;
+        }
+        .brief-title {
+            font-weight: 600;
+            margin: 0;
+        }
+        .brief-date {
+            color: #8c8c8c;
+            font-size: 0.9em;
+        }
+        .summary-section {
+            padding: 16px 24px;
+            background-color: #fff8f0;
+            border-bottom: 1px solid #ffe7ba;
+        }
+        .summary-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section {
+            padding: 16px 24px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .section-title {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .item {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            gap: 12px;
+        }
+        .item:last-child {
+            border-bottom: none;
+        }
+        .item-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .email-icon { background-color: #e6f7ff; color: #1890ff; }
+        .calendar-icon { background-color: #f6ffed; color: #52c41a; }
+        .item-content {
+            flex: 1;
+        }
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .item-title {
+            font-weight: 600;
+            margin: 0;
+        }
+        .tag {
+            display: inline-block;
+            padding: 0 7px;
+            font-size: 12px;
+            line-height: 20px;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+        .tag-high { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; }
+        .tag-medium { background: #fff7e6; color: #d46b08; border: 1px solid #ffd591; }
+        .tag-low { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+        .tag-action { background: #fff0f6; color: #c41d7f; border: 1px solid #ffadd2; margin-left: 8px; }
+        .item-meta {
+            color: #8c8c8c;
+            font-size: 0.9em;
+            margin-bottom: 4px;
+        }
+        .item-time {
+            color: #8c8c8c;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .action-item {
+            padding: 8px 0;
+            display: flex;
+            gap: 8px;
+        }
+        .action-number {
+            color: #1890ff;
+            font-weight: 600;
+            min-width: 20px;
+        }
+        .trends-section {
+            background-color: #f0f9ff;
+            border-top: 1px solid #e6f7ff;
+        }
+        .trend-item {
+            padding: 4px 0;
+            display: flex;
+            gap: 8px;
+        }
+        .footer {
+            padding: 12px 24px;
+            background-color: #fafafa;
+            border-top: 1px solid #f0f0f0;
+            text-align: right;
+            color: #8c8c8c;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="images/360logo.svg" alt="360 Brief" style="height: 40px; margin-bottom: 16px;">
+            <h1>Your 360 Brief</h1>
+            <div class="header-underline"></div>
+        </div>
+        
+        <div class="brief-container">
+            <!-- Header -->
+            <div class="brief-header">
+                <h2 class="brief-title">MISSION BRIEF</h2>
+                <div class="brief-date">August 12-13, 2025</div>
+            </div>
+            
+            <!-- Summary -->
+            <div class="summary-section">
+                <div class="summary-title">
+                    <i class="fas fa-exclamation-circle" style="color: #fa8c16;"></i>
+                    EXECUTIVE SUMMARY
+                </div>
+                <p>Critical updates requiring immediate attention on Q3 product launch and team capacity issues.</p>
+            </div>
+            
+            <!-- Priority Items -->
+            <div class="section">
+                <h3 class="section-title">PRIORITY ITEMS</h3>
+                
+                <!-- Item 1 -->
+                <div class="item">
+                    <div class="item-icon email-icon">
+                        <i class="far fa-envelope"></i>
+                    </div>
+                    <div class="item-content">
+                        <div class="item-header">
+                            <h4 class="item-title">URGENT: Q3 Launch Blocked by Engineering</h4>
+                            <span class="tag tag-high">High</span>
+                            <span class="tag tag-action">Action Required</span>
+                        </div>
+                        <div class="item-meta">From: cto@company.com</div>
+                        <div class="item-time">
+                            <i class="far fa-clock"></i>
+                            August 13, 2025 • 09:15 AM
+                        </div>
+                        <p>Engineering reports critical path dependencies that could delay Q3 launch by 2 weeks. Team needs executive decision on scope adjustment.</p>
+                    </div>
+                </div>
+                
+                <!-- Item 2 -->
+                <div class="item">
+                    <div class="item-icon calendar-icon">
+                        <i class="far fa-calendar-alt"></i>
+                    </div>
+                    <div class="item-content">
+                        <div class="item-header">
+                            <h4 class="item-title">Q3 Launch Review with Leadership</h4>
+                            <span class="tag tag-high">High</span>
+                            <span class="tag tag-action">Action Required</span>
+                        </div>
+                        <div class="item-meta">Location: Conference Room A</div>
+                        <div class="item-time">
+                            <i class="far fa-clock"></i>
+                            August 13, 2025 • 2:00 PM • 60 min
+                        </div>
+                        <p>Final review of Q3 launch plan with all department heads. Must present updated timeline and address concerns from engineering.</p>
+                    </div>
+                </div>
+                
+                <!-- Item 3 -->
+                <div class="item">
+                    <div class="item-icon email-icon">
+                        <i class="far fa-envelope"></i>
+                    </div>
+                    <div class="item-content">
+                        <div class="item-header">
+                            <h4 class="item-title">Budget Approval: Engineering Headcount</h4>
+                            <span class="tag tag-high">High</span>
+                            <span class="tag tag-action">Action Required</span>
+                        </div>
+                        <div class="item-meta">From: hr@company.com</div>
+                        <div class="item-time">
+                            <i class="far fa-clock"></i>
+                            August 12, 2025 • 3:45 PM
+                        </div>
+                        <p>HR requests approval for 2 additional senior engineers to address capacity issues. Budget impact: $320k/year.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Items -->
+            <div class="section">
+                <h3 class="section-title">REQUIRED ACTIONS</h3>
+                <div class="action-item">
+                    <div class="action-number">1.</div>
+                    <div>Approve/Deny engineering headcount request by EOD</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-number">2.</div>
+                    <div>Review and provide feedback on Q3 launch timeline adjustments</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-number">3.</div>
+                    <div>Prepare talking points for board meeting materials review</div>
+                </div>
+            </div>
+            
+            <!-- Trends -->
+            <div class="section trends-section">
+                <h3 class="section-title">TRENDS & PATTERNS</h3>
+                <div class="trend-item">
+                    <div>•</div>
+                    <div>3+ mentions of engineering capacity issues across communications</div>
+                </div>
+                <div class="trend-item">
+                    <div>•</div>
+                    <div>2 pending budget approvals requiring attention</div>
+                </div>
+                <div class="trend-item">
+                    <div>•</div>
+                    <div>Increased urgency around Q3 launch timeline</div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                Generated by 360Brief • August 13, 2025
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px; text-align: center; color: #666; font-size: 0.9em;">
+            <p>This is a preview of what your 360 Brief will look like.</p>
+            <p>Your actual brief will include personalized insights from your connected accounts.</p>
+        </div>
+    </div>
+</body>
+</html>

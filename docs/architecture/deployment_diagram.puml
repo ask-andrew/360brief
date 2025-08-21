@@ -1,0 +1,85 @@
+@startuml 360Brief - Deployment Diagram
+
+skinparam componentStyle uml2
+skinparam monochrome true
+skinparam nodesep 20
+skinparam ranksep 20
+
+title 360Brief - Deployment Architecture
+
+' Client Layer
+rectangle "Client Layer" as clients {
+  [Web Browser] as browser
+  [Mobile App] as mobile
+}
+
+' CDN Layer
+rectangle "CDN" as cdn {
+  [Netlify CDN] as netlify_cdn
+}
+
+' Web Server Layer
+rectangle "Web Server" as web {
+  [Next.js App] as nextjs
+  [API Routes] as api
+}
+
+' Serverless Layer
+rectangle "Serverless" as serverless {
+  [Auth0] as auth0
+  [Netlify Functions] as netlify_fn
+}
+
+' Database Layer
+rectangle "Database" as db {
+  [Supabase] as supabase
+  [PostgreSQL] as postgres
+  [Auth] as supabase_auth
+  [Storage] as storage
+}
+
+' External Services
+rectangle "External Services" as external {
+  [Gmail API] as gmail
+  [Google Calendar] as calendar
+  [Slack API] as slack
+}
+
+' Define relationships
+browser --> netlify_cdn : HTTPS
+mobile --> netlify_cdn : HTTPS
+
+' Internal connections
+netlify_cdn --> nextjs : HTTPS
+nextjs --> api : Internal
+api --> auth0 : OAuth 2.0
+api --> netlify_fn : Invokes
+api --> supabase : REST/GraphQL
+
+' Database connections
+supabase --> postgres : Manages
+supabase --> supabase_auth : Handles Auth
+supabase --> storage : Manages
+
+' External service connections
+netlify_fn --> gmail : API Calls
+netlify_fn --> calendar : API Calls
+netlify_fn --> slack : API Calls
+netlify_fn --> supabase : Data Access
+
+' Add notes
+note right of netlify_cdn
+  == CDN ==
+  • Global content delivery
+  • DDoS protection
+  • SSL termination
+end note
+
+note right of supabase
+  == Database ==
+  • Multi-tenant architecture
+  • Automatic backups
+  • Point-in-time recovery
+end note
+
+@enduml

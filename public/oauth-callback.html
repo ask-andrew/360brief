@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<!-- This file is auto-generated. Do not edit directly. Edit oauth-callback.template.html instead. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Completing Sign In - 360Brief</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React and ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f9fafb;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      max-width: 28rem;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="root" class="p-4">
+    <!-- React will render here -->
+  </div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // These values are injected during build from environment variables
+    const SUPABASE_URL = 'https://cqejejllmbzzsvtbyuke.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxZWplamxsbWJ6enN2dGJ5dWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4NDYzOTUsImV4cCI6MjA2OTQyMjM5NX0.gQlHumFzL-PSl3GWb2NZeAZryWkGE7WyWYvbOcEwQb0';
+
+    // Initialize Supabase client with PKCE flow
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+        storage: {
+          getItem: (key) => {
+            // Try to get from URL parameters first (for PKCE)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has(key)) {
+              return urlParams.get(key);
+            }
+            // Fall back to sessionStorage then localStorage
+            return sessionStorage.getItem(key) || localStorage.getItem(key);
+          },
+          setItem: (key, value) => {
+            // Store in both sessionStorage and localStorage for reliability
+            sessionStorage.setItem(key, value);
+            localStorage.setItem(key, value);
+          },
+          removeItem: (key) => {
+            sessionStorage.removeItem(key);
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    });
+    
+    // Debug logging
+    console.log('Supabase client initialized with URL:', SUPABASE_URL);
+
+    function AuthCallback() {
+      const [status, setStatus] = useState('processing');
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        async function handleCallback() {
+          try {
+            console.log('Starting OAuth callback handling...');
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Log all URL parameters for debugging
+            console.log('URL Parameters:', Object.fromEntries(urlParams.entries()));
+            
+            // Check for OAuth errors first
+            const errorParam = urlParams.get('error');
+            const errorDescription = urlParams.get('error_description');
+            
+            if (errorParam) {
+              console.error('OAuth error:', { error: errorParam, description: errorDescription });
+              throw new Error(errorDescription || `Authentication error: ${errorParam}`);
+            }
+
+            // Get state from URL and storage
+            const state = urlParams.get('state');
+            const storedState = localStorage.getItem('oauth_state');
+            
+            console.log('State validation:', { state, storedState });
+            
+            // Clean up the state regardless of success/failure
+            localStorage.removeItem('oauth_state');
+            
+            // Get the authentication code
+            const code = urlParams.get('code');
+            if (!code) {
+              throw new Error('No authentication code found in the URL.');
+            }
+
+            console.log('Exchanging code for session...');
+            
+            try {
+              // First, try to exchange the code for a session
+              const { error: exchangeError, data } = await supabase.auth.exchangeCodeForSession(code);
+              
+              if (exchangeError) {
+                console.error('Session exchange error:', exchangeError);
+                throw exchangeError;
+              }
+              
+              console.log('Session exchange successful:', data);
+              
+              // Success - redirect to dashboard
+              setStatus('success');
+              
+              // Force a session refresh
+              const { data: { session } } = await supabase.auth.getSession();
+              console.log('Current session:', session);
+              
+              // Redirect to dashboard after a short delay
+              setTimeout(() => {
+                window.location.href = '/dashboard';
+              }, 1500);
+              
+            } catch (exchangeErr) {
+              console.error('Error during session exchange:', exchangeErr);
+              
+              // If we get here, the exchange failed - try to sign in with OAuth again
+              console.log('Attempting to sign in with OAuth...');
+              const { error: oauthError } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                  redirectTo: window.location.origin + '/dashboard',
+                  skipBrowserRedirect: true
+                }
+              });
+              
+              if (oauthError) {
+                console.error('OAuth sign-in error:', oauthError);
+                throw oauthError;
+              }
+              
+              // If we get here, the OAuth flow will redirect the user
+              return;
+            }
+            
+          } catch (err) {
+            console.error('Authentication error:', err);
+            setError(err.message || 'An unknown error occurred');
+            setStatus('error');
+            
+            // Clean up on error
+            localStorage.removeItem('oauth_state');
+          }
+        }
+
+        handleCallback();
+      }, []);
+
+      const handleRetry = () => {
+        window.location.href = '/signin';
+      };
+
+      if (status === 'success') {
+        return (
+          <div className="card bg-white p-8 rounded-lg shadow-sm text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Successfully Signed In</h1>
+            <p className="text-gray-600 mb-6">Redirecting you to your dashboard...</p>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-green-500 h-2.5 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        );
+      }
+
+      if (status === 'error') {
+        return (
+          <div className="card bg-white p-8 rounded-lg shadow-sm text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Sign In Failed</h1>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={handleRetry}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out"
+            >
+              Return to Sign In
+            </button>
+          </div>
+        );
+      }
+
+      // Default loading state
+      return (
+        <div className="card bg-white p-8 rounded-lg shadow-sm text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Completing Sign In</h1>
+          <p className="text-gray-600">Please wait while we verify your session...</p>
+        </div>
+      );
+    }
+
+    // Render the React app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AuthCallback />);
+  </script>
+</body>
+</html>

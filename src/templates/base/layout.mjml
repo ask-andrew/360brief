@@ -1,0 +1,47 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="'Helvetica Neue', Arial, sans-serif" />
+      <mj-text font-weight="400" font-size="16px" color="#000000" line-height="24px" />
+      <mj-section padding="0px" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .status-critical { color: #DC2626; }
+      .status-warning { color: #D97706; }
+      .status-normal { color: #059669; }
+      .status-neutral { color: #4B5563; }
+      .footer a { color: #6B7280; text-decoration: none; }
+    </mj-style>
+  </mj-head>
+  <mj-body background-color="#f3f4f6">
+    <!-- Header Section -->
+    <mj-section padding="20px 0" padding-bottom="0">
+      <mj-column>
+        <mj-text align="center" padding="10px 25px" font-size="24px" font-weight="700" color="#111827">
+          360Brief
+        </mj-text>
+        <mj-divider border-width="1px" border-color="#E5E7EB" padding="10px 0 0 0" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Main Content -->
+    <mj-wrapper padding="20px 0">
+      <mj-section background-color="#ffffff" padding="20px 0">
+        <mj-column>
+          {{{content}}}
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+
+    <!-- Footer -->
+    <mj-section padding="20px 0 40px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#6B7280" line-height="20px" class="footer">
+          {{year}} 360Brief. All rights reserved.<br />
+          <a href="{{unsubscribeUrl}}">Unsubscribe</a> | 
+          <a href="{{preferencesUrl}}">Email Preferences</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -1,0 +1,48 @@
+@startuml 360Brief - User Authentication and Data Flow
+
+title User Authentication and Data Flow
+
+actor User
+participant "Frontend" as FE
+participant "Auth0" as AUTH
+participant "API Routes" as API
+participant "UnifiedDataService" as UDS
+participant "Supabase" as DB
+participant "External Services" as EXT
+
+== Authentication Flow ==
+User -> FE: 1. Opens App
+FE -> AUTH: 2. Redirects to Login
+AUTH --> FE: 3. Returns Auth Token
+FE -> API: 4. Sends Token
+API -> AUTH: 5. Validates Token
+AUTH --> API: 6. Returns User Info
+API -> DB: 7. Checks/Updates User Data
+DB --> API: 8. Returns User Settings
+API --> FE: 9. Returns Session Data
+
+== Data Loading Flow ==
+User -> FE: 1. Requests Digest
+FE -> API: 2. GET /api/brief-data
+API -> UDS: 3. Get User Data
+UDS -> DB: 4. Check Cache (Cached?)
+
+alt Cached Data Exists
+    DB --> UDS: 5a. Returns Cached Data
+else No Cache
+    UDS -> EXT: 5b. Fetch from Gmail
+    EXT --> UDS: 6b. Returns Emails
+    UDS -> EXT: 7b. Fetch from Calendar
+    EXT --> UDS: 8b. Returns Events
+    UDS -> UDS: 9b. Process & Aggregate
+    UDS -> DB: 10b. Cache Results
+    DB --> UDS: 11b. Confirms Cache
+end
+
+UDS --> API: 12. Returns Processed Data
+API -> UDS: 13. Generate Digest
+UDS --> API: 14. Returns Digest
+API --> FE: 15. Returns Digest Data
+FE -> FE: 16. Renders Digest View
+
+@enduml

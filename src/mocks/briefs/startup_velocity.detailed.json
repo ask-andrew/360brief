@@ -1,0 +1,53 @@
+{
+  "userId": "sarah.martinez@example.com",
+  "generatedAt": "2025-08-10T16:30:00Z",
+  "style": "startup_velocity",
+  "version": "1.0",
+  "audience": { "to": ["Sarah Martinez"], "from": "AI Chief of Staff" },
+  "subject": "\uD83D\uDEA8 TechFlow Crisis Mode - Time to Show What We're Made Of",
+  "tldr": "Major outage at biggest client; renewal at risk. Move fast with a 6-hour action plan and $40K budget to protect $2.4M ARR.",
+  "context": {
+    "client": { "name": "TechFlow Corp", "revenueARR": 2400000, "revenueSharePct": 20 },
+    "usersAffected": 15000,
+    "outageDurationHours": 6,
+    "reputationalRiskNote": "CEO reportedly evaluating alternatives",
+    "scenario": "Crisis response will determine renewal"
+  },
+  "startupVelocity": {
+    "velocityCheck": "We're in a defining moment. This crisis will either break us or make us legendary.",
+    "whatIsBroken": {
+      "technical": [
+        "DB cluster went down at 03:47; cascading failures",
+        "15,000 users unable to access platform",
+        "2-hour fix estimate repeated; credibility at risk"
+      ],
+      "relationship": [
+        "CTO David Kim hasn't responded to last 3 messages",
+        "CEO reportedly evaluating alternatives",
+        "Renewal probability fell from 85% to ~40%"
+      ],
+      "team": [
+        "Eng pulling all-nighter (Mike leading)",
+        "AM Lisa coordinating outreach and retention plan",
+        "Team energy high despite pressure"
+      ]
+    },
+    "nextSixHours": [
+      { "timeLabel": "09:00 - Emergency War Room Call", "participants": ["You", "TechFlow CTO", "Mike (Eng)", "AI CoS"], "goal": "Stop the bleeding and align on fix", "prep": "Damage report 15 minutes before" },
+      { "timeLabel": "10:00 - Internal Sprint Planning", "goal": "RCA, prevention measures, timeline reality check" },
+      { "timeLabel": "11:00 - Customer Love Strategy Session", "goal": "Retention package, CS plan, legal review of credits" },
+      { "timeLabel": "12:00 - CEO Sync (The Big One)", "goal": "Situation briefing, financial impact, green-light resources" }
+    ],
+    "budget": {
+      "total": 40000,
+      "items": [
+        { "label": "Emergency Technical Package", "amount": 15000, "bullets": ["Extra infra capacity", "DB recovery specialists", "Engineering overtime"] },
+        { "label": "Customer Retention Investment", "amount": 25000, "bullets": ["Service credits", "Intensive AM support"] }
+      ],
+      "simpleROI": "Spend $40K to protect $2.4M ARR"
+    },
+    "whyThisCouldBeAmazing": "Handled right, TechFlow becomes our biggest advocate and a crisis response case study.",
+    "windowEmphasisNote": "First 48 hours define long-term outcome.",
+    "closingPrompt": "Ready to authorize spend and join the 09:00 call?"
+  }
+}

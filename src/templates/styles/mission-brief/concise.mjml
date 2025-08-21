@@ -1,0 +1,122 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="'Helvetica Neue', Arial, sans-serif" />
+      <mj-text font-weight="400" font-size="16px" color="#000000" line-height="24px" />
+      <mj-section padding="0px" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .footer a { color: #6B7280; text-decoration: none; }
+    </mj-style>
+  </mj-head>
+  <mj-body background-color="#f3f4f6">
+    <!-- Header Section -->
+    <mj-section padding="20px 0" padding-bottom="0">
+      <mj-column>
+        <mj-text align="center" padding="10px 25px" font-size="24px" font-weight="700" color="#111827">
+          360Brief
+        </mj-text>
+        <mj-divider border-width="1px" border-color="#E5E7EB" padding="10px 0 0 0" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Main Content -->
+    <mj-section padding="0 0 0 0">
+      <mj-column>
+        <!-- Subject -->
+        <mj-text font-size="18px" font-weight="700" padding="10px 25px">
+          {{subject}}
+        </mj-text>
+        <mj-divider border-width="1px" border-color="#E5E7EB" padding="10px 0" />
+
+        <!-- Situation -->
+        <mj-section padding="0 25px 10px">
+          <mj-column>
+            <mj-text font-weight="700" font-size="16px" padding-bottom="5px">SITUATION</mj-text>
+            <mj-text padding="0 0 20px 0" line-height="24px">
+              {{situation.summary}}
+            </mj-text>
+          </mj-column>
+        </mj-section>
+
+        <!-- Action Required -->
+        <mj-section background-color="#FEF2F2" padding="15px 25px" border-radius="6px">
+          <mj-column>
+            <mj-text font-weight="700" color="#B91C1C" padding-bottom="5px">ACTION REQUIRED</mj-text>
+            <mj-text padding="0" line-height="24px">
+              {{action.description}}
+            </mj-text>
+            {{#if action.deadline}}
+            <mj-text padding="8px 0 0 0" font-size="14px">
+              <span style="font-weight: 600;">Deadline:</span> {{action.deadline}}
+            </mj-text>
+            {{/if}}
+          </mj-column>
+        </mj-section>
+
+        <!-- Impact -->
+        {{#if impact}}
+        <mj-section padding="15px 25px 0">
+          <mj-column>
+            <mj-text font-weight="700" padding-bottom="5px">IMPACT</mj-text>
+            <mj-text padding="0" line-height="24px">
+              {{impact}}
+            </mj-text>
+          </mj-column>
+        </mj-section>
+        {{/if}}
+
+        <!-- Status Updates -->
+        {{#if updates.length}}
+        <mj-section padding="15px 25px 0">
+          <mj-column>
+            <mj-text font-weight="700" padding-bottom="10px">STATUS UPDATES</mj-text>
+            {{#each updates}}
+            <mj-table padding="0 0 10px 0">
+              <tr>
+                <td width="24" valign="top" style="padding-right: 10px;">
+                  <span style="{{#if (eq status 'critical')}}color: #DC2626;{{/if}}{{#if (eq status 'warning')}}color: #D97706;{{/if}}{{#if (eq status 'normal')}}color: #059669;{{/if}}">
+                    {{#if (eq status 'critical')}}🔴{{/if}}
+                    {{#if (eq status 'warning')}}🟡{{/if}}
+                    {{#if (eq status 'normal')}}🟢{{/if}}
+                  </span>
+                </td>
+                <td>
+                  <mj-text padding="0" line-height="20px">{{description}}</mj-text>
+                  {{#if details}}
+                  <mj-text padding="5px 0 0 0" font-size="14px" color="#4B5563">
+                    {{details}}
+                  </mj-text>
+                  {{/if}}
+                </td>
+              </tr>
+            </mj-table>
+            {{/each}}
+          </mj-column>
+        </mj-section>
+        {{/if}}
+
+        <!-- Call to Action -->
+        <mj-section padding="20px 25px 0">
+          <mj-column>
+            <mj-button background-color="#1F2937" color="#FFFFFF" font-weight="600" font-size="14px"
+              href="{{cta.url}}" border-radius="6px" padding="12px 24px" inner-padding="12px 24px">
+              {{cta.text}}
+            </mj-button>
+          </mj-column>
+        </mj-section>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section padding="20px 0 40px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#6B7280" line-height="20px">
+          © {{year}} 360Brief. All rights reserved.<br />
+          <a href="{{unsubscribeUrl}}" style="color: #6B7280; text-decoration: none;">Unsubscribe</a> | 
+          <a href="{{preferencesUrl}}" style="color: #6B7280; text-decoration: none;">Email Preferences</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

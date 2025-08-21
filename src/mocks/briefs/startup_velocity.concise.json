@@ -1,0 +1,32 @@
+{
+  "userId": "sarah.martinez@example.com",
+  "generatedAt": "2025-08-10T16:30:00Z",
+  "style": "startup_velocity",
+  "version": "1.0",
+  "subject": "\ud83d\udea8 TechFlow Down + Revenue at Risk - Let's Ship a Fix",
+  "tldr": "6h outage; $2.4M ARR risk. Move fast to save renewal.",
+  "startupVelocity": {
+    "velocityCheck": "Biggest client is down; we need to move FAST.",
+    "whatIsBroken": {
+      "technical": ["DB cluster failure affecting 15K users"],
+      "relationship": ["CTO unresponsive; CEO evaluating alternatives"],
+      "team": ["Eng all-hands; AM at maximum effort"]
+    },
+    "nextSixHours": [
+      { "timeLabel": "0900: Emergency call" },
+      { "timeLabel": "1000: Eng damage assessment" },
+      { "timeLabel": "1100: Retention playcraft" },
+      { "timeLabel": "1200: CEO brief" }
+    ],
+    "budget": {
+      "total": 40000,
+      "items": [
+        { "label": "Emergency technical package", "amount": 15000 },
+        { "label": "Customer retention investment", "amount": 25000 }
+      ],
+      "simpleROI": "Protects $2.4M ARR"
+    },
+    "whyThisCouldBeAmazing": "Crisis response becomes our case study.",
+    "closingPrompt": "Approve spend and join 09:00 call."
+  }
+}

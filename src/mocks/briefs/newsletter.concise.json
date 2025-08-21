@@ -1,0 +1,25 @@
+{
+  "userId": "sarah.martinez@example.com",
+  "generatedAt": "2025-08-10T16:30:00Z",
+  "style": "newsletter",
+  "version": "1.0",
+  "subject": "Morning Brief: TechFlow Crisis, Revenue Risk, and Next Steps",
+  "tldr": "6h outage; $2.4M renewal uncertain; approve $40K response.",
+  "newsletter": {
+    "headlines": [
+      "Service Crisis: 6-hour outage affecting 15,000 users",
+      "Revenue Risk: $2.4M contract at risk",
+      "Executive Pressure: CEO requests immediate plan",
+      "Resource Decision: $40K response package"
+    ],
+    "featureTitle": "The Critical Hours: When Your Biggest Client Goes Dark",
+    "featureParagraphs": [
+      "Alerts began at 3:47 AM for our largest client, TechFlow.",
+      "In six hours, renewal probability fell from 85% to ~40%."
+    ],
+    "analysis": [
+      "Transparent comms and exec engagement drive outcomes",
+      "Retention spend vs acquisition economics"
+    ]
+  }
+}

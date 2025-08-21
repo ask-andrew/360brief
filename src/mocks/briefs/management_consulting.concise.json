@@ -1,0 +1,40 @@
+{
+  "userId": "sarah.martinez@example.com",
+  "generatedAt": "2025-08-10T16:30:00Z",
+  "style": "management_consulting",
+  "version": "1.0",
+  "subject": "Strategic Response Required: TechFlow Escalation & Revenue Risk Mitigation",
+  "tldr": "Critical inflection: 20% revenue ($2.4M) at risk; immediate strategic intervention required.",
+  "context": {
+    "client": { "name": "TechFlow Corp", "revenueARR": 2400000, "revenueSharePct": 20 },
+    "renewalProbability": { "before": 85, "after": 40 },
+    "usersAffected": 15000
+  },
+  "consulting": {
+    "executiveSummary": "Outage threatens renewal; response sets precedent for crisis management.",
+    "situationAnalysis": {
+      "financialImpact": [
+        "Renewal probability dropped 85% → 40%",
+        "Reputational risk beyond direct contract"
+      ],
+      "rootCauseFramework": "Database cluster disruption cascading to dependencies",
+      "stakeholderMatrix": [
+        "End users impacted",
+        "Executive team evaluating alternatives"
+      ]
+    },
+    "strategyFramework": [
+      { "phase": "Immediate Crisis Response", "description": "Technical fix + transparent comms" },
+      { "phase": "Relationship Recovery", "description": "Exec engagement to rebuild trust" },
+      { "phase": "Process Enhancement", "description": "Prevent recurrence" }
+    ],
+    "investmentRecommendation": {
+      "total": 40000,
+      "breakdown": [
+        { "label": "Emergency resources", "amount": 15000 },
+        { "label": "Service credits", "amount": 25000 }
+      ],
+      "roiNote": "Protects $2.4M ARR"
+    }
+  }
+}

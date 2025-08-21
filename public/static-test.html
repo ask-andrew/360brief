@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Test</title>
+    <style>
+        body { 
+            font-family: system-ui, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            background: #f0f9ff; 
+            color: #0369a1; 
+        }
+        .container { 
+            text-align: center; 
+            padding: 2rem; 
+            background: white; 
+            border-radius: 0.5rem; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Static File Test</h1>
+        <p>If you can see this, static files are being served!</p>
+        <p>Time: <span id="time"></span></p>
+    </div>
+    <script>
+        document.getElementById("time").textContent = new Date().toLocaleTimeString();
+    </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "userId": "sarah.martinez@example.com",
+  "generatedAt": "2025-08-10T16:30:00Z",
+  "style": "newsletter",
+  "version": "1.0",
+  "subject": "Morning Brief: TechFlow Crisis, Revenue Risk, and Strategic Response",
+  "tldr": "6-hour outage; $2.4M renewal risk; approve $40K response; first 48 hours decisive.",
+  "newsletter": {
+    "headlines": [
+      "Service Crisis: TechFlow experiencing 6-hour outage affecting 15,000 users; DB cluster at root",
+      "Revenue Risk: $2.4M contract renewal probability 85% → 40%",
+      "Executive Response: Emergency calls through the morning; CEO briefing at noon",
+      "Investment Decision: $40K crisis response package requires immediate authorization",
+      "Timeline Critical: First 48 hours determine relationship recovery"
+    ],
+    "featureTitle": "When Your Biggest Client Goes Dark: A Study in Crisis Partnership",
+    "featureParagraphs": [
+      "Alerts began at 3:47 AM for TechFlow, our largest client at 20% of revenue.",
+      "This outage is a defining moment: beyond uptime, it's a test of partnership resilience.",
+      "Renewal probability dropped from 85% to ~40% within six hours, amplifying revenue risk."
+    ],
+    "analysis": [
+      "Executive Engagement Speed: C-level visibility in first 6 hours signals priority",
+      "Investment in Recovery: Retention spend vs acquisition economics shows 5:1 advantage",
+      "Transparent Communication: Proactive updates build credibility faster than perfect solutions",
+      "Learning Integration: Response becomes competitive differentiation"
+    ],
+    "moreCoverage": [
+      "Emergency Resource Authorization: $15K technical + $25K retention package",
+      "Competitive Intelligence: Likely 3 direct competitors in TechFlow's evaluation",
+      "Team Performance Under Pressure: Peak coordination and productivity metrics"
+    ],
+    "expertInsights": [
+      "Infrastructure failures can strengthen relationships when handled with transparency and investment."
+    ],
+    "kudos": [
+      { "name": "Mike Chen", "role": "Engineering Lead", "kudosSuggestion": "Exemplary technical leadership under pressure" },
+      { "name": "Lisa Rodriguez", "role": "Account Manager", "kudosSuggestion": "Relationship advocacy during crisis" }
+    ],
+    "aheadBlockers": [
+      "CTO communication gap: coordinate technical plan",
+      "Service credit authorization: legal review timing",
+      "Infrastructure investments: budget beyond immediate response"
+    ],
+    "recommendedReads": [
+      "Crisis Communication Template",
+      "Client Retention Economics",
+      "Infrastructure Resilience Framework"
+    ]
+  }
+}

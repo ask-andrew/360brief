@@ -1,0 +1,89 @@
+@startuml 360Brief - Component Diagram
+
+title 360Brief - Component Architecture
+
+' Define components
+package "Frontend Components" {
+    [Dashboard] as dashboard
+    [Authentication] as auth_ui
+    [Settings] as settings
+    [DigestViewer] as digest_viewer
+    [DataConnections] as connections
+}
+
+package "Backend Services" {
+    [Next.js API Routes] as api_gateway
+    [Auth0] as auth_service
+    [Digest Generator] as digest_service
+    [UnifiedDataService] as data_processing
+    [Cache Service] as cache_service
+}
+
+package "Data Layer" {
+    [User Store] as user_store
+    [Digest Store] as digest_store
+    [Cache Store] as cache_store
+}
+
+package "External Integrations" {
+    [Gmail API] as gmail
+    [Google Calendar] as calendar
+    [Slack API] as slack
+    [Project Tools] as project_tools
+}
+
+' Define interfaces
+interface "REST API" as rest_api
+interface "WebSocket" as ws
+interface "OAuth 2.0" as oauth
+
+' Frontend connections
+dashboard --> rest_api
+auth_ui --> oauth
+settings --> rest_api
+digest_viewer --> rest_api
+connections --> rest_api
+
+' Backend connections
+api_gateway --> auth_service
+api_gateway --> digest_service
+api_gateway --> data_processing
+
+digest_service --> data_processing
+data_processing --> cache_service
+
+' Data connections
+auth_service --> user_store
+digest_service --> digest_store
+cache_service --> cache_store
+
+' External connections
+data_processing --> gmail
+data_processing --> calendar
+data_processing --> slack
+data_processing --> project_tools
+
+' Add notes
+note right of data_processing
+  == Data Processing ==
+  • Handles data transformation
+  • Implements business logic
+  • Manages rate limiting
+end note
+
+note right of digest_service
+  == Digest Generation ==
+  • Creates executive summaries
+  • Applies user preferences
+  • Handles scheduling
+end note
+
+note right of slack
+  Planned integration
+end note
+
+note right of project_tools
+  Planned integration
+end note
+
+@enduml
