@@ -143,17 +143,13 @@ export default function LoginPage() {
           redirectTo: redirectTo.toString(),
           queryParams: {
             access_type: 'offline',
-            prompt: 'select_account',
+            prompt: 'consent',  // Use consent to ensure we get a refresh token
             state: state,
-            // Include the redirect URL in the query params
-            redirect_uri: redirectTo.toString(),
-            // Force approval prompt to ensure we get a refresh token
-            approval_prompt: 'force'
+            include_granted_scopes: 'true',
+            redirect_uri: redirectTo.toString()
           },
           scopes: 'openid profile email',
-          skipBrowserRedirect: true, // We'll handle the redirect manually
-          // Ensure we're using the PKCE flow
-          flowType: 'pkce'
+          skipBrowserRedirect: true
         },
       });
       

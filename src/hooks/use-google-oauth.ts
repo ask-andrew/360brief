@@ -1,5 +1,7 @@
+'use client';
+
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase/client';
 import { toast } from './use-toast';
@@ -17,8 +19,8 @@ interface UseGoogleOAuthOptions {
 }
 
 export const useGoogleOAuth = ({
-  onSuccess,
-  onError,
+  onSuccess = () => {},
+  onError = () => {},
 }: UseGoogleOAuthOptions = {}): {
   startOAuthFlow: (redirectPath?: string) => Promise<void>;
   loading: boolean;
@@ -26,7 +28,6 @@ export const useGoogleOAuth = ({
   resetError: () => void;
 } => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { setSession, setUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -62,30 +63,31 @@ export const useGoogleOAuth = ({
 
       console.log('Starting OAuth flow with scopes:', scopes);
 
-      const redirectUrl = new URL(window.location.origin + window.location.pathname);
+      // Store the redirect path for after successful authentication
+      localStorage.setItem('sb-redirect-to', redirectPath);
 
       // Check if FedCM is available and use it if possible
       const isFedCMAvailable = 'FederatedCredential' in window;
       console.log('FedCM available:', isFedCMAvailable);
 
-      // First, try to use the regular OAuth flow with FedCM support
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // Define query parameters for Google OAuth
+      const queryParams = {
+        access_type: 'offline',
+        prompt: 'select_account',
+        include_granted_scopes: 'true',
+        ...(isFedCMAvailable && {
+          fedcm: '1',
+          fedcm_modal: '1',
+        }),
+      };
+
+      // Let Supabase handle the entire OAuth flow including PKCE
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl.toString(),
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account',
-            response_type: 'code',
-            // Enable FedCM if available
-            ...(isFedCMAvailable && {
-              fedcm: '1',
-              fedcm_modal: '1',
-            }),
-          },
+          redirectTo: `${window.location.origin}/auth/callback`,
           scopes: scopes.join(' '),
-          // Enable One Tap sign-in
-          skipBrowserRedirect: true,
+          queryParams,
         },
       });
 
@@ -94,12 +96,8 @@ export const useGoogleOAuth = ({
         throw error;
       }
 
-      console.log('OAuth flow started, data:', data);
-      
-      // If we have a URL, redirect to it (for non-FedCM flow)
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      // Supabase will handle the redirect to Google
+      console.log('OAuth flow started, redirecting to Google...');
     } catch (err) {
       const errorMessage = handleError(err, 'Error starting OAuth flow');
       toast({
@@ -119,80 +117,39 @@ export const useGoogleOAuth = ({
       return;
     }
 
-    console.log('Checking for OAuth response...');
-    console.log('Current URL:', window.location.href);
+    // This listener is the single source of truth for authentication state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event);
 
-    const handleOAuthResponse = async (): Promise<void> => {
-      try {
-        // First, check if we have a session already
-        const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Error getting session:', sessionError);
-          throw sessionError;
-        }
+        if (event === 'SIGNED_IN' && session) {
+          console.log('User signed in:', session.user?.email);
+          setSession(session);
+          setUser(session.user);
 
-        // If we already have a valid session, use it
-        if (existingSession?.user) {
-          console.log('Found existing session for user:', existingSession.user.email);
-          setSession(existingSession);
-          setUser(existingSession.user);
-          router.push('/dashboard');
-          onSuccess?.();
-          return;
-        }
+          // Get the stored redirect path or use default
+          const redirectTo = localStorage.getItem('sb-redirect-to') || '/dashboard';
+          localStorage.removeItem('sb-redirect-to');
 
-        // Check for OAuth callback in URL
-        const hash = window.location.hash;
-        if (hash && (hash.includes('access_token') || hash.includes('error'))) {
-          console.log('Processing OAuth callback from URL');
-          
-          // Let Supabase handle the OAuth callback
-          const { data, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error('Error during OAuth callback:', error);
-            throw error;
-          }
-          
-          if (!data.session) {
-            throw new Error('No session returned after OAuth callback');
-          }
-          
-          console.log('OAuth callback successful for user:', data.session.user.email);
-          setSession(data.session);
-          setUser(data.session.user);
-          
           // Clean up the URL
           window.history.replaceState({}, document.title, window.location.pathname);
           
-          router.push('/dashboard');
+          router.push(redirectTo);
           onSuccess?.();
-          return;
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
+          setSession(null);
+          setUser(null);
+          // Optional: redirect to login page
+          router.push('/login');
         }
-        
-        // If we get here, we're not in a callback and don't have a session
-        console.log('No active session and not in OAuth callback');
-        
-        // If we're on the login page, just return and let the login button be shown
-        if (window.location.pathname === '/login' || window.location.pathname === '/dev/login') {
-          return;
-        }
-        
-        // Otherwise, redirect to login
-        router.push('/login');
-      } catch (err) {
-        const errorMessage = handleError(err, 'Error during OAuth callback');
-        toast({
-          title: 'Authentication Error',
-          description: errorMessage,
-          variant: 'destructive',
-        });
       }
-    };
+    );
 
-    handleOAuthResponse();
-  }, [setSession, setUser, router, onSuccess, handleError]);
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [router, setSession, setUser, onSuccess]);
 
   const resetError = useCallback(() => {
     setError(null);

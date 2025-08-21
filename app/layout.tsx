@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Nunito } from "next/font/google";
+import { Inter, Poiret_One } from "next/font/google";
 import "./globals.css";
 import { isDevSession } from '@/lib/dev-auth';
 import Script from 'next/script';
@@ -10,14 +10,25 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 
-const nunito = Nunito({
+// Configure Inter for body text
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
   weight: ['300', '400', '500', '600', '700'],
-  style: ['normal', 'italic'],
+  style: ['normal'],
   adjustFontFallback: true,
   fallback: ['system-ui', 'sans-serif'],
+});
+
+// Configure Poiret One for headings
+const poiretOne = Poiret_One({
+  weight: '400', // Poiret One only has one weight
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-heading",
+  adjustFontFallback: true,
+  fallback: ['cursive', 'sans-serif'],
 });
 
 export default function RootLayout({
@@ -89,8 +100,8 @@ export default function RootLayout({
   // Show loading state while checking auth
   if (isLoading) {
     return (
-      <html lang="en">
-        <body className={nunito.className}>
+      <html lang="en" className={`${inter.variable} ${poiretOne.variable}`}>
+        <body className="min-h-screen bg-background font-sans antialiased">
           <div className="flex h-screen w-full items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
           </div>
@@ -109,7 +120,7 @@ export default function RootLayout({
           onError={(e) => console.error('Failed to load Google Identity Services', e)}
         />
       </head>
-      <body className={`${nunito.variable} font-sans antialiased tracking-[0.01em]`}>
+      <body className={`${inter.variable} font-sans antialiased tracking-[0.01em]`}>
         <div id="one-tap-container" className="fixed top-4 right-4 z-50"></div>
         <AuthProvider>
           {pathname?.startsWith('/dashboard') || 

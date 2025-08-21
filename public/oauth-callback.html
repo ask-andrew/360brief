@@ -38,8 +38,8 @@
     const { useState, useEffect } = React;
 
     // These values are injected during build from environment variables
-    const SUPABASE_URL = '{{https://cqejejllmbzzsvtbyuke.supabase.co}}';
-    const SUPABASE_ANON_KEY = '{{eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxZWplamxsbWJ6enN2dGJ5dWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4NDYzOTUsImV4cCI6MjA2OTQyMjM5NX0.gQlHumFzL-PSl3GWb2NZeAZryWkGE7WyWYvbOcEwQb0}}';
+    const SUPABASE_URL = 'https://cqejejllmbzzsvtbyuke.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxZWplamxsbWJ6enN2dGJ5dWtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4NDYzOTUsImV4cCI6MjA2OTQyMjM5NX0.gQlHumFzL-PSl3GWb2NZeAZryWkGE7WyWYvbOcEwQb0';
 
     // Initialize Supabase client with PKCE flow
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
