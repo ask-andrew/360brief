@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --hostname localhost --turbopack",
     "dev:clean": "pkill -f \"next dev\" || true && npm run dev",
     "build": "next build",
     "build:oauth": "node scripts/inject-env.js && node scripts/generate-oauth-callback.js",

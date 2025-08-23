@@ -53,41 +53,25 @@ export const useGoogleOAuth = ({
       setLoading(true);
       setError(null);
 
-      const scopes = [
-        'email',
-        'profile',
-        'https://www.googleapis.com/auth/gmail.readonly',
-        'https://www.googleapis.com/auth/calendar.readonly',
-        'https://www.googleapis.com/auth/calendar.events.readonly',
-      ];
-
-      console.log('Starting OAuth flow with scopes:', scopes);
-
       // Store the redirect path for after successful authentication
       localStorage.setItem('sb-redirect-to', redirectPath);
-
-      // Check if FedCM is available and use it if possible
-      const isFedCMAvailable = 'FederatedCredential' in window;
-      console.log('FedCM available:', isFedCMAvailable);
-
-      // Define query parameters for Google OAuth
-      const queryParams = {
-        access_type: 'offline',
-        prompt: 'select_account',
-        include_granted_scopes: 'true',
-        ...(isFedCMAvailable && {
-          fedcm: '1',
-          fedcm_modal: '1',
-        }),
-      };
 
       // Let Supabase handle the entire OAuth flow including PKCE
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: scopes.join(' '),
-          queryParams,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          scopes: [
+            'email',
+            'profile',
+            'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/calendar.readonly',
+            'https://www.googleapis.com/auth/calendar.events.readonly',
+          ].join(' '),
         },
       });
 
@@ -95,9 +79,6 @@ export const useGoogleOAuth = ({
         console.error('OAuth error:', error);
         throw error;
       }
-
-      // Supabase will handle the redirect to Google
-      console.log('OAuth flow started, redirecting to Google...');
     } catch (err) {
       const errorMessage = handleError(err, 'Error starting OAuth flow');
       toast({
