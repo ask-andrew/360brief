@@ -23,18 +23,14 @@ const config = {
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/app/(.*)$': '<rootDir>/app/$1',
     '^@/types/(.*)$': '<rootDir>/types/$1',
+    // Force module uuid to resolve with the CJS entry point
+    "uuid": require.resolve('uuid'),
   },
   testEnvironment: 'jsdom',
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/.next/',
     '<rootDir>/cypress/'
-  ],
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
-  },
-  transformIgnorePatterns: [
-    '/node_modules/(?!(node-fetch|@supabase/supabase-js|@supabase/auth-helpers-nextjs|@supabase/ssr)/)',
   ],
   setupFiles: ['<rootDir>/__tests__/setupTests.ts'],
   setupFilesAfterEnv: ['<rootDir>/__tests__/jest.setup.js'],
@@ -43,11 +39,6 @@ const config = {
     '**/__tests__/**/*.test.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)',
   ],
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.jest.json',
-    },
-  },
 };
 
 module.exports = createJestConfig(config)
