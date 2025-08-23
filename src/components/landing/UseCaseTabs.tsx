@@ -14,7 +14,7 @@ const useCases = [
     benefit: 'Start each day focused and prepared, not playing catch-up',
     icon: <Briefcase className="h-6 w-6" />,
     image: {
-      src: '/images/use-cases/overloaded-executive.jpg',
+      src: '/images/use-cases/overloaded-exec.png',
       alt: 'Executive in a meeting room looking at a laptop'
     }
   },
@@ -27,7 +27,7 @@ const useCases = [
     benefit: 'Catch up in minutes, not hours',
     icon: <Calendar className="h-6 w-6" />,
     image: {
-      src: '/images/use-cases/back-from-vacation.jpg',
+      src: '/images/use-cases/back-from-vacation.png',
       alt: 'Person working on a laptop at a beach'
     }
   },
@@ -40,7 +40,7 @@ const useCases = [
     benefit: 'Better work-life integration without the stress',
     icon: <Zap className="h-6 w-6" />,
     image: {
-      src: '/images/use-cases/multi-hatted-professional.jpg',
+      src: '/images/use-cases/multi-hatted.png',
       alt: 'Person managing multiple tasks'
     }
   }

@@ -5,6 +5,12 @@
 @tailwind utilities;
 
 @layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading), cursive, sans-serif;
+  }
+}
+
+@layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 224 71.4% 4.1%;

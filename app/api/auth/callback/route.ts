@@ -1,6 +1,7 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
+import { Database } from '@/lib/supabase/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,15 +91,35 @@ export async function GET(request: NextRequest) {
   
   try {
     console.log('Creating Supabase client...');
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    
-    // Exchange the code for a session using PKCE flow
-    console.log('Exchanging code for session...');
-    const { 
-      data: { session }, 
-      error: authError 
-    } = await supabase.auth.exchangeCodeForSession(code);
+    const cookieStore = await cookies();
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set(name, value, options);
+            } catch (error) {
+              console.error('Error setting cookie:', error);
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 });
+            } catch (error) {
+              console.error('Error removing cookie:', error);
+            }
+          },
+        },
+      }
+    );
+
+    // Exchange the auth code for the session
+    const { data: { session }, error: authError } = await supabase.auth.exchangeCodeForSession(code);
     
     if (authError) {
       console.error('Error exchanging code:', authError);
