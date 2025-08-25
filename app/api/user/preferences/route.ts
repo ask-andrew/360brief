@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 
 // Default preferences that match our database schema
@@ -48,7 +48,7 @@ type Frequency = 'daily' | 'weekly' | 'weekdays' | 'custom';
 type DeliveryMode = 'email' | 'slack' | 'audio';
 
 export async function GET() {
-  const supabase = await createServerSupabaseClient()
+  const supabase = await createClient()
   
   try {
     // Get the current user
@@ -108,7 +108,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient()
+  const supabase = await createClient()
   const updates = await request.json()
   
   try {

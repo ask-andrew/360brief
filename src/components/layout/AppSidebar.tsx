@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/lib/auth/actions';
+import { useToast } from '@/components/ui/use-toast';
 
 type NavigationItem = {
   name: string;
@@ -37,6 +38,7 @@ type NavigationItem = {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { toast } = useToast();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
@@ -285,7 +287,22 @@ export function AppSidebar() {
         {/* User menu */}
         <div className="p-4 border-t border-gray-200">
           <button
-            onClick={() => signOut()}
+            onClick={async () => {
+              try {
+                const { error } = await signOut();
+                if (error) throw error;
+                toast({
+                  title: 'Signed out',
+                  description: 'You have been successfully signed out.',
+                });
+              } catch (error) {
+                toast({
+                  title: 'Error',
+                  description: error instanceof Error ? error.message : 'Failed to sign out',
+                  variant: 'destructive',
+                });
+              }
+            }}
             className={cn(
               'flex items-center w-full px-4 py-2 text-sm font-medium rounded-md text-red-600 hover:bg-red-50',
               collapsed ? 'justify-center' : 'justify-start'

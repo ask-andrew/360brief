@@ -1,17 +1,18 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { User } from '@supabase/supabase-js';
+import { persist } from 'zustand/middleware';
 
-interface AuthState {
-  user: User | null;
-  session: any;
-  isLoading: boolean;
+export interface AuthState {
+  user: any | null;
+  session: any | null;
+  loading: boolean;
+  initialized: boolean;
   error: string | null;
-  setUser: (user: User | null) => void;
-  setSession: (session: any) => void;
-  setLoading: (isLoading: boolean) => void;
+  isAuthenticated: boolean;
+  setUser: (user: any, session: any) => void;
+  setInitialized: (initialized: boolean) => void;
+  setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  clear: () => void;
+  signOut: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -19,21 +20,37 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       session: null,
-      isLoading: false,
+      loading: true,
+      initialized: false,
       error: null,
-      setUser: (user) => set({ user }),
-      setSession: (session) => set({ session }),
-      setLoading: (isLoading) => set({ isLoading }),
-      setError: (error) => set({ error }),
-      clear: () => set({ user: null, session: null, error: null }),
+      isAuthenticated: false,
+
+      setUser: (user, session) =>
+        set({
+          user,
+          session,
+          isAuthenticated: !!user,
+          loading: false,
+          error: null,
+        }),
+
+      setInitialized: (initialized) => set({ initialized }),
+
+      setLoading: (loading) => set({ loading }),
+
+      setError: (error) => set({ error, loading: false }),
+
+      signOut: () =>
+        set({
+          user: null,
+          session: null,
+          isAuthenticated: false,
+          loading: false,
+          error: null,
+        }),
     }),
     {
-      name: 'auth-storage',
-      storage: createJSONStorage(() => sessionStorage), // or localStorage
-      partialize: (state) => ({
-        user: state.user,
-        session: state.session,
-      }),
+      name: 'auth-store', // localStorage key
     }
   )
 );

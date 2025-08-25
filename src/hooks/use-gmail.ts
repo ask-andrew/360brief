@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUnreadEmails, markAsRead, EmailMessage, fetchEmailThreads } from '@/lib/gmail/client';
-import { useAuth } from './use-auth';
+import { useAuthStore } from '@/store/auth-store';
 
 type UseEmailsOptions = {
   enabled?: boolean;
@@ -16,7 +16,7 @@ export function useUnreadEmails({
   maxResults = 10,
   refetchInterval = 5 * 60 * 1000, // 5 minutes
 }: UseEmailsOptions = {}) {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const userId = user?.id;
 
   return useQuery<EmailMessage[], Error>({
@@ -38,7 +38,7 @@ export function useUnreadEmails({
  * Hook to mark an email as read
  */
 export function useMarkAsRead() {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const queryClient = useQueryClient();
   const userId = user?.id;
 
@@ -69,7 +69,7 @@ export function useEmailThreads({
   enabled?: boolean;
   maxResults?: number;
 } = {}) {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const userId = user?.id;
 
   return useQuery({
@@ -88,7 +88,7 @@ export function useEmailThreads({
  * Hook to mark multiple emails as read
  */
 export function useMarkMultipleAsRead() {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const queryClient = useQueryClient();
   const userId = user?.id;
   const { mutate: markSingleAsRead } = useMarkAsRead();

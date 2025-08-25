@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { fetchUpcomingEvents } from '@/lib/calendar/client';
 import { fetchUnreadEmails } from '@/lib/gmail/client';
 import { sendWeeklyDigest } from '@/lib/email/sendDigest';
@@ -7,7 +7,7 @@ import { generateWeeklyDigest } from '@/lib/digest/generator';
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createClient();
     
     // Get all users who should receive a digest
     const { data: users, error: usersError } = await supabase

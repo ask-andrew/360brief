@@ -1,60 +1,89 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/utils/supabaseClient';
 
-export default function AuthCallbackPage() {
+export default function AuthCallback() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        const error = searchParams?.get('error');
-        const errorDescription = searchParams?.get('error_description');
-
-        if (error) {
-          const message = errorDescription || 'Authentication failed';
-          toast({ title: 'Authentication Error', description: message, variant: 'destructive' });
-          router.push(`/login?error=${encodeURIComponent(message)}`);
+        // Get the current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          throw sessionError;
+        }
+        
+        if (!session) {
+          // If no session, try to get it from the URL
+          const { data: { session: urlSession }, error: urlError } = 
+            await supabase.auth.getSession();
+          
+          if (urlError) throw urlError;
+          if (!urlSession) throw new Error('No session found after authentication');
+          
+          // Successfully got session from URL
+          router.replace('/dashboard');
           return;
         }
-
-        // Get the stored redirect path or use default
-        const redirectTo = sessionStorage.getItem('redirect_path') || '/dashboard';
-        sessionStorage.removeItem('redirect_path');
-
-        // Clean URL before redirect
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        // Redirect
-        router.push(redirectTo);
-
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'An unknown error occurred';
-        toast({ title: 'Authentication Error', description: message, variant: 'destructive' });
-        router.push(`/login?error=${encodeURIComponent(message)}`);
+        
+        // We have a valid session
+        router.replace('/dashboard');
+        
+      } catch (error) {
+        console.error('Auth callback error:', error);
+        setError(error instanceof Error ? error.message : 'Authentication failed');
+      } finally {
+        setIsLoading(false);
       }
     };
-
+    
     handleAuthCallback();
-  }, [router, searchParams, supabase.auth]);
+  }, [router]);
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-4 rounded-lg bg-white p-8 text-center shadow-sm">
-        <div className="flex justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">Completing sign in...</p>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900">Just a moment</h2>
-        <p className="text-gray-600">We're finalizing your sign in and will redirect you shortly.</p>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-md w-full space-y-4 text-center">
+          <div className="bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/login')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Return to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }

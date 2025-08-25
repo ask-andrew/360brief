@@ -1,94 +1,151 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
-import { Session } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/utils/supabaseClient';
 
-// ... other imports
+interface User {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    name?: string;
+    avatar_url?: string;
+  };
+}
 
 export default function DashboardPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    if (!searchParams) return;
-    
-    // Check if a code parameter exists in the URL
-    const code = searchParams.get('code');
-
-    const handleAuthCallback = async () => {
+    const checkSession = async () => {
       try {
-        if (code) {
-          // If code exists, attempt to exchange it for a session
-          setLoading(true);
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-          if (error) {
-            console.error('Error exchanging code:', error);
-            // On failure, remove the code and redirect to sign-in
-            router.replace('/signin');
-          } else {
-            console.log('Session exchanged successfully!', data.session);
-            // On success, the session is set and we clean up the URL
-            setSession(data.session);
-            router.replace('/dashboard');
-          }
-        } else {
-          // If no code, just get the current session
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-          if (!currentSession) {
-            router.replace('/signin');
-          } else {
-            setSession(currentSession);
-          }
+        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          router.push('/login');
+          return;
         }
+        
+        setUser(session.user as unknown as User);
       } catch (error) {
-        console.error('An unexpected error occurred:', error);
-        router.replace('/signin');
+        console.error('Session check error:', error);
+        router.push('/login');
       } finally {
         setLoading(false);
       }
     };
 
-    handleAuthCallback();
+    checkSession();
 
-  }, [router, searchParams]);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.push('/login');
+      } else if (session) {
+        setUser(session.user as unknown as User);
+      }
+    });
 
-  // Handle rendering based on loading and session state
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [router]);
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.push('/login');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <p>Loading...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <p className="text-sm text-gray-500">Loading your dashboard...</p>
       </div>
     );
   }
 
-  // If there's no session after the check, show a message or redirect
-  if (!session) {
+  if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen text-gray-800">
-        <h1 className="text-2xl font-bold mb-4">You are not signed in.</h1>
-        <p className="text-lg mb-6">Redirecting to sign-in page...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+        <p className="text-gray-700">You need to be logged in to view this page.</p>
+        <button
+          onClick={() => router.push('/login')}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Go to Login
+        </button>
       </div>
     );
   }
 
-  // Render dashboard content for authenticated users
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Welcome to your Dashboard!</h1>
-        <p className="text-gray-600">This is a protected page for authenticated users.</p>
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h2 className="text-xl font-semibold text-gray-700">User Session Details:</h2>
-          <pre className="mt-2 text-sm text-gray-600 whitespace-pre-wrap break-words">
-            {JSON.stringify(session.user, null, 2)}
-          </pre>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">
+              {user?.email || 'User'}
+            </span>
+            <button
+              onClick={() => router.push('/settings')}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Settings
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
-      </div>
-    </main>
+      </header>
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="border-2 border-dashed border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Welcome back, {user?.user_metadata?.name || 'User'}!</h2>
+            <p className="text-gray-600 mb-6">Here's your personalized dashboard with the latest updates.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h3 className="font-medium mb-2">Quick Actions</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => router.push('/briefs')}
+                    className="w-full text-left px-4 py-2 border border-gray-200 rounded-md hover:bg-gray-50"
+                  >
+                    View Briefs
+                  </button>
+                  <button
+                    onClick={() => router.push('/settings')}
+                    className="w-full text-left px-4 py-2 border border-gray-200 rounded-md hover:bg-gray-50"
+                  >
+                    Account Settings
+                  </button>
+                </div>
+              </div>
+              
+              <div className="md:col-span-2 bg-white p-6 rounded-lg shadow">
+                <h3 className="font-medium mb-4">Recent Activity</h3>
+                <div className="text-center py-8 text-gray-500">
+                  <p>Your recent activity will appear here</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }

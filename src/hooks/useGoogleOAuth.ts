@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
-import { toast } from './use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 // Generate a random string for code verifier
 const generateRandomString = (length: number) =>
@@ -26,6 +26,7 @@ interface UseGoogleOAuthOptions {
 }
 
 export const useGoogleOAuth = ({ onSuccess = () => {}, onError = () => {} }: UseGoogleOAuthOptions = {}) => {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const router = useRouter();

@@ -1,41 +1,46 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/utils/supabaseClient';
 
-export default function AuthCallbackPage() {
+export default function AuthCallback() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // This page handles the redirect after the OAuth flow.
-    // The Supabase client automatically processes the session exchange
-    // when it loads on this page. We just need to check if it was successful.
-    const handleAuth = async () => {
-      // Check for a session. The Supabase client will have already handled
-      // the PKCE exchange if this is a callback.
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // Redirect to dashboard or home if a session is found
-        router.replace('/dashboard');
-      } else {
-        // If no session, the auth flow failed or it's an invalid state
-        // Redirect to login
-        router.replace('/login');
+    const handleAuthCallback = async () => {
+      const code = searchParams.get('code');
+      const state = searchParams.get('state');
+
+      if (!code) {
+        console.error('No code found in callback URL');
+        return;
+      }
+
+      try {
+        // Exchange code for session
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (error) {
+          console.error('Error exchanging code for session:', error.message);
+          return;
+        }
+
+        if (data.session) {
+          router.push('/dashboard');
+        }
+      } catch (err) {
+        console.error('Callback handling error:', err);
       }
     };
 
-    handleAuth();
-  }, [router]);
+    handleAuthCallback();
+  }, [router, searchParams]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="text-center">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <h2 className="text-xl font-semibold text-gray-800">Completing Sign In</h2>
-        <p className="text-gray-600">Please wait while we complete your authentication...</p>
-      </div>
-    </div>
+    <main className="flex flex-col items-center justify-center h-screen">
+      <h1 className="text-2xl font-bold">Logging you in...</h1>
+    </main>
   );
 }

@@ -1,30 +1,35 @@
 import { NextResponse } from 'next/server';
 import { generateAuthUrl } from '@/server/google/client';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { createClient as createSupabaseServerClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    let { data: { user } } = await supabase.auth.getUser();
-
-    // Fallback: Authorization: Bearer <jwt>
-    if (!user) {
-      const authz = (req.headers as any).get?.('authorization') || (req.headers as any).get?.('Authorization');
-      const match = authz?.match(/^Bearer\s+(.+)$/i);
-      const jwt = match?.[1];
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (jwt && url && serviceKey) {
-        const admin = createSupabaseServerClient(url, serviceKey);
-        const { data, error } = await admin.auth.getUser(jwt);
-        if (!error) user = data.user as any;
-      }
+    // Create a direct Supabase client
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    
+    // Try to get the current user
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error('Error getting user:', error);
+      return NextResponse.json(
+        { error: 'Failed to authenticate' },
+        { status: 401 }
+      );
     }
 
-    if (!user) return NextResponse.json({ error: 'Unauthorized: please sign in before connecting Google.' }, { status: 401 });
+    // If no user found, return unauthorized
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
     const { searchParams } = new URL(req.url);
     const redirectPath = searchParams.get('redirect') || '/dashboard';

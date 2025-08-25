@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function DELETE(_req: Request, context: any) {
   try {
     const { params } = context || { params: {} } as any;
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -34,7 +34,7 @@ export async function PATCH(req: Request, context: any) {
       return NextResponse.json({ error: 'Invalid account_type' }, { status: 400 });
     }
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

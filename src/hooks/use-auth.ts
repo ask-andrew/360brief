@@ -1,152 +1,114 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
-import { signInWithEmail, signUpWithEmail, signInWithGoogle, signOut, getCurrentUser } from '@/lib/supabase/db';
-import { LoginFormData, RegisterFormData } from '@/lib/validations/auth';
+import { createClient } from '@/lib/supabase/client';
 
 export function useAuth() {
-  const queryClient = useQueryClient();
   const router = useRouter();
   const { 
     user, 
     session, 
-    isLoading: isAuthLoading, 
-    setUser, 
-    setSession, 
-    setLoading, 
-    setError, 
-    clear 
+    loading: isAuthLoading,
+    setUser,
+    setError,
+    signOut: signOutUser
   } = useAuthStore();
 
-  // Get current user
-  const { data: currentUser, isLoading: isUserLoading } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      if (user) return user;
+  // Check if user is authenticated
+  const isAuthenticated = !!user;
+
+  // Sign in function
+  const login = async (email: string, password: string) => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      if (!data.session) throw new Error('No session returned');
+
+      setUser(data.user, data.session);
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
+      setError(errorMessage);
+      return { 
+        success: false, 
+        error: errorMessage
+      };
+    }
+  };
+
+  // Sign up function
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (!data.session) throw new Error('No session returned');
+
+      setUser(data.user, data.session);
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign up';
+      setError(errorMessage);
+      return { 
+        success: false, 
+        error: errorMessage
+      };
+    }
+  };
+
+  // Sign out function
+  const signOut = async () => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       
-      try {
-        setLoading(true);
-        const user = await getCurrentUser();
-        if (user) {
-          setUser(user);
-          return user;
-        }
-        return null;
-      } catch (error) {
-        console.error('Error fetching current user:', error);
-        return null;
-      } finally {
-        setLoading(false);
-      }
-    },
-    enabled: !user && !isAuthLoading,
-  });
-
-  // Login mutation
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginFormData) => {
-      setLoading(true);
-      try {
-        const { user, session } = await signInWithEmail(data.email, data.password);
-        setUser(user);
-        setSession(session);
-        return { user, session };
-      } finally {
-        setLoading(false);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      router.push('/dashboard');
-    },
-    onError: (error: Error) => {
-      setError(error.message);
-    },
-  });
-
-  // Signup mutation
-  const signupMutation = useMutation({
-    mutationFn: async (data: RegisterFormData) => {
-      setLoading(true);
-      try {
-        const { user, session } = await signUpWithEmail(
-          data.email, 
-          data.password, 
-          data.fullName
-        );
-        setUser(user);
-        setSession(session);
-        return { user, session };
-      } finally {
-        setLoading(false);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      router.push('/dashboard/onboarding');
-    },
-    onError: (error: Error) => {
-      setError(error.message);
-    },
-  });
-
-  // Google sign in mutation
-  const signInWithGoogleMutation = useMutation({
-    mutationFn: async () => {
-      setLoading(true);
-      try {
-        const { url } = await signInWithGoogle();
-        if (url) {
-          window.location.href = url;
-        }
-      } finally {
-        setLoading(false);
-      }
-    },
-    onError: (error: Error) => {
-      setError(error.message);
-    },
-  });
-
-  // Sign out mutation
-  const signOutMutation = useMutation({
-    mutationFn: async () => {
-      setLoading(true);
-      try {
-        await signOut();
-        clear();
-        queryClient.clear();
-        router.push('/login');
-      } finally {
-        setLoading(false);
-      }
-    },
-    onError: (error: Error) => {
-      setError(error.message);
-    },
-  });
+      signOutUser();
+      router.push('/login');
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign out';
+      setError(errorMessage);
+      return { 
+        success: false, 
+        error: errorMessage
+      };
+    }
+  };
 
   return {
-    user: user || currentUser,
+    user,
     session,
-    isLoading: isUserLoading || isAuthLoading,
-    isAuthenticated: !!user || !!currentUser,
-    login: loginMutation.mutateAsync,
-    loginWithGoogle: signInWithGoogleMutation.mutateAsync,
-    signup: signupMutation.mutateAsync,
-    logout: signOutMutation.mutateAsync,
-    error: useAuthStore.getState().error,
-    clearError: () => setError(null),
+    loading: isAuthLoading,
+    error: useAuthStore(state => state.error),
+    isAuthenticated,
+    login,
+    signUp,
+    signOut,
   };
 }
 
 export function useProtectedRoute(redirectTo = '/login') {
   const router = useRouter();
-  const { user, isLoading } = useAuthStore();
-  
-  if (!isLoading && !user) {
-    router.push(redirectTo);
-  }
-  
-  return { user, isLoading };
+  const { user, loading } = useAuthStore();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push(redirectTo);
+    }
+  }, [user, loading, router, redirectTo]);
 }

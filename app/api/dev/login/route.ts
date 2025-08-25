@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 // This is a development-only endpoint, also gated by explicit flag
 export async function POST() {
@@ -16,7 +16,7 @@ export async function POST() {
 
   try {
     console.log('Attempting dev login with email:', testEmail);
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createClient();
     
     // Sign in with password (will create user if doesn't exist)
     const { data, error } = await supabase.auth.signInWithPassword({

@@ -8,7 +8,7 @@ import {
   getCalendarList,
   CalendarEvent
 } from '@/lib/calendar/client';
-import { useAuth } from './use-auth';
+import { useAuthStore } from '@/store/auth-store';
 
 type UseEventsOptions = {
   enabled?: boolean;
@@ -28,7 +28,7 @@ export function useUpcomingEvents({
   timeMax,
   refetchInterval = 5 * 60 * 1000, // 5 minutes
 }: UseEventsOptions = {}) {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const userId = user?.id;
 
   return useQuery<CalendarEvent[], Error>({
@@ -54,7 +54,7 @@ export function useEventsForDateRange(
   endDate: Date,
   options: Omit<UseEventsOptions, 'timeMin' | 'timeMax'> = {}
 ) {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const userId = user?.id;
   const { enabled = true, refetchInterval = 5 * 60 * 1000 } = options;
 
@@ -76,7 +76,7 @@ export function useEventsForDateRange(
  * Hook to create a new calendar event
  */
 export function useCreateEvent() {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const queryClient = useQueryClient();
   const userId = user?.id;
 
@@ -96,7 +96,7 @@ export function useCreateEvent() {
  * Hook to update an existing calendar event
  */
 export function useUpdateEvent() {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const queryClient = useQueryClient();
   const userId = user?.id;
 
@@ -120,7 +120,7 @@ export function useUpdateEvent() {
  * Hook to delete a calendar event
  */
 export function useDeleteEvent() {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const queryClient = useQueryClient();
   const userId = user?.id;
 
@@ -140,7 +140,7 @@ export function useDeleteEvent() {
  * Hook to get the user's calendar list
  */
 export function useCalendarList() {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const userId = user?.id;
 
   return useQuery({

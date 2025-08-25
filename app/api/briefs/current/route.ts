@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateBrief } from '@/server/briefs/generateBrief';
 import { fetchUnifiedData } from '@/lib/services/unifiedDataService';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: Request) {
   try {
@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const endDate = searchParams.get('end');
 
     // Resolve authenticated user
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

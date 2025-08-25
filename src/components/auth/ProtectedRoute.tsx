@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthStore } from '@/store/auth-store';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -11,7 +11,11 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, session, loading } = useAuth();
+  const { user, session, loading } = useAuthStore(state => ({
+    user: state.user,
+    session: state.session,
+    loading: state.loading
+  }));
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
 

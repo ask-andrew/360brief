@@ -1,54 +1,50 @@
+"use client";
+
 import * as React from 'react';
 
 type ToastVariant = 'default' | 'destructive';
 
-interface Toast {
+export interface Toast {
   id: string;
   title: string;
   description?: string;
   variant?: ToastVariant;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 type ToastContextType = {
   toasts: Toast[];
-  toast: (toast: Omit<Toast, 'id'>) => void;
+  toast: (toast: Omit<Toast, 'id'>) => string;
   dismissToast: (id: string) => void;
 };
 
 const ToastContext = React.createContext<ToastContextType | undefined>(undefined);
 
-interface ToastProviderProps {
-  children: React.ReactNode;
-}
-
-export function ToastProvider({ children }: ToastProviderProps) {
+export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
 
-  const toast = React.useCallback(({ title, description, variant = 'default' }: Omit<Toast, 'id'>) => {
+  const toast = React.useCallback(({ title, description, variant, action }: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts((currentToasts) => [...currentToasts, { id, title, description, variant }]);
+    setToasts((currentToasts) => [...currentToasts, { id, title, description, variant, action }]);
+    return id;
   }, []);
 
   const dismissToast = React.useCallback((id: string) => {
-    setToasts((currentToasts) => currentToasts.filter((t) => t.id !== id));
+    setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== id));
   }, []);
 
+  const value = React.useMemo(() => ({
+    toasts,
+    toast,
+    dismissToast,
+  }), [toasts, toast, dismissToast]);
+
   return (
-    <ToastContext.Provider value={{ toasts, toast, dismissToast }}>
+    <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`p-4 rounded-md ${
-              t.variant === 'destructive' ? 'bg-red-100 text-red-800' : 'bg-gray-900 text-white'
-            }`}
-          >
-            <div className="font-medium">{t.title}</div>
-            {t.description && <div className="text-sm opacity-90">{t.description}</div>}
-          </div>
-        ))}
-      </div>
     </ToastContext.Provider>
   );
 }

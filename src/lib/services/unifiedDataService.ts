@@ -2,7 +2,7 @@ import { UnifiedData } from '@/types/unified';
 import { google } from 'googleapis';
 import { getValidAccessToken } from '@/lib/gmail/oauth';
 import { getOAuthClient } from '@/server/google/client';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export type FetchUnifiedOptions = {
   startDate?: string; // ISO
@@ -84,7 +84,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     // Resolve current user id if not provided
     let userId = _userId;
     if (!userId) {
-      const supabase = await createServerSupabaseClient();
+      const supabase = await createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return empty;
       userId = user.id;

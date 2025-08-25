@@ -1,147 +1,43 @@
-'use client';
+import type { Metadata } from 'next';
+import { Inter, Poiret_One } from 'next/font/google';
+import './globals.css';
+import { ClientProviders } from '@/components/providers/ClientProviders';
+import { GoogleScript } from '@/components/auth/GoogleScript';
 
-import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { Inter, Poiret_One } from "next/font/google";
-import "./globals.css";
-import { isDevSession } from '@/lib/dev-auth';
-import Script from 'next/script';
-import { Toaster } from '@/components/ui/toaster';
-import { useGoogleOAuth } from '@/hooks/use-google-oauth';
-
-// Configure Inter for body text
 const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-sans",
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
   weight: ['300', '400', '500', '600', '700'],
   style: ['normal'],
   adjustFontFallback: true,
   fallback: ['system-ui', 'sans-serif'],
 });
 
-// Configure Poiret One for headings
 const poiretOne = Poiret_One({
-  weight: '400', // Poiret One only has one weight
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-heading",
-  adjustFontFallback: true,
-  fallback: ['cursive', 'sans-serif'],
+  subsets: ['latin'],
+  variable: '--font-heading',
+  weight: ['400'],
+  display: 'swap',
 });
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const devAuthEnabled = process.env.NEXT_PUBLIC_DEV_AUTH_ENABLED === 'true';
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
+export const metadata: Metadata = {
+  title: '360Brief - Executive Briefing Platform',
+  description: 'Transform communication noise into clear, actionable insights.',
+};
 
-  // Initialize Google OAuth hook to listen for auth state changes
-  useGoogleOAuth({
-    onSuccess: () => {
-      console.log('Auth success in root layout');
-    },
-    onError: (error) => {
-      console.error('Auth error in root layout:', error);
-    },
-  });
-
-  // Handle authentication and redirects
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const checkAuth = () => {
-      // Public routes (marketing + auth) always allowed
-      const publicPrefixes = [
-        '/',
-        '/login',
-        '/signup',
-        '/signin',
-        '/why-i-built-this',
-        '/demo',
-        '/solution-demo',
-        '/consolidated-demo',
-        '/email-preview',
-        '/notification-demo',
-        '/test',
-        '/dev/login',
-        '/dashboard',
-        '/auth/callback',
-        '/api/auth/callback'
-      ];
-      
-      const isPublic = publicPrefixes.some((p) => 
-        pathname === p || 
-        pathname?.startsWith(p + '/') ||
-        pathname?.startsWith('/_next') ||
-        pathname?.startsWith('/favicon.ico')
-      );
-      
-      if (isPublic) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Dev auth check is now handled by the middleware
-      // if (devAuthEnabled) {
-      //   const isLoggedIn = isDevSession();
-      //   const isDevLogin = pathname?.startsWith('/dev/login');
-      //   if (!isLoggedIn && !isDevLogin) {
-      //     router.push('/dev/login');
-      //     return;
-      //   }
-      //   if (isLoggedIn && isDevLogin) {
-      //     router.push('/dashboard');
-      //     return;
-      //   }
-      // }
-
-      setIsLoading(false);
-    };
-    
-    checkAuth();
-  }, [pathname, router]);
-
-  // Show loading state while checking auth
-  if (isLoading) {
-    return (
-      <html lang="en" className={`${inter.variable} ${poiretOne.variable}`}>
-        <body className="min-h-screen bg-background font-sans antialiased">
-          <div className="flex h-screen w-full items-center justify-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
-          </div>
-        </body>
-      </html>
-    );
-  }
-
-  const isAppRoute = pathname?.startsWith('/app') ?? false;
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poiretOne.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${poiretOne.variable}`}
+      suppressHydrationWarning
+    >
       <head>
-        {/* Google Identity Services Library */}
-        <Script
-          src="https://accounts.google.com/gsi/client"
-          strategy="lazyOnload"
-          onError={(e) => console.error('Failed to load Google Identity Services', e)}
-        />
+        <GoogleScript />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
-        {isAppRoute ? (
-          <div className="flex h-screen overflow-hidden">
-            <main className="flex-1 overflow-y-auto">
-              {children}
-            </main>
-          </div>
-        ) : (
-          <main>{children}</main>
-        )}
-        <Toaster />
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

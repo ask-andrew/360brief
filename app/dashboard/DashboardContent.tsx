@@ -8,7 +8,7 @@ import { calculateNextDelivery } from '@/lib/utils/date';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/toast-provider';
+import { useToast } from '@/components/ui/use-toast';
 import { ScheduledDigest } from '@/types/digest';
 
 export default function DashboardContent() {
