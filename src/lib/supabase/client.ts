@@ -1,22 +1,31 @@
-import { createBrowserClient } from '@supabase/ssr';
+"use client";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+import { createBrowserClient } from "@supabase/ssr";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env.local file.');
-}
+// Singleton instance for the browser client
+let browserSupabase: ReturnType<typeof createBrowserClient> | null = null;
 
-export function createClient() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce',
-    },
-  });
+export function getSupabaseClient() {
+  if (!browserSupabase) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      throw new Error("Supabase environment variables are missing.");
+    }
+
+    browserSupabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          flowType: 'pkce',
+        },
+      }
+    );
+  }
+  return browserSupabase;
 }
 
 // For backward compatibility
-export const supabase = createClient();
+export const supabase = getSupabaseClient();

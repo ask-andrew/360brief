@@ -2,11 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth-store';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   const { setUser, setLoading, setInitialized } = useAuthStore();
   const router = useRouter();
 
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
       console.log('Auth state changed:', event);
       setUser(session?.user ?? null, session);
       
