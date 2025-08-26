@@ -9,7 +9,7 @@ import type { CustomUserAttributes } from './types';
  * Server action to sign up with email and password
  */
 export async function signUpWithEmail(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const email = formData.get('email')?.toString();
   const password = formData.get('password')?.toString();
   const fullName = formData.get('fullName')?.toString();
@@ -40,7 +40,7 @@ export async function signUpWithEmail(formData: FormData) {
  * Server action to sign in with email and password
  */
 export async function signInWithEmail(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const email = formData.get('email')?.toString();
   const password = formData.get('password')?.toString();
 
@@ -62,7 +62,7 @@ export async function signInWithEmail(formData: FormData) {
  * Server action to sign out
  */
 export async function signOut(redirectTo: string = '/login') {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signOut();
 
   if (error) {
@@ -77,7 +77,7 @@ export async function signOut(redirectTo: string = '/login') {
  * Server action to get the current session
  */
 export async function getSession() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.getSession();
 
   if (error) {
@@ -92,7 +92,7 @@ export async function getSession() {
  * Server action to refresh the current session
  */
 export async function refreshSession() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.refreshSession();
 
   if (error) {
@@ -107,7 +107,7 @@ export async function refreshSession() {
  * Server action to handle OAuth sign in
  */
 export async function signInWithOAuth(provider: 'google' | 'github' = 'google') {
-  const supabase = createClient();
+  const supabase = await createClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
   if (!siteUrl) {
