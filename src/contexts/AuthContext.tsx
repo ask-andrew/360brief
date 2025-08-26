@@ -14,6 +14,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  signUp: (email: string, password: string) => ReturnType<typeof supabase.auth.signUp>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,8 +47,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
+  const signUp = (email: string, password: string) => {
+    // Note: For email confirmations, you can set emailRedirectTo here if desired.
+    // We keep it minimal to resolve build error and provide expected functionality.
+    return supabase.auth.signUp({ email, password });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signOut, signUp }}>
       {!loading && children}
     </AuthContext.Provider>
   );
@@ -58,3 +65,4 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+
