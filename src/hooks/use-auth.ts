@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 
 export function useAuth() {
   const router = useRouter();
@@ -20,7 +20,6 @@ export function useAuth() {
   // Sign in function
   const login = async (email: string, password: string) => {
     try {
-      const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -44,7 +43,6 @@ export function useAuth() {
   // Sign up function
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -73,7 +71,6 @@ export function useAuth() {
   // Sign out function
   const signOut = async () => {
     try {
-      const supabase = createClient();
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
