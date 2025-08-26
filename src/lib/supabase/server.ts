@@ -6,12 +6,14 @@ export async function createClient() {
   
   // Create a simple cookie handler object
   const cookieHandler = {
-    get(name: string) {
-      return cookieStore.get(name)?.value;
+    async get(name: string) {
+      const cookie = await cookieStore;
+      return cookie.get(name)?.value;
     },
-    set(name: string, value: string, options: any) {
+    async set(name: string, value: string, options: any) {
       try {
-        cookieStore.set(name, value, {
+        const cookie = await cookieStore;
+        cookie.set(name, value, {
           ...options,
           httpOnly: true,
           sameSite: 'lax',
@@ -22,11 +24,12 @@ export async function createClient() {
         console.error('Error setting cookie:', error);
       }
     },
-    remove(name: string, options: any) {
+    async remove(name: string, options: any) {
       try {
-        cookieStore.set(name, '', {
+        const cookie = await cookieStore;
+        cookie.set(name, '', {
           ...options,
-          expires: new Date(0),
+          maxAge: 0,
           httpOnly: true,
           sameSite: 'lax',
           secure: process.env.NODE_ENV === 'production',
