@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Poiret_One } from 'next/font/google';
 import './globals.css';
-import { ClientProviders } from '@/components/providers/ClientProviders';
-import { GoogleScript } from '@/components/auth/GoogleScript';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -26,18 +25,15 @@ export const metadata: Metadata = {
   description: 'Transform communication noise into clear, actionable insights.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${poiretOne.variable}`}
-      suppressHydrationWarning
-    >
-      <head>
-        <GoogleScript />
-      </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
-        <ClientProviders>{children}</ClientProviders>
+    <html lang="en" className={`${inter.variable} ${poiretOne.variable}`}>
+      <body className={inter.className}>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
