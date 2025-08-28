@@ -50,7 +50,7 @@ export function PodcastPhoneGraphic(props: React.SVGProps<SVGSVGElement>) {
 
       {/* Episode title and show name */}
       <text x="60" y="312" fontFamily="Inter, sans-serif" fontSize="14" fill="#E5E7EB" fontWeight={600 as any}>
-        Multiplying Time: Inbox to Insight
+        Multiply Time: Inbox to Insight
       </text>
       <text x="60" y="332" fontFamily="Inter, sans-serif" fontSize="12" fill="#9CA3AF">
         360Brief • Executive Signals

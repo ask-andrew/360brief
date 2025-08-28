@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { SignInButton } from '@/components/SignInButton';
 import { cn } from '@/lib/utils';
 import { ArrowRight, ChevronRight, Shield } from 'lucide-react';
 
@@ -40,13 +41,14 @@ export function HeroSection() {
           
           {/* CTA Buttons */}
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
+            <SignInButton />
             <Link 
               href="/signup"
               className={cn(
-                'group inline-flex items-center justify-center rounded-xl bg-primary px-8 py-6 text-lg font-semibold text-primary-foreground',
-                'transition-all hover:bg-primary/90 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                'hover:shadow-primary/20 hover:scale-[1.02] transform transition-transform',
-                'shadow-[0_4px_14px_0_rgba(0,0,0,0.08)]'
+                'group inline-flex items-center justify-center rounded-xl bg-primary/10 px-8 py-6 text-lg font-semibold text-foreground',
+                'transition-all hover:bg-primary/20 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'hover:shadow-primary/10 hover:scale-[1.02] transform transition-transform',
+                'border border-primary/20 shadow-sm'
               )}
             >
               Get Your First Briefing Free

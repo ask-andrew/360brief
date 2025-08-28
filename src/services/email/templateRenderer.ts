@@ -1,32 +1,59 @@
 import mjml2html from 'mjml';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import handlebars from 'handlebars';
-import { promisify } from 'util';
-const readFile = promisify(fs.readFile);
 
 // Register custom helpers
-handlebars.registerHelper('eq', function (a, b) {
+handlebars.registerHelper('eq', function (a: unknown, b: unknown): boolean {
   return a === b;
 });
 
-type TemplateData = {
-  [key: string]: any;
-};
+handlebars.registerHelper('formatDate', function (date: Date | string | undefined): string {
+  if (!date) return '';
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC'
+  });
+});
+
+export interface TemplateData {
+  [key: string]: unknown;
+  year?: number;
+  unsubscribeUrl?: string;
+}
+
+export interface TemplateOptions {
+  theme?: string;
+  layout?: string;
+  style?: 'concise' | 'detailed' | 'comprehensive';
+}
+
+export interface RenderedTemplate {
+  html: string;
+  text: string;
+}
 
 export class EmailTemplateRenderer {
-  private templateCache: Map<string, HandlebarsTemplateDelegate> = new Map();
-  private templateDir: string;
+  private readonly templateCache: Map<string, handlebars.TemplateDelegate> = new Map();
+  private readonly templateDir: string;
+  private readonly defaultTheme = 'mission-brief';
+  private readonly defaultLayout = 'default';
+  private readonly defaultStyle: 'detailed' = 'detailed';
 
   constructor() {
-    this.templateDir = path.join(process.cwd(), 'src/templates');
+    this.templateDir = path.join(process.cwd(), 'src/templates/emails');
   }
 
   private async loadTemplate(templatePath: string): Promise<string> {
     try {
       const fullPath = path.join(this.templateDir, templatePath);
       console.log(`Loading template from: ${fullPath}`);
-      const content = await fs.promises.readFile(fullPath, 'utf-8');
+      const content = await fs.readFile(fullPath, 'utf-8');
       return content;
     } catch (error) {
       console.error(`Failed to load template ${templatePath}:`, error);
@@ -34,116 +61,136 @@ export class EmailTemplateRenderer {
     }
   }
 
-  private async getTemplate(templateName: string): Promise<HandlebarsTemplateDelegate> {
-    if (this.templateCache.has(templateName)) {
-      return this.templateCache.get(templateName)!;
+  private getTemplate(templateName: string): handlebars.TemplateDelegate {
+    const template = this.templateCache.get(templateName);
+    if (!template) {
+      throw new Error(`Template ${templateName} not found in cache`);
     }
-
-    // Load the base layout
-    const layoutContent = await this.loadTemplate('base/layout.mjml');
-    
-    // Load the template content
-    const templateContent = await this.loadTemplate(templateName);
-    
-    // Replace the content placeholder in the layout with the template content
-    const fullTemplate = layoutContent.replace('{{{content}}}', templateContent);
-    
-    // Register a simple helper for @partial-block
-    if (!handlebars.helpers['partial-block']) {
-      handlebars.registerHelper('partial-block', function(this: any, options: Handlebars.HelperOptions) {
-        return options.fn && options.fn(this);
-      });
-    }
-    
-    const template = handlebars.compile(fullTemplate, {
-      noEscape: true, // Don't escape HTML in MJML
-      preventIndent: true, // Preserve indentation for MJML
-      strict: false // Be more lenient with missing variables
-    });
-    
-    this.templateCache.set(templateName, template);
     return template;
   }
 
-  private async renderMjml(templateName: string, data: TemplateData): Promise<string> {
+  private async renderMjml(
+    templateName: string,
+    data: TemplateData,
+    options: TemplateOptions
+  ): Promise<RenderedTemplate> {
     try {
       console.log(`Rendering template: ${templateName}`);
-      const template = await this.getTemplate(templateName);
+      const template = this.getTemplate(templateName);
+
+      const {
+        theme = this.defaultTheme,
+        layout = this.defaultLayout,
+        style = this.defaultStyle
+      } = options;
+
+      // Load the main template
+      const templatePath = `themes/${theme}/${templateName}.mjml`;
+      const templateContent = await this.loadTemplate(templatePath);
+
+      // Load the layout if specified
+      let layoutContent = '';
+      if (layout) {
+        try {
+          const layoutPath = `layouts/${layout}.mjml`;
+          layoutContent = await this.loadTemplate(layoutPath);
+        } catch (error) {
+          console.warn(`Layout ${layout} not found, using template without layout`);
+        }
+      }
+
+      // Compile the template with data and style
+      const compiledTemplate = handlebars.compile(templateContent);
+      const renderedContent = compiledTemplate({ ...data, style });
+
+      // Apply layout if available
+      const mjmlContent = layoutContent
+        ? layoutContent.replace('{{> content}}', renderedContent)
+        : renderedContent;
+
+      // Convert MJML to HTML
+      const { html, errors } = mjml2html(mjmlContent, {
+        validationLevel: 'soft',
+        filePath: this.templateDir,
+        minify: process.env.NODE_ENV === 'production'
+      });
+
+      if (errors?.length > 0) {
+        console.error('MJML Errors:', errors);
+        throw new Error('Failed to render MJML template');
+      }
+
+      // Generate plain text version
+      const text = this.generateTextVersion(html);
+
+      return { html, text };
+    } catch (error) {
+      console.error('Error rendering template:', error);
+      throw new Error(
+        `Failed to render template: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  public async render(
+    templateName: string,
+    data: TemplateData = {},
+    options: TemplateOptions = {}
+  ): Promise<RenderedTemplate> {
+    try {
+      return await this.renderMjml(templateName, data, options);
+    } catch (error) {
+      console.error('Error in render:', error);
+      throw new Error(
+        `Failed to render template: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  public async renderMissionBriefEmail(data: {
+    style: 'concise' | 'detailed' | 'comprehensive';
+    subject: string;
+    situation: unknown;
+    action: unknown;
+    impact?: unknown;
+    updates?: unknown[];
+    cta: { text: string; url: string };
+  }): Promise<RenderedTemplate> {
+    try {
+      const templateName = data.style === 'concise' ? 'mission-brief-concise' : 'mission-brief-detailed';
       
       const templateData = {
         ...data,
         year: new Date().getFullYear(),
         unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings/email-preferences`,
-        preferencesUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings`,
       };
-      
-      console.log('Template data:', JSON.stringify(templateData, null, 2));
-      
-      const mjmlContent = template(templateData);
-      console.log('Generated MJML content:', mjmlContent.substring(0, 200) + '...');
 
-      const mjmlOptions = {
-        filePath: path.join(this.templateDir, path.dirname(templateName)),
-        minify: true,
-        validationLevel: 'strict' as const,
-      };
-      
-      console.log('MJML options:', mjmlOptions);
-      
-      const { html, errors } = mjml2html(mjmlContent, mjmlOptions);
-
-      if (errors && errors.length > 0) {
-        console.error('MJML Errors:', errors);
-        throw new Error(`MJML Errors: ${JSON.stringify(errors, null, 2)}`);
-      }
-      
-        return html;
+      return await this.render(templateName, templateData, {
+        style: data.style,
+        theme: 'mission-brief',
+        layout: 'default'
+      });
     } catch (error) {
-      console.error('Error in renderMjml:', error);
-      throw new Error(`Failed to render MJML template: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error in renderMissionBriefEmail:', error);
+      throw new Error(
+        `Failed to render mission brief email: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
-  public async renderMissionBriefEmail(data: {
-    style: 'concise' | 'detailed';
-    subject: string;
-    situation: any;
-    action: any;
-    impact?: any;
-    updates?: any[];
-    cta: { text: string; url: string };
-    secondaryCta?: { text: string; url: string };
-  }): Promise<string> {
-    try {
-      console.log(`Rendering Mission Brief email (${data.style} version)`);
-      const templateName = `styles/mission-brief/${data.style}.mjml`;
-      console.log(`Using template: ${templateName}`);
-      
-      const templatePath = path.join(this.templateDir, templateName);
-      console.log(`Full template path: ${templatePath}`);
-      
-      // Verify template exists
-      try {
-        await fs.promises.access(templatePath, fs.constants.F_OK);
-        console.log('Template file exists');
-      } catch (error) {
-        console.error(`Template file does not exist: ${templatePath}`);
-        throw new Error(`Template file not found: ${templateName}`);
-      }
-      
-      const result = await this.renderMjml(templateName, {
-        ...data,
-        subject: data.subject,
-      });
-      
-      console.log('Successfully rendered email template');
-      return result;
-    } catch (error) {
-      console.error('Error in renderMissionBriefEmail:', error);
-      throw error;
-    }
+  private generateTextVersion(html: string): string {
+    // Simple text conversion - can be enhanced with a proper HTML to text library
+    return html
+      .replace(/<style[^>]*>[\s\S]*<\/style>/g, '') // Remove style tags
+      .replace(/<[^>]+>/g, '\n') // Replace HTML tags with newlines
+      .replace(/\s*\n\s*/g, '\n') // Normalize whitespace around newlines
+      .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
+      .replace(/([^\n])\n([^\n])/g, '$1 $2') // Join lines that were split by HTML
+      .trim();
   }
 }
 
 // Singleton instance
 export const emailTemplateRenderer = new EmailTemplateRenderer();
+
+export default emailTemplateRenderer;

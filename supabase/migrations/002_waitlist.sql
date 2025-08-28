@@ -30,13 +30,21 @@ create policy "waitlist_insert_authenticated"
   to authenticated
   with check (true);
 
--- Optional: allow users to read their own row if you ever authenticate signups
-drop policy if exists "waitlist_select_self" on public.waitlist;
-create policy "waitlist_select_self"
+-- Allow admins to view all waitlist entries
+drop policy if exists "waitlist_select_admin" on public.waitlist;
+create policy "waitlist_select_admin"
   on public.waitlist
   for select
   to authenticated
-  using (false);
+  using (auth.jwt() ->> 'email' = 'askandrewcoaching@gmail.com');
+
+-- Allow admins to update waitlist entries
+drop policy if exists "waitlist_update_admin" on public.waitlist;
+create policy "waitlist_update_admin"
+  on public.waitlist
+  for update
+  to authenticated
+  using (auth.jwt() ->> 'email' = 'askandrewcoaching@gmail.com');
 
 -- Index for created_at to view latest signups quickly
 create index if not exists waitlist_created_at_idx on public.waitlist (created_at desc);

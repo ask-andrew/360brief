@@ -117,53 +117,111 @@ export function BetaWaitlist() {
 
   return (
     <div>
-      <div className="flex justify-center">
-        <button
-          onClick={() => setOpen(true)}
-          className="rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-3 text-white shadow transition-colors duration-200 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
-        >
-          Request Beta Invite
-        </button>
-      </div>
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3 text-base font-medium text-white shadow-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
+      >
+        Join Waitlist
+      </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50"
-          onClick={() => setOpen(false)}
-        >
-          <div className="flex min-h-screen items-center justify-center p-4" aria-hidden>
-            <div
-              role="dialog"
-              aria-modal="true"
-              className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-            <div className="sticky top-0 z-10 mb-4 flex items-start justify-between gap-4 bg-white pb-2">
-              <div>
-                <h2 className="text-xl font-semibold">Request Beta Invite</h2>
-                <p className="text-sm text-gray-600">
-                  Privacy-first: we store preferences, not raw sensitive data. Unsubscribe anytime.
-                </p>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4 text-center">
+            <div className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onClick={() => setOpen(false)} />
+            <div className="relative my-8 w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 text-left shadow-2xl transition-all border border-indigo-100">
+              <div className="sticky top-0 z-10 flex items-start justify-between gap-4 bg-white/80 backdrop-blur-sm p-6 border-b border-indigo-100">
+                <div>
+                  <h2 className="text-2xl font-bold text-indigo-900">Join the Beta Waitlist</h2>
+                  <p className="mt-2 text-indigo-800/80">Get early access to 360Brief</p>
+                  <p className="text-sm text-gray-600">
+                    Privacy-first: we store preferences, not raw sensitive data. Unsubscribe anytime.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none"
+                  aria-label="Close"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="rounded p-1 text-gray-500 hover:bg-gray-100"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
 
             {submitted ? (
-              <div className="space-y-3">
-                <p className="text-green-700">You're on the list! We'll reach out as cohorts open.</p>
-                <p className="text-sm text-gray-600">Want to move up the list? Refer a friend—forward your confirmation email.</p>
-                <div className="pt-2">
+              <div className="p-8 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                  <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="mt-4 text-2xl font-bold text-gray-900">You're on the list, {form.name || 'friend'}! 🎉</h3>
+                <p className="mt-2 text-gray-600">We'll be in touch soon with your invite.</p>
+                
+                <div className="mt-8 rounded-lg bg-indigo-50 p-6">
+                  <h4 className="font-medium text-indigo-900">Want to move up the list?</h4>
+                  <p className="mt-2 text-sm text-indigo-700">Share 360Brief and get priority access when you refer others!</p>
+                  
+                  <div className="mt-4 flex justify-center gap-3">
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('Just joined the waitlist for @360Brief - a better way to manage your communications! Join me: https://360brief.com')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
+                    >
+                      <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                      </svg>
+                      Share on X
+                    </a>
+                    <a
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://360brief.com')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
+                    >
+                      <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                      </svg>
+                      Share on LinkedIn
+                    </a>
+                  </div>
+                </div>
+
+                <div className="mt-8">
+                  <p className="text-sm text-gray-500">Your referral link:</p>
+                  <div className="mt-2 flex rounded-md shadow-sm">
+                    <div className="relative flex flex-grow items-stretch focus-within:z-10">
+                      <input
+                        type="text"
+                        readOnly
+                        value={`https://360brief.com?ref=${form.email.replace('@', '-at-')}`}
+                        className="block w-full rounded-l-md border-gray-300 py-2 pl-3 pr-12 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`https://360brief.com?ref=${form.email.replace('@', '-at-')}`);
+                          // Could add a toast notification here
+                        }}
+                        className="relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span>Copy</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8">
                   <button
                     onClick={() => setOpen(false)}
-                    className="rounded-md border px-4 py-2 hover:bg-gray-50"
+                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   >
-                    Close
+                    Done
                   </button>
                 </div>
               </div>
@@ -338,12 +396,12 @@ export function BetaWaitlist() {
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
 
-                <div className="sticky bottom-0 flex items-center justify-between gap-3 bg-white py-2">
+                <div className="sticky bottom-0 flex items-center justify-between gap-3 bg-white/80 backdrop-blur-sm border-t border-indigo-100 px-6 py-4">
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
-                      className="rounded-md border px-3 py-2 text-sm transition-colors hover:bg-gray-50"
+                      className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                     >
                       Close
                     </button>
@@ -352,7 +410,7 @@ export function BetaWaitlist() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-white transition-colors duration-200 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60"
+                    className="rounded-full bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-60"
                   >
                     {submitting ? "Submitting…" : "Request Invite"}
                   </button>

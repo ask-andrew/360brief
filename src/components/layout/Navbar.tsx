@@ -94,7 +94,7 @@ export function Navbar() {
           {/* Desktop CTA */}
           <div className="hidden items-center space-x-3 md:flex">
             <Link
-              href="/signin"
+              href="/login"
               className={cn(
                 'text-sm font-medium text-muted-foreground transition-colors hover:text-foreground/90',
                 'px-3 py-2 rounded-md hover:bg-muted/50'
@@ -104,21 +104,9 @@ export function Navbar() {
             </Link>
             <Link
               href="/signup"
-              className={cn(
-                'inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground',
-                'transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                'group px-5 py-2.5 hover:shadow-md'
-              )}
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               Get Started
-              <svg 
-                className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
             </Link>
           </div>
 
@@ -172,12 +160,10 @@ export function Navbar() {
           ))}
           <div className="flex flex-col space-y-2 pt-4">
             <Link
-              href="/signin"
-              className={cn(
-                'text-sm font-medium text-foreground/80 transition-colors hover:text-primary'
-              )}
+              href="/login"
+              className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
             >
-              Sign In
+              Sign in
             </Link>
             <Link
               href="/signup"

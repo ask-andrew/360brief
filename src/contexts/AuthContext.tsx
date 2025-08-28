@@ -1,68 +1,52 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
-
-type User = {
-  id: string;
-  email?: string;
-  user_metadata?: { name?: string; avatar_url?: string };
-};
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createClientComponentClient, Session } from '@supabase/auth-helpers-nextjs';
 
 type AuthContextType = {
-  user: User | null;
+  session: Session | null;
   loading: boolean;
-  signOut: () => Promise<void>;
-  signUp: (email: string, password: string) => ReturnType<typeof supabase.auth.signUp>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  session: null,
+  loading: true,
+});
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user || null);
-        setLoading(false);
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
+    // Load the session on mount
+    const getSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setSession(session ?? null);
       setLoading(false);
+    };
+
+    getSession();
+
+    // Listen for changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session ?? null);
     });
 
     return () => {
-      subscription?.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [router]);
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
-
-  const signUp = (email: string, password: string) => {
-    // Note: For email confirmations, you can set emailRedirectTo here if desired.
-    // We keep it minimal to resolve build error and provide expected functionality.
-    return supabase.auth.signUp({ email, password });
-  };
+  }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut, signUp }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ session, loading }}>
+      {children}
     </AuthContext.Provider>
   );
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
 };
 
+export const useAuth = () => useContext(AuthContext);
