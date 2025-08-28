@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,28 +13,27 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const router = useRouter();
-  const supabase = createClientComponentClient();
+  const { signInWithGoogle, signInWithEmail } = useAuth();
   const { toast } = useToast();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+    if (!email || !password) {
+      toast({
+        title: 'Error',
+        description: 'Please enter both email and password',
+        variant: 'destructive',
       });
-
-      if (error) throw error;
-
-      router.push('/dashboard');
-      router.refresh();
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await signInWithEmail(email, password);
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.error_description || error.message,
+        description: error.message || 'Failed to sign in',
         variant: 'destructive',
       });
     } finally {
@@ -46,22 +44,11 @@ export function LoginForm() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      if (error) throw error;
+      await signInWithGoogle();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.error_description || error.message,
+        description: error.message || 'Failed to sign in with Google',
         variant: 'destructive',
       });
     } finally {

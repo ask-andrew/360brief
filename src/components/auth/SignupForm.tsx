@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function SignupForm() {
   const [email, setEmail] = useState('');
@@ -16,35 +16,36 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const { signUpWithEmail, signInWithGoogle } = useAuth();
   const { toast } = useToast();
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password || !fullName) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) throw error;
-
+      await signUpWithEmail(email, password, fullName);
+      
       toast({
         title: 'Check your email',
         description: 'We sent you a confirmation email. Please check your inbox.',
       });
+      
+      // Redirect to login after successful signup
+      router.push('/login');
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.error_description || error.message,
+        description: error.message || 'Failed to create account',
         variant: 'destructive',
       });
     } finally {
@@ -55,22 +56,11 @@ export function SignupForm() {
   const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      if (error) throw error;
+      await signInWithGoogle();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.error_description || error.message,
+        description: error.message || 'Failed to sign in with Google',
         variant: 'destructive',
       });
     } finally {

@@ -1,0 +1,212 @@
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
+
+// Disable static rendering and caching for this route
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: NextRequest) {
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+  const error = requestUrl.searchParams.get('error')
+  const errorDescription = requestUrl.searchParams.get('error_description')
+  const errorCode = requestUrl.searchParams.get('error_code')
+  const next = requestUrl.searchParams.get('next') || '/dashboard'
+  
+  // Log the callback for debugging (without sensitive data)
+  console.log('[Auth Callback] Received callback', {
+    code: code ? 'present' : 'missing',
+    error: error || 'none',
+    next
+  })
+
+  // Handle OAuth errors
+  if (error) {
+    console.error('[Auth Callback] OAuth error:', {
+      error,
+      errorDescription: errorDescription || 'No description',
+      errorCode: errorCode || 'No error code',
+      url: requestUrl.origin + requestUrl.pathname
+    })
+    
+    const redirectUrl = new URL('/login', request.url)
+    redirectUrl.searchParams.set('error', error || 'oauth_error')
+    if (errorDescription) redirectUrl.searchParams.set('error_description', errorDescription)
+    if (errorCode) redirectUrl.searchParams.set('error_code', errorCode)
+    
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // If no code is present, redirect to login with an error
+  if (!code) {
+    console.error('[Auth Callback] No OAuth code found in callback URL')
+    
+    const redirectUrl = new URL('/login', request.url)
+    redirectUrl.searchParams.set('error', 'no_code')
+    redirectUrl.searchParams.set('error_description', 'No authentication code was provided')
+    
+    return NextResponse.redirect(redirectUrl)
+  }
+  
+  // Create a response that we'll use to set cookies
+  let response = NextResponse.redirect(new URL(next, request.url))
+  
+  try {
+    // Create a Supabase client configured to use cookies
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+              sameSite: 'lax',
+              secure: process.env.NODE_ENV === 'production',
+              httpOnly: true,
+              path: '/',
+            })
+          },
+          remove(name: string, options: any) {
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+              maxAge: 0,
+              sameSite: 'lax',
+              secure: process.env.NODE_ENV === 'production',
+              httpOnly: true,
+              path: '/',
+            })
+          },
+        },
+      }
+    )
+    
+    // Exchange the auth code for a session
+    console.log('[Auth Callback] Exchanging code for session...')
+    const { error: authError, data } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (authError) {
+      console.error('[Auth Callback] Error exchanging code for session:', authError)
+      throw authError
+    }
+    
+    console.log('[Auth Callback] Successfully authenticated user:', data.user?.email)
+    
+    // Clean up the URL by removing the code parameter
+    const cleanUrl = new URL(request.url)
+    cleanUrl.searchParams.delete('code')
+    cleanUrl.searchParams.delete('next')
+    
+    // Redirect to the clean URL to prevent code reuse
+    response = NextResponse.redirect(cleanUrl)
+    
+    return response
+    
+  } catch (error) {
+    console.error('[Auth Callback] Error in auth callback:', error)
+    
+    const redirectUrl = new URL('/login', request.url)
+    redirectUrl.searchParams.set('error', 'auth_error')
+    redirectUrl.searchParams.set('error_description', 'Failed to authenticate with the provider')
+    
+    return NextResponse.redirect(redirectUrl)
+  }
+}              value,
+              ...options,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              path: '/',
+              httpOnly: true,
+            })
+          },
+          remove(name: string, options: any) {
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+              maxAge: 0,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              path: '/',
+              httpOnly: true,
+            })
+          },
+        },
+      }
+    )
+
+    console.log('[Auth Callback] Exchanging code for session...')
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (error) {
+      console.error('[Auth Callback] Error exchanging code for session:', error)
+      throw error
+    }
+
+    console.log('[Auth Callback] Successfully exchanged code for session:', {
+      user: data.user?.id,
+      expiresAt: data.session?.expires_at,
+    })
+    
+    // Set up redirect URL with proper cleanup of sensitive params
+    const redirectUrl = new URL(next || '/dashboard', request.url)
+    
+    // Clean up any sensitive params from the URL
+    const paramsToRemove = [
+      'code', 'error', 'error_description', 'error_code', 'error_hint',
+      'state', 'provider', 'type'
+    ]
+    
+    paramsToRemove.forEach(param => {
+      redirectUrl.searchParams.delete(param)
+    })
+    
+    // Set the redirect
+    response.headers.set('Location', redirectUrl.toString())
+    
+    // Get the user session to verify
+    const { data: sessionData } = await supabase.auth.getSession()
+    
+    if (!sessionData.session) {
+      console.error('[Auth Callback] Failed to get session after authentication')
+      
+      // Redirect to login with error
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('error', 'no_session')
+      loginUrl.searchParams.set('error_description', 'No session after authentication')
+      
+      // Clean up any existing cookies
+      response.cookies.delete('sb-access-token')
+      response.cookies.delete('sb-refresh-token')
+      
+      // Set the redirect to login
+      response.headers.set('Location', loginUrl.toString())
+      return response
+    }
+
+    // Success! Return the response with the redirect
+    return response
+  } catch (error) {
+    console.error('[Auth Callback] Error in auth callback:', error);
+    
+    const redirectUrl = new URL('/login', request.url);
+    const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+    
+    redirectUrl.searchParams.set('error', 'auth_error');
+    redirectUrl.searchParams.set('error_description', encodeURIComponent(errorMessage));
+    
+    // Add error details for debugging (only in development)
+    if (process.env.NODE_ENV === 'development' && error instanceof Error) {
+      redirectUrl.searchParams.set('error_stack', encodeURIComponent(error.stack || ''));
+    }
+    
+    return NextResponse.redirect(redirectUrl);
+  }
+}
