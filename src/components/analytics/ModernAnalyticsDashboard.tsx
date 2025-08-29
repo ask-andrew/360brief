@@ -363,9 +363,29 @@ export function ModernAnalyticsDashboard() {
               <BarChart3 className="w-8 h-8 text-blue-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting up your analytics</h2>
-            <p className="text-gray-600 mb-6">
-              {error ? error : 'We\'re currently syncing your communication data to generate personalized insights. This usually takes a few minutes.'}
-            </p>
+            <div className="text-gray-600 mb-6">
+              {error ? (
+                <div className="space-y-2">
+                  <p className="font-medium text-gray-800">Setup Required:</p>
+                  {error.includes('credentials file not found') ? (
+                    <div className="bg-gray-50 p-4 rounded border text-sm">
+                      <p className="mb-2">Gmail credentials need to be configured first:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-xs">
+                        <li>Create a Google Cloud project and enable Gmail API</li>
+                        <li>Create OAuth2 credentials and download JSON file</li>
+                        <li>Save as gmail_credentials.json in services/data_processing/</li>
+                        <li>Set GMAIL_CREDENTIALS_FILE environment variable</li>
+                      </ol>
+                      <p className="mt-2 text-blue-600">See setup_gmail.md for detailed instructions</p>
+                    </div>
+                  ) : (
+                    <p>{error}</p>
+                  )}
+                </div>
+              ) : (
+                <p>We're currently syncing your communication data to generate personalized insights. This usually takes a few minutes.</p>
+              )}
+            </div>
             <div className="flex items-center justify-center space-x-2 mb-6">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>

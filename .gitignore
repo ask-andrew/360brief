@@ -70,3 +70,7 @@ MANIFEST
 
 # Analytics API cache
 /services/data_processing/src/analytics/api/__pycache__/
+
+# Gmail API credentials (never commit these!)
+/services/data_processing/gmail_credentials.json
+/services/data_processing/gmail_token.json

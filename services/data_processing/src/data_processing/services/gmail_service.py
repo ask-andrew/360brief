@@ -51,8 +51,14 @@ class GmailService:
         Returns:
             Authorization URL for user to grant permissions
         """
-        if not self.credentials_file:
-            raise ValueError("Gmail credentials file path not configured")
+        if not self.credentials_file or not os.path.exists(self.credentials_file):
+            raise ValueError(
+                "Gmail credentials file not found. Please:"
+                "\n1. Go to Google Cloud Console (https://console.cloud.google.com/)"
+                "\n2. Create a project and enable Gmail API"
+                "\n3. Create OAuth2 credentials and download the JSON file"
+                "\n4. Set GMAIL_CREDENTIALS_FILE environment variable to the file path"
+            )
             
         flow = Flow.from_client_secrets_file(
             self.credentials_file,

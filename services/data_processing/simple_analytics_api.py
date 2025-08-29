@@ -255,10 +255,21 @@ async def gmail_status():
     
     try:
         gmail_service = GmailService()
+        
+        # Check if credentials file exists
+        if not gmail_service.credentials_file or not os.path.exists(gmail_service.credentials_file):
+            return {
+                "authenticated": False,
+                "error": "Gmail credentials not configured",
+                "setup_required": True,
+                "message": "Please follow the setup guide to configure Gmail credentials"
+            }
+        
         authenticated = await gmail_service.authenticate()
         
         return {
             "authenticated": authenticated,
+            "credentials_configured": True,
             "message": "Gmail connected" if authenticated else "Gmail not connected"
         }
         
