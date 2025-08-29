@@ -4,6 +4,7 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/components/ui/use-toast';
 import { Toaster } from '@/components/ui/toaster';
+import { QueryProvider } from '@/providers/QueryProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -35,10 +36,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${poiretOne.variable}`}>
       <body className={inter.className}>
-        <ToastProvider>
-          <AuthProvider>{children}</AuthProvider>
-          <Toaster />
-        </ToastProvider>
+        <QueryProvider>
+          <ToastProvider>
+            <AuthProvider>{children}</AuthProvider>
+            <Toaster />
+          </ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );
