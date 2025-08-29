@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { SignInButton } from '@/components/SignInButton';
 import { cn } from '@/lib/utils';
 import { ArrowRight, ChevronRight, Shield } from 'lucide-react';
 
@@ -41,7 +40,6 @@ export function HeroSection() {
           
           {/* CTA Buttons */}
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
-            <SignInButton />
             <Link 
               href="/signup"
               className={cn(

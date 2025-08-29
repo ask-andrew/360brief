@@ -126,10 +126,10 @@ export function BetaWaitlist() {
 
       {open && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center p-4 text-center">
+          <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-6">
             <div className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onClick={() => setOpen(false)} />
-            <div className="relative my-8 w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 text-left shadow-2xl transition-all border border-indigo-100">
-              <div className="sticky top-0 z-10 flex items-start justify-between gap-4 bg-white/80 backdrop-blur-sm p-6 border-b border-indigo-100">
+            <div className="relative my-8 w-full max-w-2xl transform overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 text-left shadow-2xl transition-all border border-indigo-100 max-h-[90vh] flex flex-col">
+              <div className="sticky top-0 z-10 flex items-start justify-between gap-4 bg-white/80 backdrop-blur-sm px-6 py-4 sm:px-8 sm:py-6 border-b border-indigo-100 flex-shrink-0">
                 <div>
                   <h2 className="text-2xl font-bold text-indigo-900">Join the Beta Waitlist</h2>
                   <p className="mt-2 text-indigo-800/80">Get early access to 360Brief</p>
@@ -150,8 +150,9 @@ export function BetaWaitlist() {
                 </button>
               </div>
 
+            <div className="flex-1 overflow-y-auto">
             {submitted ? (
-              <div className="p-8 text-center">
+              <div className="p-6 sm:p-8 text-center">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                   <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -226,7 +227,8 @@ export function BetaWaitlist() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={submit} className="space-y-6">
+              <div className="px-6 py-4 sm:px-8 sm:py-6">
+              <form id="waitlist-form" onSubmit={submit} className="space-y-6">
                 {/* Step 1 */}
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="sm:col-span-2">
@@ -237,18 +239,19 @@ export function BetaWaitlist() {
                       ref={emailRef}
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="mt-1 w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                       placeholder="you@company.com"
                     />
                   </div>
                   <div className="flex items-end">
-                    <label className="flex items-center gap-2 text-sm">
+                    <label className="flex items-start gap-2 text-sm">
                       <input
                         type="checkbox"
                         checked={form.consent}
                         onChange={(e) => setForm({ ...form, consent: e.target.checked })}
+                        className="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                       />
-                      I consent to be contacted about the beta
+                      <span>I consent to be contacted about the beta</span>
                     </label>
                   </div>
                 </div>
@@ -258,14 +261,14 @@ export function BetaWaitlist() {
                   <button
                     type="button"
                     onClick={() => setStep2((s) => !s)}
-                    className="text-sm text-primary hover:underline"
+                    className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded px-1 py-1 transition-colors"
                   >
-                    {step2 ? "Hide optional questions" : "Answer a few optional questions (helps prioritize access)"}
+                    {step2 ? "▲ Hide optional questions" : "▼ Answer a few optional questions (helps prioritize access)"}
                   </button>
                 </div>
 
                 {step2 && (
-                  <div className="space-y-4 rounded-md bg-gray-50 p-4">
+                  <div className="space-y-4 rounded-lg bg-gray-50 p-4 sm:p-6 border border-gray-200">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="block text-sm font-medium">Name</label>
@@ -273,7 +276,7 @@ export function BetaWaitlist() {
                           type="text"
                           value={form.name}
                           onChange={(e) => setForm({ ...form, name: e.target.value })}
-                          className="mt-1 w-full rounded-md border px-3 py-2"
+                          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         />
                       </div>
                       <div>
@@ -282,7 +285,7 @@ export function BetaWaitlist() {
                           type="text"
                           value={form.role}
                           onChange={(e) => setForm({ ...form, role: e.target.value })}
-                          className="mt-1 w-full rounded-md border px-3 py-2"
+                          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         />
                       </div>
                       <div>
@@ -290,7 +293,7 @@ export function BetaWaitlist() {
                         <select
                           value={form.company_size}
                           onChange={(e) => setForm({ ...form, company_size: e.target.value })}
-                          className="mt-1 w-full rounded-md border px-3 py-2"
+                          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         >
                           <option value="">Select</option>
                           <option>1-10</option>
@@ -304,7 +307,7 @@ export function BetaWaitlist() {
                         <select
                           value={form.delivery_pref}
                           onChange={(e) => setForm({ ...form, delivery_pref: e.target.value })}
-                          className="mt-1 w-full rounded-md border px-3 py-2"
+                          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         >
                           <option value="">Select</option>
                           <option>Web</option>
@@ -315,34 +318,40 @@ export function BetaWaitlist() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium">Which tools do you want included?</label>
-                      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {TOOLS.map((t) => (
-                          <label key={t} className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={form.tools.includes(t)}
-                              onChange={() => onToggleList("tools", t)}
-                            />
-                            {t}
-                          </label>
-                        ))}
+                      <label className="block text-sm font-medium mb-3">Which tools do you want included?</label>
+                      <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {TOOLS.map((t) => (
+                            <label key={t} className="flex items-center gap-2 text-sm hover:bg-gray-50 p-1 rounded">
+                              <input
+                                type="checkbox"
+                                checked={form.tools.includes(t)}
+                                onChange={() => onToggleList("tools", t)}
+                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <span className="truncate">{t}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium">Must-have features</label>
-                      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {MUST_HAVES.map((m) => (
-                          <label key={m} className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={form.must_haves.includes(m)}
-                              onChange={() => onToggleList("must_haves", m)}
-                            />
-                            {m}
-                          </label>
-                        ))}
+                      <label className="block text-sm font-medium mb-3">Must-have features</label>
+                      <div className="max-h-28 overflow-y-auto border border-gray-200 rounded-md p-3 bg-white">
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {MUST_HAVES.map((m) => (
+                            <label key={m} className="flex items-center gap-2 text-sm hover:bg-gray-50 p-1 rounded">
+                              <input
+                                type="checkbox"
+                                checked={form.must_haves.includes(m)}
+                                onChange={() => onToggleList("must_haves", m)}
+                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <span className="truncate">{m}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -352,7 +361,7 @@ export function BetaWaitlist() {
                         <select
                           value={form.style_pref}
                           onChange={(e) => setForm({ ...form, style_pref: e.target.value })}
-                          className="mt-1 w-full rounded-md border px-3 py-2"
+                          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         >
                           <option value="">Select</option>
                           {STYLES.map((s) => (
@@ -360,14 +369,15 @@ export function BetaWaitlist() {
                           ))}
                         </select>
                       </div>
-                      <div className="flex items-end">
-                        <label className="flex items-center gap-2 text-sm">
+                        <div className="flex items-end">
+                        <label className="flex items-start gap-2 text-sm">
                           <input
                             type="checkbox"
                             checked={form.willing_call}
                             onChange={(e) => setForm({ ...form, willing_call: e.target.checked })}
+                            className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           />
-                          Willing to do a 15-min feedback call
+                          <span>Willing to do a 15-min feedback call</span>
                         </label>
                       </div>
                     </div>
@@ -395,8 +405,13 @@ export function BetaWaitlist() {
                 )}
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
-
-                <div className="sticky bottom-0 flex items-center justify-between gap-3 bg-white/80 backdrop-blur-sm border-t border-indigo-100 px-6 py-4">
+              </form>
+              </div>
+            )}
+            </div>
+            
+            {!submitted && (
+              <div className="sticky bottom-0 flex items-center justify-between gap-3 bg-white/90 backdrop-blur-sm border-t border-indigo-100 px-6 py-4 sm:px-8 flex-shrink-0">
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -411,11 +426,11 @@ export function BetaWaitlist() {
                     type="submit"
                     disabled={submitting}
                     className="rounded-full bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-60"
+                    form="waitlist-form"
                   >
                     {submitting ? "Submitting…" : "Request Invite"}
                   </button>
                 </div>
-              </form>
             )}
             </div>
           </div>
