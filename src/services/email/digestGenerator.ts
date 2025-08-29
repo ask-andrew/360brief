@@ -58,8 +58,8 @@ export class DigestGenerator {
       cta: data.cta || { text: 'View Details', url: '#' }
     }).then(html => ({
       subject: `🚨 ${subject}`,
-      html,
-      text: this.generatePlainTextFromHtml(html)
+      html: html as any,
+      text: this.generatePlainTextFromHtml(html as any)
     }));
   }
 
@@ -90,12 +90,11 @@ export class DigestGenerator {
         details: update.details,
         metrics: update.metrics || []
       })) || [],
-      cta: data.cta || { text: 'View Full Report', url: '#' },
-      secondaryCta: data.secondaryCta
+      cta: data.cta || { text: 'View Full Report', url: '#' }
     }).then(html => ({
       subject: `📋 ${subject}`,
-      html,
-      text: this.generatePlainTextFromHtml(html)
+      html: html as any,
+      text: this.generatePlainTextFromHtml(html as any)
     }));
   }
 

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
@@ -9,10 +10,14 @@ import { PodcastSection } from '@/components/landing/PodcastSection';
 import { BetaWaitlist } from '@/components/marketing/BetaWaitlist';
 import { UseCaseTabs } from '@/components/landing/UseCaseTabs';
 import { SignInButton } from '@/components/SignInButton';
+import { AuthCodeHandler } from '@/components/AuthCodeHandler';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
+      <Suspense fallback={null}>
+        <AuthCodeHandler />
+      </Suspense>
       <Navbar />
       <main className="overflow-hidden">
         <HeroSection />

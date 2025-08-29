@@ -26,13 +26,17 @@ export async function generateExecutiveBrief(
     : `Activity snapshot: ${emails} emails, ${meetings} meetings in the period.`;
 
   const brief: ExecutiveBrief = {
+    id: `brief-${Date.now()}`,
+    title: 'Executive Brief',
+    summary: tldr,
+    data: {} as any, // Will be filled by insights engine
     userId: opts.userId,
     generatedAt,
     timeframe: opts.timeframe,
     style,
     version: '1.0',
     tldr,
-    metrics: { emails, meetings },
+    metrics: [{ name: 'emails', value: emails.toString() }, { name: 'meetings', value: meetings.toString() }],
     highlights: [],
     blockers: [],
     nextSteps: [],

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { Timestamped, Owned } from '@/types/common';
+import { CreateDigestSchedule } from '@/types/digest';
 
 /**
  * Types for digest scheduling
@@ -26,11 +27,11 @@ export interface DigestSchedule extends Timestamped, Owned {
  * Service for managing digest schedules and generation
  */
 
-export const createDigestSchedule = async (digest: Omit<DigestSchedule, 'id' | 'createdAt' | 'updatedAt'>) => {
+export const createDigestSchedule = async (digest: CreateDigestSchedule) => {
   const { data, error } = await supabase
     .from('digest_schedules')
     .insert([{
-      user_id: digest.owner_id,
+      user_id: digest.userId,
       name: digest.name,
       description: digest.description,
       frequency: digest.frequency,

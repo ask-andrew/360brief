@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateBrief } from '@/server/briefs/generateBrief';
-import { fetchUnifiedData } from '@/lib/services/unifiedDataService';
+import { fetchUnifiedData } from '@/services/unifiedDataService';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: Request) {

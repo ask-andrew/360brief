@@ -1,6 +1,6 @@
-import { addDays, setHours, setMinutes, parse } from 'date-fns';
+import { addDays, setHours, setMinutes, addMonths, parse } from 'date-fns';
 
-export function calculateNextDelivery(time: string, frequency: 'daily' | 'weekly' | 'weekdays'): Date {
+export function calculateNextDelivery(time: string, frequency: 'daily' | 'weekly' | 'weekdays' | 'monthly'): Date {
   const now = new Date();
   const [hours, minutes] = time.split(':').map(Number);
   let nextDate = setMinutes(setHours(now, hours), minutes);
@@ -22,6 +22,12 @@ export function calculateNextDelivery(time: string, frequency: 'daily' | 'weekly
       nextDate = addDays(nextDate, 1);
     } else if (day === 6) { // Saturday
       nextDate = addDays(nextDate, 2);
+    }
+  }
+  // Handle monthly frequency
+  else if (frequency === 'monthly') {
+    if (nextDate < now) {
+      nextDate = addMonths(nextDate, 1);
     }
   }
 

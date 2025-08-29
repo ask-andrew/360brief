@@ -1,5 +1,8 @@
 'use client';
 
+import { Suspense } from 'react';
+
+export const dynamic = 'force-dynamic';
 import { CheckCircle, Clock, Mail } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,7 +15,7 @@ interface SearchParams {
   frequency?: string;
 }
 
-export default function DigestSuccessPage() {
+function DigestSuccessContent() {
   const searchParams = useSearchParams() as unknown as URLSearchParams & SearchParams;
   const digestName = searchParams.get?.('name') 
     ? decodeURIComponent(searchParams.get('name') as string) 
@@ -96,5 +99,24 @@ export default function DigestSuccessPage() {
         <p>Need to make changes? You can edit your digest settings anytime from your dashboard.</p>
       </div>
     </div>
+  );
+}
+
+export default function DigestSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-2xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
+        <div className="flex justify-center mb-6">
+          <div className="rounded-full bg-green-100 p-3">
+            <CheckCircle className="h-12 w-12 text-green-600" />
+          </div>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          Loading...
+        </h1>
+      </div>
+    }>
+      <DigestSuccessContent />
+    </Suspense>
   );
 }
