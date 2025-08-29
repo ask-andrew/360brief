@@ -1,7 +1,5 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import type { Database } from '@/lib/supabase/database.types';
 
 // Disable static rendering and caching for this route
 export const dynamic = 'force-dynamic';
@@ -14,52 +12,44 @@ export async function GET(request: Request) {
   const errorCode = requestUrl.searchParams.get('error_code');
   const errorHint = requestUrl.searchParams.get('error_hint');
   const codeVerifier = requestUrl.searchParams.get('code_verifier');
+  const next = requestUrl.searchParams.get('next') || '/dashboard';
 
   // Log the callback for debugging (but don't log sensitive data)
   console.log('[Auth Callback] Received callback', {
     code: code ? 'present' : 'missing',
-    hasCodeVerifier: !!codeVerifier,
     error,
+    errorDescription,
     errorCode,
-    url: requestUrl.origin + requestUrl.pathname // Don't log query params
+    errorHint,
+    hasCodeVerifier: !!codeVerifier,
+    next
   });
 
-  // Handle OAuth errors
+  // If there's an error, redirect to login with error details
   if (error) {
-    console.error('[Auth Callback] OAuth error:', { 
-      error, 
+    console.error('[Auth Callback] OAuth error:', {
+      error,
       errorDescription,
       errorCode,
-      errorHint,
-      url: requestUrl.toString()
+      errorHint
     });
     
-    const redirectUrl = new URL('/login', request.url);
-    redirectUrl.searchParams.set('error', error || 'oauth_error');
+    const redirectUrl = new URL('/login', requestUrl.origin);
+    redirectUrl.searchParams.set('error', 'oauth_failed');
     if (errorDescription) redirectUrl.searchParams.set('error_description', errorDescription);
-    if (errorCode) redirectUrl.searchParams.set('error_code', errorCode);
-    
     return NextResponse.redirect(redirectUrl);
   }
 
-  // If no code is present, redirect to login with an error
+  // If there's no code, redirect to login
   if (!code) {
-    const errorMsg = 'No OAuth code found in callback URL';
-    console.error(`[Auth Callback] ${errorMsg}`);
-    
-    const redirectUrl = new URL('/login', request.url);
-    redirectUrl.searchParams.set('error', 'invalid_request');
-    redirectUrl.searchParams.set('error_description', encodeURIComponent(errorMsg));
-    
+    console.error('[Auth Callback] No code provided in callback');
+    const redirectUrl = new URL('/login', requestUrl.origin);
+    redirectUrl.searchParams.set('error', 'no_code');
     return NextResponse.redirect(redirectUrl);
   }
 
   try {
-    // Create a Supabase client configured to use cookies
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
-
-    // Exchange the code for a session
+    const supabase = await createClient();
     const { error: authError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (authError) {
@@ -69,39 +59,22 @@ export async function GET(request: Request) {
 
     // Get the user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
+
     if (sessionError || !session) {
       console.error('[Auth Callback] Error getting session:', sessionError);
-      throw sessionError || new Error('No session found after authentication');
+      throw new Error('Failed to get user session');
     }
 
-    console.log('[Auth Callback] User authenticated successfully:', {
-      userId: session.user.id,
-      email: session.user.email,
-      provider: session.user.app_metadata.provider
-    });
-
-    // Check if the user needs to complete signup
-    const needsSignup = !session.user.user_metadata?.full_name;
-    
-    // Redirect to the appropriate page
-    const redirectTo = needsSignup 
-      ? '/onboarding'
-      : requestUrl.searchParams.get('redirect_to') || '/dashboard';
-
-    return NextResponse.redirect(new URL(redirectTo, request.url));
-
+    // Success! Redirect to the dashboard or the next URL
+    console.log('[Auth Callback] Authentication successful, redirecting to:', next);
+    return NextResponse.redirect(new URL(next, requestUrl.origin));
   } catch (error) {
     console.error('[Auth Callback] Error during authentication:', error);
-    
-    // Create a safe error message for the client
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    
-    // Redirect to login with error details
-    const redirectUrl = new URL('/login', request.url);
-    redirectUrl.searchParams.set('error', 'authentication_failed');
-    redirectUrl.searchParams.set('error_description', encodeURIComponent(errorMessage));
-    
+    const redirectUrl = new URL('/login', requestUrl.origin);
+    redirectUrl.searchParams.set('error', 'auth_error');
+    if (error instanceof Error) {
+      redirectUrl.searchParams.set('error_description', error.message);
+    }
     return NextResponse.redirect(redirectUrl);
   }
 }

@@ -5,13 +5,13 @@ export type InsightResults = {
   highlights: ExecutiveBrief['highlights'];
   blockers: ExecutiveBrief['blockers'];
   nextSteps: ExecutiveBrief['nextSteps'];
-  trendLabel?: NonNullable<ExecutiveBrief['metrics']>['trendLabel'];
+  trendLabel?: string;
 };
 
 // Basic scoring helpers
 function ticketWeight(t: TicketItem): number {
   const prio = { p0: 4, p1: 3, p2: 2, p3: 1 }[t.priority] || 1;
-  const status = { blocked: 3, in_progress: 2, open: 1, closed: 0 }[t.status] || 0;
+  const status = { blocked: 3, in_progress: 2, open: 1, closed: 0, resolved: 0 }[t.status] || 0;
   const dueScore = t.dueDate ? Math.max(0, 5 - daysUntil(t.dueDate)) : 0;
   return prio * 2 + status + dueScore; // simple heuristic
 }
@@ -37,9 +37,8 @@ export function computeInsights(unified: UnifiedData): InsightResults {
     .sort((a, b) => (a.severity > b.severity ? -1 : 1))
     .slice(0, 3)
     .forEach((inc) => {
-      highlights.push({
-        title: `Incident: ${inc.title}`,
-        summary: [
+      highlights.push([
+          `Incident: ${inc.title}`,
           `${inc.severity.toUpperCase()} incident`,
           inc.arrAtRisk ? `ARR at risk ~$${inc.arrAtRisk}` : undefined,
           inc.affectedUsers ? `${inc.affectedUsers} users` : undefined,
@@ -47,23 +46,10 @@ export function computeInsights(unified: UnifiedData): InsightResults {
           inc.description,
         ]
           .filter(Boolean)
-          .join(' | '),
-        ...(latestEmailUrl
-          ? { cta: { label: 'Open latest message', url: latestEmailUrl } }
-          : {}),
-        refs: latestEmail ? { emailIds: [latestEmail.id] } : undefined,
-      });
+          .join(' | '));
       if (inc.severity === 'sev1' || inc.severity === 'sev2') {
-        blockers.push({
-          title: `Resolve ${inc.title}`,
-          owner: 'Incident Commander',
-          nextStep: `Active ${inc.severity.toUpperCase()} incident impacting customers.`,
-        });
-        nextSteps.push({
-          title: `Coordinate fix: ${inc.title}`,
-          assignee: 'Incident Commander',
-          due: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-        });
+        blockers.push(`Resolve ${inc.title} - Active ${inc.severity.toUpperCase()} incident impacting customers (Owner: Incident Commander)`);
+        nextSteps.push(`Coordinate fix: ${inc.title} (Assignee: Incident Commander, Due: ${new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()})`);
       }
     });
 
@@ -74,17 +60,9 @@ export function computeInsights(unified: UnifiedData): InsightResults {
     .sort((a, b) => ticketWeight(b) - ticketWeight(a))
     .slice(0, 5)
     .forEach((t) => {
-      nextSteps.push({
-        title: `${t.title}`,
-        assignee: t.owner || 'Unassigned',
-        due: t.dueDate,
-      });
+      nextSteps.push(`${t.title} (Assignee: ${t.owner || 'Unassigned'}${t.dueDate ? `, Due: ${t.dueDate}` : ''})`);
       if (t.status === 'blocked') {
-        blockers.push({
-          title: `Unblock: ${t.title}`,
-          owner: t.owner || 'Unassigned',
-          nextStep: t.description || 'Requires attention to proceed.',
-        });
+        blockers.push(`Unblock: ${t.title} (Owner: ${t.owner || 'Unassigned'}) - ${t.description || 'Requires attention to proceed.'}`);
       }
     });
 

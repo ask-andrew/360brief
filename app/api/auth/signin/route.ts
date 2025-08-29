@@ -1,5 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -14,7 +13,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await createClient();
   
   // Generate the OAuth URL with the redirectTo parameter
   const { data, error } = await supabase.auth.signInWithOAuth({

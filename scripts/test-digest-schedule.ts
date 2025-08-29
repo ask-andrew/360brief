@@ -5,7 +5,7 @@ import { env } from './load-env';
 // Now we can safely import other modules that depend on environment variables
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/types/database.types';
-import { createDigestSchedule, getDigestSchedules } from '@/lib/services/digestService';
+import { createDigestSchedule, getDigestSchedules } from '@/services/digest/digestService';
 
 // Create a direct Supabase client with service role for testing
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

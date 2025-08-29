@@ -4,15 +4,27 @@ import { ScheduledDigest } from '@/types/digest';
 const mockDigests: ScheduledDigest[] = [
   {
     id: '1',
+    scheduleId: 'schedule-1',
     name: 'Morning Briefing',
     time: '09:00',
     frequency: 'daily',
+    timezone: 'UTC',
+    recipients: ['user@example.com'],
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: '2',
+    scheduleId: 'schedule-2',
     name: 'Weekly Summary',
     time: '18:00',
     frequency: 'weekly',
+    timezone: 'UTC',
+    recipients: ['user@example.com'],
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 

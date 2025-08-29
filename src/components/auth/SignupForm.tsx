@@ -33,7 +33,7 @@ export function SignupForm() {
     setIsLoading(true);
 
     try {
-      await signUpWithEmail(email, password, fullName);
+      await signUpWithEmail(email, password);
       
       toast({
         title: 'Check your email',

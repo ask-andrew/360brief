@@ -9,9 +9,9 @@ export type Severity = 'sev1' | 'sev2' | 'sev3' | 'info';
 export type TicketStatus = 'open' | 'in_progress' | 'blocked' | 'closed' | 'resolved';
 export type TicketPriority = 'p0' | 'p1' | 'p2' | 'p3';
 
-export interface EmailItem extends Timestamped {
+export interface EmailItem {
   id: string;
-  messageId: string;
+  messageId?: string;
   subject: string;
   body: string;
   bodyHtml?: string;
@@ -26,14 +26,16 @@ export interface EmailItem extends Timestamped {
   isStarred?: boolean;
   hasAttachments?: boolean;
   metadata?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface IncidentItem extends Timestamped, Owned {
+export interface IncidentItem {
   id: string;
   externalId?: string;
   title: string;
   severity: Severity;
-  status: 'investigating' | 'identified' | 'monitoring' | 'resolved' | 'postmortem';
+  status?: 'investigating' | 'identified' | 'monitoring' | 'resolved' | 'postmortem';
   startedAt: string; // ISO
   endedAt?: string; // ISO
   detectedAt?: string; // ISO
@@ -47,9 +49,12 @@ export interface IncidentItem extends Timestamped, Owned {
   postmortemUrl?: string;
   relatedTickets?: string[];
   metadata?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+  owner?: string;
 }
 
-export interface CalendarEventItem extends Timestamped {
+export interface CalendarEventItem {
   id: string;
   externalId?: string;
   title: string;
@@ -66,7 +71,7 @@ export interface CalendarEventItem extends Timestamped {
     responseStatus?: 'needsAction' | 'declined' | 'tentative' | 'accepted';
     isOrganizer?: boolean;
     isResource?: boolean;
-  }>;
+  }> | string[];
   conferenceData?: {
     entryPoints?: Array<{
       entryPointType: 'video' | 'phone' | 'sip' | 'more';
@@ -86,9 +91,11 @@ export interface CalendarEventItem extends Timestamped {
   visibility?: 'default' | 'public' | 'private';
   iCalUID?: string;
   metadata?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface TicketItem extends Timestamped, Owned {
+export interface TicketItem {
   id: string;
   externalId?: string;
   title: string;
@@ -121,6 +128,18 @@ export interface TicketItem extends Timestamped, Owned {
     updated?: string; // ISO
   }>;
   metadata?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+  owner?: string;
+}
+
+// Add resolved status for compatibility
+export interface TicketStatusStats {
+  blocked: number;
+  in_progress: number;
+  open: number;
+  closed: number;
+  resolved?: number;
 }
 
 export interface UnifiedData {
