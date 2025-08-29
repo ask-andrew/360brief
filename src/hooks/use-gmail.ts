@@ -1,6 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUnreadEmails, markAsRead, EmailMessage, fetchEmailThreads } from '@/lib/gmail/client';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Client-side email message type
+export interface EmailMessage {
+  id: string;
+  threadId: string;
+  subject: string;
+  from: {
+    name: string;
+    email: string;
+  };
+  to: Array<{
+    name: string;
+    email: string;
+  }>;
+  date: string;
+  snippet: string;
+  body?: string;
+  labels?: string[];
+  isUnread?: boolean;
+}
 
 type UseEmailsOptions = {
   enabled?: boolean;
@@ -9,23 +28,47 @@ type UseEmailsOptions = {
 };
 
 /**
- * Hook to fetch and manage unread emails
+ * Hook to fetch and manage unread emails (mock implementation)
  */
 export function useUnreadEmails({
   enabled = true,
   maxResults = 10,
   refetchInterval = 5 * 60 * 1000, // 5 minutes
 }: UseEmailsOptions = {}) {
-  const user = useAuthStore(state => state.user);
-  const userId = user?.id;
+  const { user } = useAuth();
 
   return useQuery<EmailMessage[], Error>({
     queryKey: ['emails', 'unread'],
     queryFn: async () => {
-      if (!userId) throw new Error('User not authenticated');
-      return fetchUnreadEmails(userId, maxResults);
+      if (!user) throw new Error('User not authenticated');
+      
+      // Mock data for now - replace with API call to /api/gmail/emails
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
+      
+      return [
+        {
+          id: '1',
+          threadId: 'thread-1',
+          subject: 'Q4 Performance Review',
+          from: { name: 'Sarah Johnson', email: 'sarah@company.com' },
+          to: [{ name: 'You', email: user.email || '' }],
+          date: new Date().toISOString(),
+          snippet: 'Please review the attached Q4 performance metrics...',
+          labels: ['UNREAD', 'IMPORTANT']
+        },
+        {
+          id: '2', 
+          threadId: 'thread-2',
+          subject: 'Meeting Follow-up: Product Strategy',
+          from: { name: 'Mike Chen', email: 'mike@company.com' },
+          to: [{ name: 'You', email: user.email || '' }],
+          date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          snippet: 'Thanks for the productive discussion. Here are the action items...',
+          labels: ['UNREAD']
+        }
+      ];
     },
-    enabled: enabled && !!userId,
+    enabled: enabled && !!user,
     refetchInterval,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
@@ -38,14 +81,14 @@ export function useUnreadEmails({
  * Hook to mark an email as read
  */
 export function useMarkAsRead() {
-  const user = useAuthStore(state => state.user);
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const userId = user?.id;
 
   return useMutation<void, Error, string>({
     mutationFn: async (messageId: string) => {
-      if (!userId) throw new Error('User not authenticated');
-      await markAsRead(userId, messageId);
+      if (!user) throw new Error('User not authenticated');
+      // Mock API call - replace with actual API endpoint
+      await new Promise(resolve => setTimeout(resolve, 500));
     },
     onSuccess: (_, messageId) => {
       // Optimistically update the cache
@@ -69,16 +112,17 @@ export function useEmailThreads({
   enabled?: boolean;
   maxResults?: number;
 } = {}) {
-  const user = useAuthStore(state => state.user);
-  const userId = user?.id;
+  const { user } = useAuth();
 
   return useQuery({
     queryKey: ['emails', 'threads'],
     queryFn: async () => {
-      if (!userId) throw new Error('User not authenticated');
-      return fetchEmailThreads(userId, maxResults);
+      if (!user) throw new Error('User not authenticated');
+      // Mock implementation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return [];
     },
-    enabled: enabled && !!userId,
+    enabled: enabled && !!user,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -88,19 +132,14 @@ export function useEmailThreads({
  * Hook to mark multiple emails as read
  */
 export function useMarkMultipleAsRead() {
-  const user = useAuthStore(state => state.user);
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const userId = user?.id;
-  const { mutate: markSingleAsRead } = useMarkAsRead();
 
   return useMutation<void, Error, string[]>({
     mutationFn: async (messageIds: string[]) => {
-      if (!userId) throw new Error('User not authenticated');
-      
-      // Process each message in parallel
-      await Promise.all(
-        messageIds.map((id) => markAsRead(userId, id).catch(console.error))
-      );
+      if (!user) throw new Error('User not authenticated');
+      // Mock implementation
+      await new Promise(resolve => setTimeout(resolve, 1000));
     },
     onSuccess: (_, messageIds) => {
       // Optimistically update the cache

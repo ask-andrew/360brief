@@ -49,13 +49,6 @@ export function AppSidebar() {
   }, [pathname]);
   
   const navigation: NavigationItem[] = [
-    {
-      name: 'Analytics',
-      href: '/analytics',
-      icon: BarChart3,
-      current: pathname === '/analytics',
-      exact: true
-    },
     { 
       name: 'Dashboard', 
       href: '/dashboard', 
@@ -63,10 +56,10 @@ export function AppSidebar() {
       current: pathname === '/dashboard',
       exact: true
     },
-    { 
-      name: 'Analytics', 
-      href: '/analytics', 
-      icon: BarChart3, 
+    {
+      name: 'Analytics',
+      href: '/analytics',
+      icon: BarChart3,
       current: pathname?.startsWith('/analytics')
     },
     { 
