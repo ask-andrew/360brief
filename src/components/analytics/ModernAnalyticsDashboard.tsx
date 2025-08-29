@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -201,10 +201,51 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
   );
 }
 
+// API Data fetching hook
+function useAnalyticsData(isDemo: boolean) {
+  const [data, setData] = useState(mockAnalyticsData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isDemo) {
+      setData(mockAnalyticsData);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    // Fetch real data from API
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch('/api/analytics');
+        if (response.ok) {
+          const apiData = await response.json();
+          setData(apiData);
+        } else {
+          throw new Error('Failed to fetch analytics data');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        // Keep showing demo data on error
+        setData(mockAnalyticsData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [isDemo]);
+
+  return { data, loading, error };
+}
+
 export function ModernAnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDemo, setIsDemo] = useState(true);
-  const data = mockAnalyticsData;
+  const { data, loading, error } = useAnalyticsData(isDemo);
 
   const formatResponseTime = (minutes: number) => {
     if (minutes >= 60) {
@@ -214,8 +255,63 @@ export function ModernAnalyticsDashboard() {
     return `${minutes}m`;
   };
 
-  // Show empty state when My Data is selected
-  if (!isDemo) {
+  // Show loading state
+  if (loading && !isDemo) {
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+              <p className="text-blue-100 mt-2">
+                Loading your communication insights...
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="data-toggle" className="text-white text-sm">
+                    My Data
+                  </Label>
+                  <Switch
+                    id="data-toggle"
+                    checked={isDemo}
+                    onCheckedChange={setIsDemo}
+                    className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
+                  />
+                  <Label htmlFor="data-toggle" className="text-white text-sm">
+                    Demo Data
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        <div className="text-center py-16">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+              <BarChart3 className="w-8 h-8 text-blue-600 animate-pulse" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading your analytics...</h2>
+            <p className="text-gray-600 mb-6">
+              Fetching your communication data and generating insights.
+            </p>
+            <div className="flex items-center justify-center space-x-2 mb-6">
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state when My Data is selected but no data available
+  if (!isDemo && !loading && (error || data.total_count === 0)) {
     return (
       <div className="space-y-8">
         {/* Header */}
@@ -244,12 +340,6 @@ export function ModernAnalyticsDashboard() {
                   </Label>
                 </div>
               </div>
-              <Badge 
-                variant="secondary" 
-                className="bg-blue-500/20 text-blue-100 hover:bg-white/30"
-              >
-                My Data
-              </Badge>
             </div>
           </div>
         </div>
@@ -262,7 +352,7 @@ export function ModernAnalyticsDashboard() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting up your analytics</h2>
             <p className="text-gray-600 mb-6">
-              We're currently syncing your communication data to generate personalized insights. This usually takes a few minutes.
+              {error ? `Error: ${error}` : 'We\'re currently syncing your communication data to generate personalized insights. This usually takes a few minutes.'}
             </p>
             <div className="flex items-center justify-center space-x-2 mb-6">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
@@ -309,12 +399,6 @@ export function ModernAnalyticsDashboard() {
                 </Label>
               </div>
             </div>
-            <Badge 
-              variant="secondary" 
-              className={`${isDemo ? 'bg-green-500/20 text-green-100' : 'bg-blue-500/20 text-blue-100'} hover:bg-white/30`}
-            >
-              {isDemo ? 'Demo Data' : 'My Data'}
-            </Badge>
           </div>
         </div>
       </div>
