@@ -3,12 +3,26 @@
 Simplified Analytics API for 360Brief
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 import uvicorn
 import logging
+import asyncio
+
+# Add path for local imports
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
+try:
+    from src.data_processing.services.gmail_service import GmailService
+    GMAIL_AVAILABLE = True
+except ImportError as e:
+    print(f"Gmail service not available: {e}")
+    GMAIL_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -144,10 +158,16 @@ async def root():
     }
 
 @app.get("/analytics")
-async def get_analytics():
+async def get_analytics(
+    use_real_data: bool = Query(False, description="Use real Gmail data instead of sample data"),
+    days_back: int = Query(7, description="Number of days to analyze")
+):
     """Get communication analytics data"""
     try:
-        return get_sample_analytics()
+        if use_real_data and GMAIL_AVAILABLE:
+            return await get_real_analytics(days_back)
+        else:
+            return get_sample_analytics()
     except Exception as e:
         logger.error(f"Error generating analytics: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -181,10 +201,102 @@ async def get_priority_messages():
         logger.error(f"Error getting priority messages: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# OAuth2 Models
+class TokenExchangeRequest(BaseModel):
+    code: str
+    redirect_uri: str
+
+@app.get("/auth/gmail/authorize")
+async def gmail_authorize():
+    """Get Gmail OAuth2 authorization URL"""
+    if not GMAIL_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Gmail integration not available")
+    
+    try:
+        gmail_service = GmailService()
+        auth_url = gmail_service.get_auth_url(redirect_uri="http://localhost:3000/api/auth/gmail/callback")
+        
+        return {
+            "auth_url": auth_url,
+            "message": "Redirect user to this URL for Gmail authorization"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating auth URL: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/auth/gmail/callback")
+async def gmail_callback(request: TokenExchangeRequest):
+    """Exchange authorization code for access tokens"""
+    if not GMAIL_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Gmail integration not available")
+    
+    try:
+        gmail_service = GmailService()
+        success = gmail_service.exchange_code_for_tokens(request.code, request.redirect_uri)
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Gmail authorization successful"
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Failed to exchange authorization code")
+            
+    except Exception as e:
+        logger.error(f"Error in OAuth callback: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/auth/gmail/status")
+async def gmail_status():
+    """Check Gmail authentication status"""
+    if not GMAIL_AVAILABLE:
+        return {"authenticated": False, "error": "Gmail integration not available"}
+    
+    try:
+        gmail_service = GmailService()
+        authenticated = await gmail_service.authenticate()
+        
+        return {
+            "authenticated": authenticated,
+            "message": "Gmail connected" if authenticated else "Gmail not connected"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking Gmail status: {str(e)}")
+        return {"authenticated": False, "error": str(e)}
+
+async def get_real_analytics(days_back: int = 7) -> Dict[str, Any]:
+    """Get real analytics data from Gmail API"""
+    gmail_service = GmailService()
+    
+    # Check if user is authenticated
+    if not await gmail_service.authenticate():
+        logger.warning("Gmail not authenticated, falling back to sample data")
+        return get_sample_analytics()
+    
+    # Calculate date range
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days_back)
+    
+    try:
+        analytics_data = await gmail_service.get_analytics_data(start_date, end_date)
+        logger.info(f"Retrieved real analytics for {analytics_data['total_count']} emails")
+        return analytics_data
+        
+    except Exception as e:
+        logger.error(f"Error getting real analytics: {e}")
+        # Fallback to sample data on error
+        return get_sample_analytics()
+
 if __name__ == "__main__":
     print("🚀 Starting 360Brief Analytics API...")
     print("📊 API will be available at http://localhost:8000")
     print("📝 API docs at http://localhost:8000/docs")
+    if GMAIL_AVAILABLE:
+        print("✅ Gmail API integration enabled")
+    else:
+        print("⚠️  Gmail API not available - using sample data only")
     
     uvicorn.run(
         "simple_analytics_api:app",

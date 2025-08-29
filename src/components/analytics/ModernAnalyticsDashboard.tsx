@@ -215,12 +215,25 @@ function useAnalyticsData(isDemo: boolean) {
       return;
     }
 
-    // Fetch real data from API
-    const fetchData = async () => {
+    // Check Gmail authentication status first
+    const checkAuthAndFetchData = async () => {
       setLoading(true);
       setError(null);
+      
       try {
-        const response = await fetch('/api/analytics');
+        // Check if Gmail is connected
+        const authResponse = await fetch('/api/auth/gmail/status');
+        const authStatus = await authResponse.json();
+        
+        if (!authStatus.authenticated) {
+          setError('Gmail not connected. Please connect your Gmail account to view real data.');
+          setData(mockAnalyticsData);
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch real data with Gmail integration
+        const response = await fetch('/api/analytics?use_real_data=true');
         if (response.ok) {
           const apiData = await response.json();
           setData(apiData);
@@ -229,14 +242,13 @@ function useAnalyticsData(isDemo: boolean) {
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
-        // Keep showing demo data on error
         setData(mockAnalyticsData);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    checkAuthAndFetchData();
   }, [isDemo]);
 
   return { data, loading, error };
@@ -352,19 +364,29 @@ export function ModernAnalyticsDashboard() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting up your analytics</h2>
             <p className="text-gray-600 mb-6">
-              {error ? `Error: ${error}` : 'We\'re currently syncing your communication data to generate personalized insights. This usually takes a few minutes.'}
+              {error ? error : 'We\'re currently syncing your communication data to generate personalized insights. This usually takes a few minutes.'}
             </p>
             <div className="flex items-center justify-center space-x-2 mb-6">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
             </div>
-            <Button 
-              onClick={() => setIsDemo(true)}
-              variant="outline"
-            >
-              View Demo Data Instead
-            </Button>
+            <div className="flex gap-3">
+              {error && error.includes('Gmail not connected') ? (
+                <Button 
+                  onClick={() => window.location.href = '/api/auth/gmail/authorize'}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Connect Gmail Account
+                </Button>
+              ) : null}
+              <Button 
+                onClick={() => setIsDemo(true)}
+                variant="outline"
+              >
+                View Demo Data Instead
+              </Button>
+            </div>
           </div>
         </div>
       </div>
