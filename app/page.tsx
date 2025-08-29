@@ -9,10 +9,12 @@ import { PodcastSection } from '@/components/landing/PodcastSection';
 import { BetaWaitlist } from '@/components/marketing/BetaWaitlist';
 import { UseCaseTabs } from '@/components/landing/UseCaseTabs';
 import { SignInButton } from '@/components/SignInButton';
+import { AuthCodeHandler } from '@/components/AuthCodeHandler';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
+      <AuthCodeHandler />
       <Navbar />
       <main className="overflow-hidden">
         <HeroSection />
