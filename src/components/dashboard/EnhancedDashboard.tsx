@@ -16,8 +16,6 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUnreadEmails, useEmailStats } from '@/hooks/use-gmail';
-import { useUpcomingEvents, useCalendarStats } from '@/hooks/use-calendar';
 import { ServiceConnectionCard } from './ServiceConnectionCard';
 import { BriefGenerationCard } from './BriefGenerationCard';
 import { useRouter } from 'next/navigation';
@@ -28,6 +26,49 @@ interface DashboardStats {
   upcomingMeetings: number;
   todaysMeetings: number;
   lastBriefGenerated?: string;
+}
+
+// Hook for fetching real analytics data
+function useDashboardData() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Check if Gmail is connected
+        const authResponse = await fetch('/api/auth/gmail/status');
+        const authStatus = await authResponse.json();
+        
+        if (!authStatus.authenticated) {
+          setError('Gmail not connected');
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch real data with Gmail integration
+        const response = await fetch('/api/analytics?use_real_data=true');
+        if (response.ok) {
+          const apiData = await response.json();
+          setData(apiData);
+        } else {
+          throw new Error('Failed to fetch analytics data');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return { data, loading, error };
 }
 
 export function EnhancedDashboard() {
@@ -47,26 +88,13 @@ export function EnhancedDashboard() {
     }
   ]);
 
-  // Gmail data
-  const { data: unreadEmails = [], isLoading: emailsLoading, error: emailsError } = useUnreadEmails({
-    enabled: !!user,
-    maxResults: 10
-  });
-  
-  const { stats: emailStats, isLoading: emailStatsLoading } = useEmailStats();
-
-  // Calendar data
-  const { data: upcomingEvents = [], isLoading: eventsLoading, error: eventsError } = useUpcomingEvents({
-    enabled: !!user,
-    maxResults: 5
-  });
-  
-  const { stats: calendarStats, isLoading: calendarStatsLoading } = useCalendarStats();
+  // Fetch real analytics data
+  const { data: analyticsData, loading: analyticsLoading, error: analyticsError } = useDashboardData();
 
   const dashboardStats: DashboardStats = {
-    unreadEmails: unreadEmails.length || 0,
-    upcomingMeetings: upcomingEvents.length || 0,
-    todaysMeetings: calendarStats?.today || 0,
+    unreadEmails: analyticsData?.total_count || 0,
+    upcomingMeetings: analyticsData?.priority_messages?.awaiting_my_reply?.length || 0,
+    todaysMeetings: analyticsData?.channel_analytics?.by_time?.reduce((acc: number, timeData: any) => acc + timeData.count, 0) || 0,
     lastBriefGenerated: recentBriefs[0]?.createdAt
   };
 
@@ -89,6 +117,7 @@ export function EnhancedDashboard() {
       toast({
         title: 'Brief Generated',
         description: 'Your executive brief has been created successfully.',
+        duration: 3000,
       });
       
       router.push(`/briefs/current`);
@@ -97,6 +126,7 @@ export function EnhancedDashboard() {
         title: 'Generation Failed',
         description: 'Failed to generate brief. Please try again.',
         variant: 'destructive',
+        duration: 4000,
       });
     } finally {
       setIsGeneratingBrief(false);
@@ -108,6 +138,7 @@ export function EnhancedDashboard() {
     toast({
       title: 'Gmail Connection',
       description: 'Gmail OAuth flow would be triggered here.',
+      duration: 3000,
     });
   };
 
@@ -116,6 +147,7 @@ export function EnhancedDashboard() {
     toast({
       title: 'Calendar Connection',
       description: 'Calendar OAuth flow would be triggered here.',
+      duration: 3000,
     });
   };
 
@@ -129,17 +161,17 @@ export function EnhancedDashboard() {
     await new Promise(resolve => setTimeout(resolve, 1000));
   };
 
-  // Determine service connection status
+  // Determine service connection status based on analytics data
   const gmailStatus = {
-    connected: !emailsError && unreadEmails.length >= 0,
-    lastSync: emailsError ? undefined : new Date().toISOString(),
-    error: emailsError?.message
+    connected: !analyticsError && analyticsData && analyticsData.total_count > 0,
+    lastSync: analyticsError ? undefined : new Date().toISOString(),
+    error: analyticsError
   };
 
   const calendarStatus = {
-    connected: !eventsError && upcomingEvents.length >= 0,
-    lastSync: eventsError ? undefined : new Date().toISOString(),
-    error: eventsError?.message
+    connected: false, // Calendar data not currently integrated in analytics
+    lastSync: undefined,
+    error: 'Calendar integration coming soon'
   };
 
   return (
@@ -172,9 +204,9 @@ export function EnhancedDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-red-600">Unread Emails</p>
+                <p className="text-sm font-medium text-red-600">Total Messages</p>
                 <p className="text-3xl font-bold text-red-700">
-                  {emailsLoading ? '...' : dashboardStats.unreadEmails}
+                  {analyticsLoading ? '...' : dashboardStats.unreadEmails}
                 </p>
               </div>
               <Mail className="h-8 w-8 text-red-600" />
@@ -186,9 +218,9 @@ export function EnhancedDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Today's Meetings</p>
+                <p className="text-sm font-medium text-blue-600">Priority Messages</p>
                 <p className="text-3xl font-bold text-blue-700">
-                  {calendarStatsLoading ? '...' : dashboardStats.todaysMeetings}
+                  {analyticsLoading ? '...' : dashboardStats.upcomingMeetings}
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-blue-600" />
@@ -200,9 +232,9 @@ export function EnhancedDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Upcoming Events</p>
+                <p className="text-sm font-medium text-green-600">Daily Activity</p>
                 <p className="text-3xl font-bold text-green-700">
-                  {eventsLoading ? '...' : dashboardStats.upcomingMeetings}
+                  {analyticsLoading ? '...' : Math.round(dashboardStats.todaysMeetings / 8)}
                 </p>
               </div>
               <Clock className="h-8 w-8 text-green-600" />
@@ -276,7 +308,7 @@ export function EnhancedDashboard() {
       </div>
 
       {/* Quick Insights */}
-      {(emailStats.total > 0 || calendarStats.totalUpcoming > 0) && (
+      {analyticsData && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -286,26 +318,26 @@ export function EnhancedDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {emailStats.total > 0 && (
+              {analyticsData.top_projects?.length > 0 && (
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">Top Email Domain</p>
+                  <p className="text-sm text-gray-600 mb-2">Top Project</p>
                   <p className="font-semibold">
-                    {Object.entries(emailStats.bySender)[0]?.[0] || 'N/A'}
+                    {analyticsData.top_projects[0]?.name || 'N/A'}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {Object.entries(emailStats.bySender)[0]?.[1] || 0} emails
+                    {analyticsData.top_projects[0]?.messageCount || 0} messages
                   </p>
                 </div>
               )}
               
-              {calendarStats.totalUpcoming > 0 && (
+              {analyticsData.channel_analytics?.by_time?.length > 0 && (
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">Busiest Hour</p>
+                  <p className="text-sm text-gray-600 mb-2">Busiest Time</p>
                   <p className="font-semibold">
-                    {Object.entries(calendarStats.busyHours)[0]?.[0] || 'N/A'}
+                    {analyticsData.channel_analytics.by_time[0]?.hour || 'N/A'}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {Object.entries(calendarStats.busyHours)[0]?.[1] || 0} meetings
+                    {analyticsData.channel_analytics.by_time[0]?.count || 0} messages
                   </p>
                 </div>
               )}

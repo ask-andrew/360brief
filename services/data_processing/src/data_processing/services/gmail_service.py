@@ -24,10 +24,17 @@ logger = logging.getLogger(__name__)
 class GmailService:
     """Service for interacting with Gmail API for analytics and data processing."""
     
-    # Gmail API scopes needed for read access and metadata
+    # Gmail API scopes needed for read access
+    # Note: Google automatically grants both readonly and metadata scopes together
+    # We need to request both to avoid scope mismatch errors
     SCOPES = [
         'https://www.googleapis.com/auth/gmail.readonly',
-        'https://www.googleapis.com/auth/gmail.metadata'
+        'https://www.googleapis.com/auth/gmail.metadata',
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/calendar.events.readonly',
+        'openid'
     ]
     
     def __init__(self, credentials_file: str = None, token_file: str = None):
@@ -94,6 +101,8 @@ class GmailService:
             flow.fetch_token(code=code)
             self.credentials = flow.credentials
             
+            logger.info(f"Successfully obtained tokens with scopes: {self.credentials.scopes}")
+            
             # Save credentials for future use
             self._save_credentials()
             return True
@@ -148,7 +157,9 @@ class GmailService:
             return False
             
         try:
-            self.service = build('gmail', 'v1', credentials=self.credentials)
+            # Disable cache to avoid oauth2client<4.0.0 warning
+            from googleapiclient.discovery import build
+            self.service = build('gmail', 'v1', credentials=self.credentials, cache_discovery=False)
             
             # Test connection
             profile = self.service.users().getProfile(userId='me').execute()
@@ -157,6 +168,8 @@ class GmailService:
             
         except Exception as e:
             logger.error(f"Gmail authentication failed: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return False
     
     async def fetch_emails(
@@ -181,15 +194,11 @@ class GmailService:
             if not await self.authenticate():
                 raise ConnectionError("Failed to authenticate with Gmail")
         
-        # Build Gmail search query
-        date_query = f"after:{start_date.strftime('%Y/%m/%d')} before:{end_date.strftime('%Y/%m/%d')}"
-        search_query = f"{date_query} {query}" if query else date_query
-        
         try:
-            # Get message IDs
+            # Get message IDs without using search query (q parameter)
+            # to avoid metadata scope restrictions
             result = self.service.users().messages().list(
                 userId='me',
-                q=search_query,
                 maxResults=max_results
             ).execute()
             
@@ -206,12 +215,26 @@ class GmailService:
             for i in range(0, len(messages), batch_size):
                 batch = messages[i:i + batch_size]
                 batch_emails = await self._fetch_message_batch(batch)
-                email_data.extend(batch_emails)
+                
+                # Filter messages by date range (client-side filtering)
+                filtered_emails = []
+                for email in batch_emails:
+                    if email and 'timestamp' in email:
+                        email_date = email['timestamp']
+                        if start_date <= email_date <= end_date:
+                            filtered_emails.append(email)
+                
+                email_data.extend(filtered_emails)
                 
                 # Add small delay to respect rate limits
                 await asyncio.sleep(0.1)
+                
+                # Stop if we have enough emails
+                if len(email_data) >= max_results:
+                    break
             
-            return email_data
+            logger.info(f"Filtered to {len(email_data)} messages within date range")
+            return email_data[:max_results]
             
         except HttpError as e:
             logger.error(f"Gmail API error: {e}")
@@ -236,7 +259,8 @@ class GmailService:
                 msg = self.service.users().messages().get(
                     userId='me',
                     id=msg_ref['id'],
-                    format='full'
+                    format='metadata',
+                    metadataHeaders=['Subject', 'From', 'To', 'Date', 'Message-ID', 'In-Reply-To', 'References']
                 ).execute()
                 
                 email_data = self._parse_gmail_message(msg)
@@ -249,6 +273,58 @@ class GmailService:
         
         return batch_emails
     
+    def _is_marketing_email(self, headers: Dict[str, str], snippet: str, labels: List[str]) -> bool:
+        """Determine if an email is marketing/promotional content.
+        
+        Args:
+            headers: Email headers
+            snippet: Email snippet/preview text
+            labels: Gmail labels
+            
+        Returns:
+            True if likely marketing email
+        """
+        sender = headers.get('From', '').lower()
+        subject = headers.get('Subject', '').lower()
+        snippet_lower = snippet.lower()
+        
+        # Check Gmail labels first (most reliable)
+        marketing_labels = ['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'SPAM']
+        if any(label in labels for label in marketing_labels):
+            return True
+            
+        # Marketing sender patterns
+        marketing_domains = [
+            'noreply', 'no-reply', 'donotreply', 'do-not-reply', 'marketing', 
+            'newsletter', 'notifications', 'alerts', 'updates', 'promo'
+        ]
+        if any(domain in sender for domain in marketing_domains):
+            # Whitelist important automated systems
+            important_patterns = [
+                'github', 'slack', 'jira', 'asana', 'trello', 'confluence',
+                'salesforce', 'hubspot', 'pipedrive', 'monday.com',
+                'calendar', 'meeting', 'zoom', 'teams', 'webex',
+                'bank', 'chase', 'wells fargo', 'american express', 'visa'
+            ]
+            if not any(pattern in sender for pattern in important_patterns):
+                return True
+        
+        # Marketing subject/content indicators
+        marketing_keywords = [
+            'unsubscribe', 'opt out', 'click here', 'limited time', 'act now',
+            'discount', 'save %', 'free shipping', 'deal', 'offer expires',
+            'newsletter', 'weekly digest', 'monthly roundup'
+        ]
+        
+        # Count marketing indicators
+        marketing_score = 0
+        for keyword in marketing_keywords:
+            if keyword in subject or keyword in snippet_lower:
+                marketing_score += 1
+                
+        # High marketing score indicates promotional content
+        return marketing_score >= 2
+    
     def _parse_gmail_message(self, msg: Dict) -> Optional[Dict[str, Any]]:
         """Parse Gmail API message into standardized format.
         
@@ -260,18 +336,24 @@ class GmailService:
         """
         try:
             headers = {h['name']: h['value'] for h in msg['payload'].get('headers', [])}
+            labels = msg.get('labelIds', [])
             
             # Extract timestamp
             timestamp_ms = int(msg['internalDate'])
             timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
             
-            # Get message body
-            body = self._extract_message_body(msg['payload'])
+            # With metadata format, we don't have body content, use snippet instead
+            body = msg.get('snippet', '')
             
-            # Determine direction (simplified - can be enhanced with user's email)
-            user_email = self.service.users().getProfile(userId='me').execute().get('emailAddress', '')
+            # Check if this is marketing content
+            is_marketing = self._is_marketing_email(headers, body, labels)
+            
+            # Determine direction based on sender
             sender = headers.get('From', '')
-            direction = 'inbound' if user_email.lower() not in sender.lower() else 'outbound'
+            # Simple heuristic: if sender contains the authenticated user's domain or known patterns
+            direction = 'inbound'  # Default to inbound for simplicity
+            if '@gmail.com' in sender and 'andrew' in sender.lower():
+                direction = 'outbound'
             
             return {
                 'id': msg['id'],
@@ -286,6 +368,7 @@ class GmailService:
                 'labels': [label for label in msg.get('labelIds', [])],
                 'snippet': msg.get('snippet', ''),
                 'direction': direction,
+                'is_marketing': is_marketing,
                 'metadata': {
                     'message_id': headers.get('Message-ID', ''),
                     'in_reply_to': headers.get('In-Reply-To', ''),
@@ -337,7 +420,8 @@ class GmailService:
         self,
         start_date: datetime,
         end_date: datetime,
-        max_results: int = 1000
+        max_results: int = 1000,
+        filter_marketing: bool = True
     ) -> Dict[str, Any]:
         """Generate analytics data from Gmail messages.
         
@@ -353,6 +437,13 @@ class GmailService:
         
         if not emails:
             return self._empty_analytics()
+        
+        # Filter marketing emails if requested
+        if filter_marketing:
+            filtered_emails = [email for email in emails if not email.get('is_marketing', False)]
+            marketing_count = len(emails) - len(filtered_emails)
+            logger.info(f"Filtered out {marketing_count} marketing emails ({len(filtered_emails)} remain)")
+            emails = filtered_emails
         
         # Calculate analytics
         total_count = len(emails)
@@ -564,24 +655,77 @@ class GmailService:
         }
     
     def _extract_projects(self, emails: List[Dict]) -> List[Dict]:
-        """Extract project mentions from email subjects."""
-        project_words = {}
+        """Extract project mentions from email subjects and create summaries."""
+        import re
+        from collections import defaultdict
+        
+        # Project patterns and keywords
+        project_indicators = {
+            'project_names': r'\b(?:project|initiative|campaign|program)\s+([A-Z]\w+(?:\s+[A-Z]\w+)*)',
+            'meeting_topics': r'\b(?:meeting|sync|standup|review)\s*:?\s*([A-Za-z][^:,\n]{5,30})',
+            'work_items': r'\b(?:re|regarding|about|for)\s*:?\s*([A-Za-z][^:,\n]{10,40})',
+            'action_items': r'\b(?:update|status|feedback|review|approval)\s+(?:on|for|regarding)\s+([A-Za-z][^:,\n]{5,30})'
+        }
+        
+        project_data = defaultdict(lambda: {'count': 0, 'subjects': [], 'keywords': set()})
         
         for email in emails:
-            subject = email.get('subject', '').lower()
-            # Simple keyword extraction (can be enhanced with NLP)
-            words = subject.split()
-            for word in words:
-                if len(word) > 4 and word.isalpha():  # Basic filtering
-                    project_words[word] = project_words.get(word, 0) + 1
+            subject = email.get('subject', '')
+            if not subject or len(subject) < 5:
+                continue
+                
+            # Extract project-related phrases
+            for pattern_type, pattern in project_indicators.items():
+                matches = re.findall(pattern, subject, re.IGNORECASE)
+                for match in matches:
+                    # Clean and normalize the match
+                    cleaned = re.sub(r'[^\w\s]', ' ', match).strip()
+                    cleaned = ' '.join(cleaned.split())  # Remove extra spaces
+                    
+                    if len(cleaned) > 3 and not cleaned.lower() in ['the', 'and', 'for', 'with', 'that', 'this']:
+                        # Use first 3 words as key for grouping similar topics
+                        key_words = cleaned.split()[:3]
+                        project_key = ' '.join(key_words).title()
+                        
+                        project_data[project_key]['count'] += 1
+                        project_data[project_key]['subjects'].append(subject)
+                        project_data[project_key]['keywords'].add(cleaned.lower())
         
-        # Get top projects
-        top_projects = sorted(project_words.items(), key=lambda x: x[1], reverse=True)[:5]
+        # Also look for recurring key terms
+        all_subjects = ' '.join([email.get('subject', '') for email in emails])
+        # Extract capitalized phrases (likely proper nouns/project names)
+        capitalized_phrases = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', all_subjects)
         
-        return [
-            {"name": word.title(), "messageCount": count, "type": "project"}
-            for word, count in top_projects
-        ]
+        phrase_count = defaultdict(int)
+        for phrase in capitalized_phrases:
+            if len(phrase) > 4 and phrase not in ['From', 'Subject', 'Dear', 'Hello', 'Thanks']:
+                phrase_count[phrase] += 1
+        
+        # Add high-frequency proper nouns as projects
+        for phrase, count in phrase_count.items():
+            if count >= 2:  # Appears in multiple emails
+                if phrase not in project_data:
+                    project_data[phrase]['count'] = count
+                    project_data[phrase]['keywords'].add(phrase.lower())
+        
+        # Create summaries and sort by relevance
+        projects = []
+        for project_name, data in project_data.items():
+            if data['count'] >= 2:  # Minimum threshold
+                # Create a brief summary from keywords
+                keywords_list = list(data['keywords'])[:3]
+                summary = f"Communication about {', '.join(keywords_list)}" if keywords_list else "Recurring project topic"
+                
+                projects.append({
+                    "name": project_name,
+                    "messageCount": data['count'],
+                    "type": "project",
+                    "summary": summary
+                })
+        
+        # Sort by message count and return top 5
+        projects.sort(key=lambda x: x['messageCount'], reverse=True)
+        return projects[:5]
     
     def _find_reconnect_contacts(self, emails: List[Dict]) -> List[Dict]:
         """Find contacts to reconnect with based on email patterns."""

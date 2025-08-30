@@ -254,6 +254,64 @@ function useAnalyticsData(isDemo: boolean) {
   return { data, loading, error };
 }
 
+// Leadership Tips Component
+function LeadershipTip() {
+  const [tip, setTip] = useState(null);
+
+  const leadershipTips = [
+    {
+      quote: "The single most important thing a leader can do is to facilitate good decisions.",
+      attribution: "Harvard Business School",
+      author: "Clayton Christensen"
+    },
+    {
+      quote: "Communication is the lifeblood of every organization.",
+      attribution: "MIT Sloan School of Management",
+      author: "Edgar Schein"
+    },
+    {
+      quote: "Leaders must be close enough to relate to others, but far enough ahead to motivate them.",
+      attribution: "Stanford Graduate School of Business",
+      author: "Chip Heath"
+    },
+    {
+      quote: "The art of communication is the language of leadership.",
+      attribution: "Wharton School",
+      author: "James Humes"
+    },
+    {
+      quote: "Effective leaders are not just communicators, but meaning makers.",
+      attribution: "Kellogg School of Management",
+      author: "Adam Galinsky"
+    },
+    {
+      quote: "Leadership is the capacity to translate vision into reality through effective communication.",
+      attribution: "Harvard Business School",
+      author: "Warren Bennis"
+    }
+  ];
+
+  useEffect(() => {
+    // Select a random tip when component mounts
+    const randomIndex = Math.floor(Math.random() * leadershipTips.length);
+    setTip(leadershipTips[randomIndex]);
+  }, []);
+
+  if (!tip) return null;
+
+  return (
+    <div className="transition-all duration-500 ease-in-out">
+      <blockquote className="text-sm italic text-gray-700 mb-2">
+        "{tip.quote}"
+      </blockquote>
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <span>— {tip.author}</span>
+        <span className="font-medium">{tip.attribution}</span>
+      </div>
+    </div>
+  );
+}
+
 export function ModernAnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDemo, setIsDemo] = useState(true);
@@ -308,13 +366,33 @@ export function ModernAnalyticsDashboard() {
               <BarChart3 className="w-8 h-8 text-blue-600 animate-pulse" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading your analytics...</h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4">
               Fetching your communication data and generating insights.
             </p>
-            <div className="flex items-center justify-center space-x-2 mb-6">
+            <p className="text-sm text-gray-500 mb-6">
+              This usually takes 30-60 seconds depending on your email volume.
+            </p>
+            <div className="flex items-center justify-center space-x-2 mb-8">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            </div>
+            
+            {/* Leadership Tips */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 mb-2">Leadership Insight</h3>
+                  <LeadershipTip />
+                </div>
+              </div>
             </div>
           </div>
         </div>

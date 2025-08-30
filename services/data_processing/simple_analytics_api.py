@@ -160,12 +160,13 @@ async def root():
 @app.get("/analytics")
 async def get_analytics(
     use_real_data: bool = Query(False, description="Use real Gmail data instead of sample data"),
-    days_back: int = Query(7, description="Number of days to analyze")
+    days_back: int = Query(7, description="Number of days to analyze"),
+    filter_marketing: bool = Query(True, description="Filter out marketing/promotional emails")
 ):
     """Get communication analytics data"""
     try:
         if use_real_data and GMAIL_AVAILABLE:
-            return await get_real_analytics(days_back)
+            return await get_real_analytics(days_back, filter_marketing)
         else:
             return get_sample_analytics()
     except Exception as e:
@@ -277,7 +278,7 @@ async def gmail_status():
         logger.error(f"Error checking Gmail status: {str(e)}")
         return {"authenticated": False, "error": str(e)}
 
-async def get_real_analytics(days_back: int = 7) -> Dict[str, Any]:
+async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True) -> Dict[str, Any]:
     """Get real analytics data from Gmail API"""
     gmail_service = GmailService()
     
@@ -286,13 +287,15 @@ async def get_real_analytics(days_back: int = 7) -> Dict[str, Any]:
         logger.warning("Gmail not authenticated, falling back to sample data")
         return get_sample_analytics()
     
-    # Calculate date range
-    end_date = datetime.now()
+    # Calculate date range (timezone-aware to match Gmail timestamps)
+    from datetime import timezone
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days_back)
     
     try:
-        analytics_data = await gmail_service.get_analytics_data(start_date, end_date)
-        logger.info(f"Retrieved real analytics for {analytics_data['total_count']} emails")
+        analytics_data = await gmail_service.get_analytics_data(start_date, end_date, filter_marketing=filter_marketing)
+        filtered_suffix = " (marketing filtered)" if filter_marketing else ""
+        logger.info(f"Retrieved real analytics for {analytics_data['total_count']} emails{filtered_suffix}")
         return analytics_data
         
     except Exception as e:

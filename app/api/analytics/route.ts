@@ -4,14 +4,22 @@ const ANALYTICS_API_BASE = 'http://localhost:8000';
 
 export async function GET(request: NextRequest) {
   try {
-    // Forward the request to the Python analytics API
-    const response = await fetch(`${ANALYTICS_API_BASE}/analytics`, {
+    // Get query parameters from the request
+    const searchParams = request.nextUrl.searchParams;
+    const queryString = searchParams.toString();
+    
+    // Forward the request to the Python analytics API with query params
+    const apiUrl = queryString 
+      ? `${ANALYTICS_API_BASE}/analytics?${queryString}`
+      : `${ANALYTICS_API_BASE}/analytics`;
+      
+    console.log(`Fetching analytics from: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      // Add timeout to prevent hanging
-      signal: AbortSignal.timeout(10000), // 10 second timeout
     });
 
     if (!response.ok) {
