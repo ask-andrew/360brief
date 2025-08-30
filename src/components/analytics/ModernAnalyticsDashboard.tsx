@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -201,10 +201,121 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
   );
 }
 
+// API Data fetching hook
+function useAnalyticsData(isDemo: boolean) {
+  const [data, setData] = useState(mockAnalyticsData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isDemo) {
+      setData(mockAnalyticsData);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    // Check Gmail authentication status first
+    const checkAuthAndFetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Check if Gmail is connected
+        const authResponse = await fetch('/api/auth/gmail/status');
+        const authStatus = await authResponse.json();
+        
+        if (!authStatus.authenticated) {
+          setError('Gmail not connected. Please connect your Gmail account to view real data.');
+          setData(mockAnalyticsData);
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch real data with Gmail integration
+        const response = await fetch('/api/analytics?use_real_data=true');
+        if (response.ok) {
+          const apiData = await response.json();
+          setData(apiData);
+        } else {
+          throw new Error('Failed to fetch analytics data');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        setData(mockAnalyticsData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuthAndFetchData();
+  }, [isDemo]);
+
+  return { data, loading, error };
+}
+
+// Leadership Tips Component
+function LeadershipTip() {
+  const [tip, setTip] = useState(null);
+
+  const leadershipTips = [
+    {
+      quote: "The single most important thing a leader can do is to facilitate good decisions.",
+      attribution: "Harvard Business School",
+      author: "Clayton Christensen"
+    },
+    {
+      quote: "Communication is the lifeblood of every organization.",
+      attribution: "MIT Sloan School of Management",
+      author: "Edgar Schein"
+    },
+    {
+      quote: "Leaders must be close enough to relate to others, but far enough ahead to motivate them.",
+      attribution: "Stanford Graduate School of Business",
+      author: "Chip Heath"
+    },
+    {
+      quote: "The art of communication is the language of leadership.",
+      attribution: "Wharton School",
+      author: "James Humes"
+    },
+    {
+      quote: "Effective leaders are not just communicators, but meaning makers.",
+      attribution: "Kellogg School of Management",
+      author: "Adam Galinsky"
+    },
+    {
+      quote: "Leadership is the capacity to translate vision into reality through effective communication.",
+      attribution: "Harvard Business School",
+      author: "Warren Bennis"
+    }
+  ];
+
+  useEffect(() => {
+    // Select a random tip when component mounts
+    const randomIndex = Math.floor(Math.random() * leadershipTips.length);
+    setTip(leadershipTips[randomIndex]);
+  }, []);
+
+  if (!tip) return null;
+
+  return (
+    <div className="transition-all duration-500 ease-in-out">
+      <blockquote className="text-sm italic text-gray-700 mb-2">
+        "{tip.quote}"
+      </blockquote>
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <span>— {tip.author}</span>
+        <span className="font-medium">{tip.attribution}</span>
+      </div>
+    </div>
+  );
+}
+
 export function ModernAnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDemo, setIsDemo] = useState(true);
-  const data = mockAnalyticsData;
+  const { data, loading, error } = useAnalyticsData(isDemo);
 
   const formatResponseTime = (minutes: number) => {
     if (minutes >= 60) {
@@ -214,8 +325,83 @@ export function ModernAnalyticsDashboard() {
     return `${minutes}m`;
   };
 
-  // Show empty state when My Data is selected
-  if (!isDemo) {
+  // Show loading state
+  if (loading && !isDemo) {
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+              <p className="text-blue-100 mt-2">
+                Loading your communication insights...
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="data-toggle" className="text-white text-sm">
+                    My Data
+                  </Label>
+                  <Switch
+                    id="data-toggle"
+                    checked={isDemo}
+                    onCheckedChange={setIsDemo}
+                    className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
+                  />
+                  <Label htmlFor="data-toggle" className="text-white text-sm">
+                    Demo Data
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        <div className="text-center py-16">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+              <BarChart3 className="w-8 h-8 text-blue-600 animate-pulse" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading your analytics...</h2>
+            <p className="text-gray-600 mb-4">
+              Fetching your communication data and generating insights.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              This usually takes 30-60 seconds depending on your email volume.
+            </p>
+            <div className="flex items-center justify-center space-x-2 mb-8">
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            </div>
+            
+            {/* Leadership Tips */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 mb-2">Leadership Insight</h3>
+                  <LeadershipTip />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state when My Data is selected but no data available
+  if (!isDemo && !loading && (error || data.total_count === 0)) {
     return (
       <div className="space-y-8">
         {/* Header */}
@@ -244,12 +430,6 @@ export function ModernAnalyticsDashboard() {
                   </Label>
                 </div>
               </div>
-              <Badge 
-                variant="secondary" 
-                className="bg-blue-500/20 text-blue-100 hover:bg-white/30"
-              >
-                My Data
-              </Badge>
             </div>
           </div>
         </div>
@@ -261,20 +441,50 @@ export function ModernAnalyticsDashboard() {
               <BarChart3 className="w-8 h-8 text-blue-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting up your analytics</h2>
-            <p className="text-gray-600 mb-6">
-              We're currently syncing your communication data to generate personalized insights. This usually takes a few minutes.
-            </p>
+            <div className="text-gray-600 mb-6">
+              {error ? (
+                <div className="space-y-2">
+                  <p className="font-medium text-gray-800">Setup Required:</p>
+                  {error.includes('credentials file not found') ? (
+                    <div className="bg-gray-50 p-4 rounded border text-sm">
+                      <p className="mb-2">Gmail credentials need to be configured first:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-xs">
+                        <li>Create a Google Cloud project and enable Gmail API</li>
+                        <li>Create OAuth2 credentials and download JSON file</li>
+                        <li>Save as gmail_credentials.json in services/data_processing/</li>
+                        <li>Set GMAIL_CREDENTIALS_FILE environment variable</li>
+                      </ol>
+                      <p className="mt-2 text-blue-600">See setup_gmail.md for detailed instructions</p>
+                    </div>
+                  ) : (
+                    <p>{error}</p>
+                  )}
+                </div>
+              ) : (
+                <p>We're currently syncing your communication data to generate personalized insights. This usually takes a few minutes.</p>
+              )}
+            </div>
             <div className="flex items-center justify-center space-x-2 mb-6">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
             </div>
-            <Button 
-              onClick={() => setIsDemo(true)}
-              variant="outline"
-            >
-              View Demo Data Instead
-            </Button>
+            <div className="flex gap-3">
+              {error && error.includes('Gmail not connected') ? (
+                <Button 
+                  onClick={() => window.location.href = '/api/auth/gmail/authorize'}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Connect Gmail Account
+                </Button>
+              ) : null}
+              <Button 
+                onClick={() => setIsDemo(true)}
+                variant="outline"
+              >
+                View Demo Data Instead
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -309,12 +519,6 @@ export function ModernAnalyticsDashboard() {
                 </Label>
               </div>
             </div>
-            <Badge 
-              variant="secondary" 
-              className={`${isDemo ? 'bg-green-500/20 text-green-100' : 'bg-blue-500/20 text-blue-100'} hover:bg-white/30`}
-            >
-              {isDemo ? 'Demo Data' : 'My Data'}
-            </Badge>
           </div>
         </div>
       </div>

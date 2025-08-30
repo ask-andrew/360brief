@@ -1,0 +1,32 @@
+# Core dependencies for API service
+pandas>=2.0.0
+numpy>=1.24.0
+python-dateutil>=2.8.2
+pytz>=2023.3
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+httpx>=0.24.0
+
+# Data Processing
+openpyxl>=3.1.2
+python-multipart>=0.0.6
+
+# Data Visualization
+matplotlib>=3.7.1
+seaborn>=0.12.2
+plotly>=5.15.0
+networkx>=3.1
+
+# API Clients
+google-api-python-client>=2.86.0
+google-auth-oauthlib>=1.0.0
+slack-sdk>=3.21.3
+msal>=1.24.0
+
+# Development
+pytest>=7.4.0
+
+# Caching
+redis>=4.5.5

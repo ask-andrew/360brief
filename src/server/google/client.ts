@@ -19,9 +19,12 @@ export function getOAuthClient() {
 
 export const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.metadata',
   'https://www.googleapis.com/auth/calendar.readonly',
+  'https://www.googleapis.com/auth/calendar.events.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
+  'openid'
 ];
 
 export function generateAuthUrl(state?: { redirect?: string; account_type?: 'personal' | 'business' }): string {
