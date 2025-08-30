@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ANALYTICS_API_BASE = 'http://localhost:8000';
+const ANALYTICS_API_BASE = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if analytics service is configured
+    if (!process.env.ANALYTICS_API_BASE) {
+      return NextResponse.redirect(
+        new URL('/analytics?auth=error&message=' + encodeURIComponent('Gmail integration not available in this environment'), request.url)
+      );
+    }
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
     const error = searchParams.get('error');

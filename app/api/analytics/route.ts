@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ANALYTICS_API_BASE = 'http://localhost:8000';
+const ANALYTICS_API_BASE = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
 
 export async function GET(request: NextRequest) {
   try {

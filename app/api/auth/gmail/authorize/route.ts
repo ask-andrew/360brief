@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ANALYTICS_API_BASE = 'http://localhost:8000';
+const ANALYTICS_API_BASE = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if analytics service is configured
+    if (!process.env.ANALYTICS_API_BASE) {
+      return NextResponse.json({
+        error: 'Gmail integration not available',
+        message: 'Analytics service not configured for this environment'
+      }, {
+        status: 503,
+      });
+    }
+
     // Get OAuth2 authorization URL from Python backend
     const response = await fetch(`${ANALYTICS_API_BASE}/auth/gmail/authorize`, {
       method: 'GET',
@@ -26,9 +36,9 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       error: 'Failed to initiate Gmail authorization',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Analytics service unavailable'
     }, {
-      status: 500,
+      status: 503,
     });
   }
 }
