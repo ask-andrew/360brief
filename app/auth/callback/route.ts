@@ -40,7 +40,37 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${requestUrl.origin}/login?error=no_session`)
     }
 
+    // Store OAuth tokens if this is a Google OAuth with provider_token
+    if (data.session.provider_token && data.session.user) {
+      console.log('🔄 Storing Gmail OAuth tokens...')
+      
+      try {
+        await supabase.from('user_tokens').upsert({
+          user_id: data.session.user.id,
+          provider: 'google',
+          access_token: data.session.provider_token,
+          refresh_token: data.session.provider_refresh_token,
+          expires_at: data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : null,
+          token_type: 'Bearer',
+          scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly',
+          updated_at: new Date().toISOString(),
+        });
+        
+        console.log('✅ Gmail OAuth tokens stored successfully!');
+      } catch (tokenError) {
+        console.error('⚠️ Failed to store tokens:', tokenError);
+        // Continue anyway - user can still use the app
+      }
+    }
+
     console.log('✅ Session exchange successful!')
+    
+    // Check if this was a Gmail connection flow
+    const connectParam = requestUrl.searchParams.get('connect');
+    if (connectParam === 'gmail') {
+      return NextResponse.redirect(`${requestUrl.origin}/dashboard?connected=gmail`);
+    }
+    
     return NextResponse.redirect(`${requestUrl.origin}${next}`)
 
   } catch (err) {

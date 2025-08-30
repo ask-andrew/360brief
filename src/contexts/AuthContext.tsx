@@ -11,6 +11,7 @@ type AuthContextType = {
   loading: boolean
   error: string | null
   signInWithGoogle: () => Promise<void>
+  connectGmail: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<void>
   signUpWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -112,6 +114,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in with Google'
       console.error('❌ Sign in error:', errorMessage)
+      setError(errorMessage)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
+  const connectGmail = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      console.log('📧 Connecting Gmail...')
+      
+      const { data, error: connectError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?connect=gmail`,
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      })
+      
+      if (connectError) {
+        console.error('❌ Gmail connect error:', connectError)
+        throw connectError
+      }
+      
+      console.log('✅ Gmail connection initiated:', data)
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to connect Gmail'
+      console.error('❌ Gmail connect error:', errorMessage)
       setError(errorMessage)
       throw err
     } finally {
@@ -216,6 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     error,
     signInWithGoogle,
+    connectGmail,
     signInWithEmail,
     signUpWithEmail,
     signOut,

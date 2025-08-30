@@ -40,18 +40,22 @@ function useDashboardData() {
       setError(null);
       
       try {
-        // Check if Gmail is connected
-        const authResponse = await fetch('/api/auth/gmail/status');
-        const authStatus = await authResponse.json();
+        // Try to fetch Gmail analytics data directly
+        const gmailResponse = await fetch('/api/analytics/gmail');
         
-        if (!authStatus.authenticated) {
-          setError('Gmail not connected');
-          setLoading(false);
+        if (gmailResponse.ok) {
+          const gmailData = await gmailResponse.json();
+          setData(gmailData);
           return;
         }
         
-        // Fetch real data with Gmail integration
-        const response = await fetch('/api/analytics?use_real_data=true');
+        // If Gmail is not connected (403) or other issues, fallback to demo data
+        if (gmailResponse.status === 403 || gmailResponse.status === 401) {
+          setError('Gmail not connected - using demo data');
+        }
+        
+        // Fallback to general analytics (demo mode)
+        const response = await fetch('/api/analytics');
         if (response.ok) {
           const apiData = await response.json();
           setData(apiData);
@@ -72,11 +76,12 @@ function useDashboardData() {
 }
 
 export function EnhancedDashboard() {
-  const { user } = useAuth();
+  const { user, connectGmail } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   
   const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [recentBriefs, setRecentBriefs] = useState([
     // Mock data - replace with real data later
     {
@@ -90,6 +95,25 @@ export function EnhancedDashboard() {
 
   // Fetch real analytics data
   const { data: analyticsData, loading: analyticsLoading, error: analyticsError } = useDashboardData();
+
+  // Handle connection success message
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const connected = urlParams.get('connected');
+    
+    if (connected === 'gmail') {
+      toast({
+        title: 'Gmail Connected!',
+        description: 'Your Gmail account has been successfully connected. Refreshing data...',
+      });
+      
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+      
+      // Refresh the page to load real data
+      window.location.reload();
+    }
+  }, [toast]);
 
   const dashboardStats: DashboardStats = {
     unreadEmails: analyticsData?.total_count || 0,
@@ -131,12 +155,19 @@ export function EnhancedDashboard() {
     }
   };
 
-  const handleConnectGmail = () => {
-    // This would trigger the OAuth flow
-    toast({
-      title: 'Gmail Connection',
-      description: 'Gmail OAuth flow would be triggered here.',
-    });
+  const handleConnectGmail = async () => {
+    try {
+      setIsConnecting(true);
+      await connectGmail();
+    } catch (error) {
+      toast({
+        title: 'Connection Failed',
+        description: 'Failed to connect Gmail. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const handleConnectCalendar = () => {
