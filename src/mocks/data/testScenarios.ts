@@ -8,9 +8,8 @@ export const crisisScenario: UnifiedData = {
       subject: 'URGENT: TechFlow Corp Service Down - CEO Escalation',
       body: 'Service outage affecting all users. CEO David Kim demanding immediate response. Revenue at risk.',
       date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-      from: { email: 'support@techflow.com', name: 'TechFlow Support' },
-      to: [{ email: 'ops@company.com', name: 'Operations Team' }],
-      priority: 'high',
+      from: 'support@techflow.com',
+      to: ['ops@company.com'],
       labels: ['crisis', 'escalation'],
     },
     {
@@ -18,9 +17,8 @@ export const crisisScenario: UnifiedData = {
       subject: 'Customer Complaints Flooding In - TechFlow Outage',
       body: 'Multiple customers threatening to cancel contracts due to ongoing service disruption.',
       date: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-      from: { email: 'cs@company.com', name: 'Customer Success' },
-      to: [{ email: 'leadership@company.com', name: 'Leadership Team' }],
-      priority: 'high',
+      from: 'cs@company.com',
+      to: ['leadership@company.com'],
       labels: ['churn-risk'],
     }
   ],
@@ -30,8 +28,8 @@ export const crisisScenario: UnifiedData = {
       title: 'TechFlow Corp Database Cluster Failure',
       description: 'Primary database cluster failure causing cascading system failures',
       startedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-      endedAt: null, // Still ongoing
-      severity: 'critical',
+      endedAt: undefined, // Still ongoing
+      severity: 'sev1',
       status: 'investigating',
       owner: 'Mike Chen',
       affectedUsers: 15000,
@@ -101,9 +99,8 @@ export const normalOperationsScenario: UnifiedData = {
       subject: 'Weekly Project Status Update',
       body: 'All projects on track. New feature deployment scheduled for Friday.',
       date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      from: { email: 'pm@company.com', name: 'Project Manager' },
-      to: [{ email: 'team@company.com', name: 'Team' }],
-      priority: 'normal',
+      from: 'pm@company.com',
+      to: ['team@company.com'],
       labels: ['status-update'],
     },
     {
@@ -111,9 +108,8 @@ export const normalOperationsScenario: UnifiedData = {
       subject: 'New Customer Onboarding - Acme Corp', 
       body: 'Successful onboarding of new enterprise client. $500K ARR.',
       date: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      from: { email: 'sales@company.com', name: 'Sales Team' },
-      to: [{ email: 'leadership@company.com', name: 'Leadership' }],
-      priority: 'normal',
+      from: 'sales@company.com',
+      to: ['leadership@company.com'],
       labels: ['opportunity', 'expansion'],
     }
   ],
@@ -170,9 +166,8 @@ export const highActivityScenario: UnifiedData = {
       subject: 'Proposal Request - Fortune 500 Expansion',
       body: 'Major enterprise opportunity requiring immediate proposal. Potential $5M ARR.',
       date: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      from: { email: 'enterprise@prospect.com', name: 'Enterprise Prospect' },
-      to: [{ email: 'sales@company.com', name: 'Sales Team' }],
-      priority: 'high',
+      from: 'enterprise@prospect.com',
+      to: ['sales@company.com'],
       labels: ['opportunity', 'proposal'],
     },
     {
@@ -180,9 +175,8 @@ export const highActivityScenario: UnifiedData = {
       subject: 'Partnership Opportunity - Strategic Integration',
       body: 'Technology partnership proposal from industry leader.',
       date: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      from: { email: 'partnerships@bigtech.com', name: 'BigTech Partnerships' },
-      to: [{ email: 'bd@company.com', name: 'Business Development' }],
-      priority: 'high',
+      from: 'partnerships@bigtech.com',
+      to: ['bd@company.com'],
       labels: ['partnership', 'opportunity'],
     },
     {
@@ -190,9 +184,8 @@ export const highActivityScenario: UnifiedData = {
       subject: 'Product Launch Feedback - Overwhelming Positive Response',
       body: 'New feature launch exceeded expectations. 40% adoption rate in first week.',
       date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      from: { email: 'product@company.com', name: 'Product Team' },
-      to: [{ email: 'all@company.com', name: 'All Hands' }],
-      priority: 'normal',
+      from: 'product@company.com',
+      to: ['all@company.com'],
       labels: ['launch', 'success'],
     }
   ],
