@@ -30,7 +30,7 @@ interface DashboardStats {
 
 // Hook for fetching real analytics data
 function useDashboardData() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,7 +117,6 @@ export function EnhancedDashboard() {
       toast({
         title: 'Brief Generated',
         description: 'Your executive brief has been created successfully.',
-        duration: 3000,
       });
       
       router.push(`/briefs/current`);
@@ -126,7 +125,6 @@ export function EnhancedDashboard() {
         title: 'Generation Failed',
         description: 'Failed to generate brief. Please try again.',
         variant: 'destructive',
-        duration: 4000,
       });
     } finally {
       setIsGeneratingBrief(false);
@@ -138,7 +136,6 @@ export function EnhancedDashboard() {
     toast({
       title: 'Gmail Connection',
       description: 'Gmail OAuth flow would be triggered here.',
-      duration: 3000,
     });
   };
 
@@ -147,7 +144,6 @@ export function EnhancedDashboard() {
     toast({
       title: 'Calendar Connection',
       description: 'Calendar OAuth flow would be triggered here.',
-      duration: 3000,
     });
   };
 
@@ -165,7 +161,7 @@ export function EnhancedDashboard() {
   const gmailStatus = {
     connected: !analyticsError && analyticsData && analyticsData.total_count > 0,
     lastSync: analyticsError ? undefined : new Date().toISOString(),
-    error: analyticsError
+    error: analyticsError || undefined
   };
 
   const calendarStatus = {

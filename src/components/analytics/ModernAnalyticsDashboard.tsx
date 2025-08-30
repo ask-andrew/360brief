@@ -256,7 +256,7 @@ function useAnalyticsData(isDemo: boolean) {
 
 // Leadership Tips Component
 function LeadershipTip() {
-  const [tip, setTip] = useState(null);
+  const [tip, setTip] = useState<{ quote: string; attribution: string; author: string; } | null>(null);
 
   const leadershipTips = [
     {
