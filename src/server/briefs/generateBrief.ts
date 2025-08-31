@@ -330,16 +330,18 @@ export function generateStyledBrief(
 ): any {
   const baseBrief = generateBrief(unified);
   const context = analyzeBusinessContext(unified);
+  const insights = generateDataInsights(unified);
+  const attribution = generateDataAttribution(unified);
   
   switch (style) {
     case 'mission_brief':
-      return formatMissionBrief(baseBrief, context, unified);
+      return formatMissionBrief(baseBrief, context, unified, insights, attribution);
     case 'startup_velocity':
-      return formatStartupVelocityBrief(baseBrief, context, unified);
+      return formatStartupVelocityBrief(baseBrief, context, unified, insights, attribution);
     case 'management_consulting':
-      return formatConsultingBrief(baseBrief, context, unified);
+      return formatConsultingBrief(baseBrief, context, unified, insights, attribution);
     case 'newsletter':
-      return formatNewsletterBrief(baseBrief, context, unified);
+      return formatNewsletterBrief(baseBrief, context, unified, insights, attribution);
     default:
       return baseBrief;
   }
@@ -396,6 +398,134 @@ function extractMainStakeholders(unified: UnifiedData): string[] {
   });
   
   return Array.from(stakeholders).slice(0, 5);
+}
+
+// Generate actionable insights from data patterns
+function generateDataInsights(unified: UnifiedData): any {
+  const now = new Date();
+  const last24Hours = now.getTime() - 24 * 60 * 60 * 1000;
+  const last7Days = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+
+  // Communication patterns
+  const recentEmails = unified.emails.filter(e => new Date(e.date).getTime() > last24Hours);
+  const weeklyEmails = unified.emails.filter(e => new Date(e.date).getTime() > last7Days);
+  const urgentEmails = unified.emails.filter(e => 
+    /urgent|asap|critical|emergency|immediate/i.test(e.subject + ' ' + e.body)
+  );
+
+  // Meeting analysis
+  const todayMeetings = unified.calendarEvents.filter(e => {
+    const eventDate = new Date(e.start).toDateString();
+    return eventDate === now.toDateString();
+  });
+  const tomorrowMeetings = unified.calendarEvents.filter(e => {
+    const eventDate = new Date(e.start);
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    return eventDate.toDateString() === tomorrow.toDateString();
+  });
+
+  // Project momentum indicators
+  const activeProjects = new Set();
+  unified.tickets.forEach(t => {
+    if (t.status !== 'closed' && t.title) {
+      // Extract potential project names from ticket titles
+      const projectMatch = t.title.match(/(\w+\s+\w+)(?:\s+[-:])/);
+      if (projectMatch) activeProjects.add(projectMatch[1]);
+    }
+  });
+
+  // Risk indicators
+  const overdueItems = unified.tickets.filter(t => 
+    t.dueDate && new Date(t.dueDate) < now && t.status !== 'closed'
+  );
+  const blockedItems = unified.tickets.filter(t => t.status === 'blocked');
+
+  // Communication frequency analysis
+  const communicationTrend = recentEmails.length > weeklyEmails.length / 7 * 1.5 ? 'high' : 
+    recentEmails.length < weeklyEmails.length / 7 * 0.5 ? 'low' : 'normal';
+
+  return {
+    communication: {
+      recentVolume: recentEmails.length,
+      weeklyVolume: weeklyEmails.length,
+      urgentCount: urgentEmails.length,
+      trend: communicationTrend,
+      keyTopics: extractKeyTopics(unified.emails),
+    },
+    meetings: {
+      todayCount: todayMeetings.length,
+      tomorrowCount: tomorrowMeetings.length,
+      upcomingImportant: todayMeetings.filter(m => 
+        /board|executive|ceo|investor|client|customer/i.test(m.title)
+      ),
+    },
+    projects: {
+      activeCount: activeProjects.size,
+      atRiskCount: overdueItems.length + blockedItems.length,
+      momentum: overdueItems.length > 3 ? 'declining' : blockedItems.length > 2 ? 'blocked' : 'steady',
+    },
+    risks: {
+      overdue: overdueItems.length,
+      blocked: blockedItems.length,
+      incidents: unified.incidents.filter(i => !i.endedAt).length,
+    }
+  };
+}
+
+// Extract key topics from email content
+function extractKeyTopics(emails: any[]): string[] {
+  const topicCounts = new Map<string, number>();
+  
+  emails.forEach(email => {
+    const text = (email.subject + ' ' + email.body).toLowerCase();
+    
+    // Look for project/business keywords
+    const keywords = [
+      'budget', 'revenue', 'client', 'customer', 'launch', 'release',
+      'meeting', 'demo', 'proposal', 'contract', 'renewal', 'expansion',
+      'hiring', 'onboarding', 'quarterly', 'review', 'performance',
+      'incident', 'outage', 'bug', 'issue', 'urgent', 'critical'
+    ];
+    
+    keywords.forEach(keyword => {
+      if (text.includes(keyword)) {
+        topicCounts.set(keyword, (topicCounts.get(keyword) || 0) + 1);
+      }
+    });
+  });
+  
+  // Return top 5 topics
+  return Array.from(topicCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([topic]) => topic);
+}
+
+// Generate data source attribution
+function generateDataAttribution(unified: UnifiedData): string {
+  const parts = [];
+  
+  if (unified.emails.length > 0) {
+    parts.push(`${unified.emails.length} messages`);
+  }
+  if (unified.calendarEvents.length > 0) {
+    parts.push(`${unified.calendarEvents.length} meetings`);
+  }
+  if (unified.tickets.length > 0) {
+    parts.push(`${unified.tickets.length} tasks`);
+  }
+  if (unified.incidents.length > 0) {
+    parts.push(`${unified.incidents.length} incidents`);
+  }
+  
+  if (parts.length === 0) return 'Based on available data';
+  
+  const timeRange = pickTimeRange(unified);
+  const timeStr = timeRange ? 
+    ` from ${new Date(timeRange.start).toLocaleDateString()} to ${new Date(timeRange.end).toLocaleDateString()}` : 
+    ' from recent activity';
+  
+  return `Based on ${parts.join(', ')}${timeStr}`;
 }
 
 function formatMissionBrief(brief: BriefingData, context: any, unified: UnifiedData): any {

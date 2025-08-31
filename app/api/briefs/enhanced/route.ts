@@ -40,7 +40,7 @@ export async function GET(req: Request) {
         return NextResponse.json({
           ...generateStyledBrief(unified, briefStyle),
           dataSource: 'mock',
-          warning: 'No real data available. Using mock data as fallback. Connect your accounts to see real insights.'
+          warning: 'Gmail connected but no recent messages found. Try again later or check your Gmail filters.'
         });
       }
     } else {

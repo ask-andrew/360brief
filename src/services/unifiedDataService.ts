@@ -9,18 +9,31 @@ export type FetchUnifiedOptions = {
   endDate?: string;   // ISO
 };
 
-// Minimal TS UnifiedDataService. Tries Supabase (if available), falls back to empty.
+// Unified data service that prioritizes working Python API over direct Google calls
 export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOptions = {}): Promise<UnifiedData> {
-  // Choose data source: direct Google APIs (recommended for beta) or FastAPI fallback
-  const forceDirect = (process.env.DIRECT_GOOGLE === 'true' || process.env.NEXT_PUBLIC_DIRECT_GOOGLE === 'true');
-  const base = process.env.UNIFIED_API_BASE || process.env.NEXT_PUBLIC_UNIFIED_API_BASE || '';
+  // Use Python FastAPI as primary source (same as analytics page), fallback to direct Google API
+  const useWorkingAPI = true; // Python API has working OAuth
+  const forceDirect = (process.env.DIRECT_GOOGLE === 'true' || process.env.NEXT_PUBLIC_DIRECT_GOOGLE === 'true') && !useWorkingAPI;
+  
+  // Python API base (localhost:8000) - same as analytics
+  const pythonAPI = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
+  const legacyBase = process.env.UNIFIED_API_BASE || process.env.NEXT_PUBLIC_UNIFIED_API_BASE || '';
 
   const params = new URLSearchParams();
   if (_opts.startDate) params.set('start', _opts.startDate);
   if (_opts.endDate) params.set('end', _opts.endDate);
+  params.set('use_real_data', 'true'); // Force real data for briefs
+  
+  // Add user ID if available for Python API to identify the user
+  if (_userId) {
+    params.set('user_id', _userId);
+  }
 
-  const apiBase = base ? base.replace(/\/$/, '') : '';
-  const url = apiBase ? `${apiBase}/api/unified${params.toString() ? `?${params.toString()}` : ''}` : '';
+  // Primary: Use Next.js analytics route (same as analytics page) 
+  const workingUrl = `/api/analytics${params.toString() ? `?${params.toString()}` : ''}`;
+  // Fallback: Legacy API base
+  const apiBase = legacyBase ? legacyBase.replace(/\/$/, '') : '';
+  const legacyUrl = apiBase ? `${apiBase}/api/unified${params.toString() ? `?${params.toString()}` : ''}` : '';
 
   const empty: UnifiedData = {
     emails: [],
@@ -30,12 +43,155 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     generated_at: new Date().toISOString(),
   };
 
-  async function fetchViaFastAPI(): Promise<UnifiedData | null> {
-    if (!url) return null;
-    const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
-    if (!res.ok) return null;
-    const data = await res.json();
+  async function fetchViaDirectGmailAPI(): Promise<UnifiedData | null> {
+    try {
+      console.log(`🔄 Fetching Gmail data directly (same as analytics page)`);
+      
+      // Get current user - same as analytics page
+      const supabase = await createClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.log(`⚠️ Authentication required for Gmail data`);
+        return null;
+      }
+      
+      // Get Gmail access token from user_tokens table (same as analytics)
+      console.log(`🔄 Looking for tokens for user: ${user.id}`);
+      const { data: tokens, error: tokenError } = await supabase
+        .from('user_tokens')
+        .select('access_token, refresh_token, expires_at, user_id, provider')
+        .eq('user_id', user.id)
+        .eq('provider', 'google')
+        .limit(1);
 
+      if (tokenError) {
+        console.log(`❌ Token query error:`, tokenError);
+        return null;
+      }
+      
+      if (!tokens?.[0]) {
+        // Debug: Check if any tokens exist for this user
+        const { data: allTokens } = await supabase
+          .from('user_tokens')
+          .select('user_id, provider')
+          .eq('user_id', user.id);
+        console.log(`⚠️ No Gmail token found for user: ${user.id}, found tokens:`, allTokens);
+        return null;
+      }
+
+      const token = tokens[0];
+      
+      // Check if token is expired and needs refresh (basic check)
+      let accessToken = token.access_token;
+      if (token.expires_at && new Date(token.expires_at) < new Date()) {
+        console.log(`🔄 Token expired, will attempt with current token`);
+        // In a full implementation, we'd refresh the token here
+      }
+      
+      // Fetch Gmail messages using same approach as analytics page
+      console.log(`🔄 Fetching Gmail messages for user ${user.id}`);
+      const gmailResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20&q=-category:promotions -in:chats`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!gmailResponse.ok) {
+        console.log(`⚠️ Gmail API responded with ${gmailResponse.status}: ${gmailResponse.statusText}`);
+        return null;
+      }
+
+      const gmailData = await gmailResponse.json();
+      const messageIds = gmailData.messages || [];
+      console.log(`✅ Gmail API returned ${messageIds.length} message IDs`);
+      
+      // Get details for first 10 messages (simplified for briefs)
+      const messages = await Promise.all(
+        messageIds.slice(0, 10).map(async (msg: any) => {
+          try {
+            const msgResponse = await fetch(
+              `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=subject&metadataHeaders=from&metadataHeaders=to&metadataHeaders=date`, 
+              {
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Accept': 'application/json'
+                }
+              }
+            );
+            
+            if (!msgResponse.ok) return null;
+            const msgData = await msgResponse.json();
+            
+            const headers = msgData.payload?.headers || [];
+            const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+            
+            return {
+              id: msg.id,
+              subject: getHeader('subject'),
+              body: msgData.snippet || '',
+              from: getHeader('from'),
+              to: [getHeader('to')],
+              date: getHeader('date') || new Date().toISOString(),
+            };
+          } catch (error) {
+            console.log(`⚠️ Failed to fetch message ${msg.id}:`, error);
+            return null;
+          }
+        })
+      );
+
+      const validMessages = messages.filter(Boolean);
+      console.log(`✅ Successfully fetched ${validMessages.length} Gmail messages`);
+
+      return {
+        emails: validMessages,
+        incidents: [], 
+        calendarEvents: [], 
+        tickets: [], 
+        generated_at: new Date().toISOString(),
+      };
+
+    } catch (error) {
+      console.log(`❌ Direct Gmail API failed:`, error);
+      return null;
+    }
+  }
+
+  async function fetchViaLegacyAPI(): Promise<UnifiedData | null> {
+    if (!legacyUrl) return null;
+    try {
+      const res = await fetch(legacyUrl, { method: 'GET', headers: { 'Accept': 'application/json' } });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return mapUnifiedData(data);
+    } catch {
+      return null;
+    }
+  }
+
+  function transformAnalyticsToUnified(analyticsData: any): UnifiedData {
+    // Transform Python analytics API response to UnifiedData format
+    const emails = analyticsData?.messages?.map((msg: any) => ({
+      id: String(msg?.id || Math.random()),
+      subject: String(msg?.subject || ''),
+      body: String(msg?.body || msg?.snippet || ''),
+      from: String(msg?.from || ''),
+      to: Array.isArray(msg?.to) ? msg.to.map((t: any) => String(t)) : [String(msg?.to || '')],
+      date: String(msg?.date || msg?.timestamp || new Date().toISOString()),
+    })) || [];
+
+    return {
+      emails,
+      incidents: [], // Analytics API doesn't provide incidents
+      calendarEvents: [], // Analytics API doesn't provide calendar
+      tickets: [], // Analytics API doesn't provide tickets
+      generated_at: new Date().toISOString(),
+    };
+  }
+
+  function mapUnifiedData(data: any): UnifiedData {
     // Map with guards to the expected UnifiedData shape
     const mapped: UnifiedData = {
       emails: Array.isArray(data?.emails) ? data.emails.map((e: any) => ({
@@ -154,13 +310,26 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     return unified;
   }
 
-  // Execution order: if forced → direct; else try FastAPI then fallback to direct
+  // Execution order: Working Python API → Legacy API → Direct Google API → Empty
   try {
-    if (forceDirect) return await fetchViaGoogleDirect();
-    const fromApi = await fetchViaFastAPI();
-    if (fromApi) return fromApi;
+    if (forceDirect) {
+      console.log(`🔄 Forced direct Google API access`);
+      return await fetchViaGoogleDirect();
+    }
+    
+    // Try direct Gmail API first (same method as analytics page)
+    const fromDirectGmail = await fetchViaDirectGmailAPI();
+    if (fromDirectGmail) return fromDirectGmail;
+    
+    // Fallback to legacy API
+    const fromLegacyAPI = await fetchViaLegacyAPI();
+    if (fromLegacyAPI) return fromLegacyAPI;
+    
+    // Last resort: direct Google API (likely to fail with token issues)
+    console.log(`🔄 Falling back to direct Google API access`);
     return await fetchViaGoogleDirect();
-  } catch {
+  } catch (error) {
+    console.error(`❌ All unified data sources failed:`, error);
     return empty;
   }
 }

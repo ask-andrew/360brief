@@ -6,9 +6,9 @@ import { refreshAccessToken } from '@/server/google/client';
 export async function getValidAccessToken(userId: string): Promise<string> {
   const supabase = await createClient();
 
-  // Load the user's Google connected account (pick the first for now)
+  // Load the user's Google tokens (pick the first for now)
   const { data: accounts, error } = await supabase
-    .from('user_connected_accounts')
+    .from('user_tokens')
     .select('id, access_token, refresh_token, expires_at')
     .eq('user_id', userId)
     .eq('provider', 'google')
@@ -34,10 +34,11 @@ export async function getValidAccessToken(userId: string): Promise<string> {
 
   // Persist updated tokens
   const { error: upErr } = await supabase
-    .from('user_connected_accounts')
+    .from('user_tokens')
     .update({
       access_token: newAccess,
       expires_at: newExpiryMs ? new Date(newExpiryMs).toISOString() : null,
+      updated_at: new Date().toISOString(),
       // keep refresh_token as-is; Google may or may not return it on refresh
     })
     .eq('id', acct.id);
