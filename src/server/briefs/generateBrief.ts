@@ -335,13 +335,13 @@ export function generateStyledBrief(
   
   switch (style) {
     case 'mission_brief':
-      return formatMissionBrief(baseBrief, context, unified, insights, attribution);
+      return formatMissionBrief(baseBrief, context, unified);
     case 'startup_velocity':
-      return formatStartupVelocityBrief(baseBrief, context, unified, insights, attribution);
+      return formatStartupVelocityBrief(baseBrief, context, unified);
     case 'management_consulting':
-      return formatConsultingBrief(baseBrief, context, unified, insights, attribution);
+      return formatConsultingBrief(baseBrief, context, unified);
     case 'newsletter':
-      return formatNewsletterBrief(baseBrief, context, unified, insights, attribution);
+      return formatNewsletterBrief(baseBrief, context, unified);
     default:
       return baseBrief;
   }
