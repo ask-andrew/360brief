@@ -13,13 +13,14 @@ export function getOAuthClient() {
   return new google.auth.OAuth2(
     clientId,
     clientSecret,
-    `${appUrl}/api/auth/google/callback`
+    `${appUrl}/api/auth/gmail/callback`
   );
 }
 
 export const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.metadata',
+  'https://www.googleapis.com/auth/gmail.metadata', 
+  'https://www.googleapis.com/auth/gmail.modify', // More comprehensive Gmail access
   'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/calendar.events.readonly',
   'https://www.googleapis.com/auth/userinfo.email',

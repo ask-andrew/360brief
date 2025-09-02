@@ -28,37 +28,44 @@ interface DashboardStats {
   lastBriefGenerated?: string;
 }
 
-// Hook for fetching real analytics data
+// Hook for fetching real analytics data with processing status
 function useDashboardData() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+      setProcessingStatus(null);
       
       try {
-        // Try to fetch Gmail analytics data directly
-        const gmailResponse = await fetch('/api/analytics/gmail');
+        // Use the working analytics API (same as analytics page)
+        // This API automatically detects if user has real data and serves accordingly
+        const response = await fetch('/api/analytics?use_real_data=true');
         
-        if (gmailResponse.ok) {
-          const gmailData = await gmailResponse.json();
-          setData(gmailData);
-          return;
-        }
-        
-        // If Gmail is not connected (403) or other issues, fallback to demo data
-        if (gmailResponse.status === 403 || gmailResponse.status === 401) {
-          setError('Gmail not connected - using demo data');
-        }
-        
-        // Fallback to general analytics (demo mode)
-        const response = await fetch('/api/analytics');
         if (response.ok) {
           const apiData = await response.json();
-          setData(apiData);
+          
+          // Check if data indicates processing status
+          if (apiData.status === 'processing') {
+            setProcessingStatus('Processing your Gmail data...');
+            setData(null);
+          } else if (apiData.status === 'error') {
+            setError(`Data processing failed: ${apiData.error || 'Unknown error'}`);
+            setData(null);
+          } else {
+            setData(apiData);
+            
+            // Clear any previous error if we successfully get data
+            if (apiData.total_count > 0) {
+              setError(null);
+            } else {
+              setError('No recent messages found. Connect Gmail or try again later.');
+            }
+          }
         } else {
           throw new Error('Failed to fetch analytics data');
         }
@@ -72,7 +79,7 @@ function useDashboardData() {
     fetchData();
   }, []);
 
-  return { data, loading, error };
+  return { data, loading, error, processingStatus };
 }
 
 export function EnhancedDashboard() {
@@ -94,24 +101,50 @@ export function EnhancedDashboard() {
   ]);
 
   // Fetch real analytics data
-  const { data: analyticsData, loading: analyticsLoading, error: analyticsError } = useDashboardData();
+  const { data: analyticsData, loading: analyticsLoading, error: analyticsError, processingStatus } = useDashboardData();
 
-  // Handle connection success message
+  // Handle connection success and processing status
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const connected = urlParams.get('connected');
+    const status = urlParams.get('status');
     
     if (connected === 'gmail') {
-      toast({
-        title: 'Gmail Connected!',
-        description: 'Your Gmail account has been successfully connected. Refreshing data...',
-      });
+      if (status === 'processing') {
+        toast({
+          title: 'Gmail Connected!',
+          description: 'Your Gmail account has been connected. Processing your data in the background...',
+          duration: 5000,
+        });
+      } else if (status === 'processing_failed') {
+        toast({
+          title: 'Gmail Connected',
+          description: 'Gmail connected, but background processing failed. You can manually refresh to try again.',
+          variant: 'destructive',
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: 'Gmail Connected!',
+          description: 'Your Gmail account has been successfully connected. Refreshing data...',
+        });
+      }
       
       // Clean up URL
       window.history.replaceState({}, '', '/dashboard');
       
-      // Refresh the page to load real data
-      window.location.reload();
+      // Auto-refresh data every 10 seconds if processing
+      if (status === 'processing') {
+        const refreshInterval = setInterval(() => {
+          window.location.reload();
+        }, 10000);
+        
+        // Clear interval after 2 minutes
+        setTimeout(() => clearInterval(refreshInterval), 120000);
+      } else {
+        // Refresh the page to load real data
+        window.location.reload();
+      }
     }
   }, [toast]);
 
@@ -122,32 +155,77 @@ export function EnhancedDashboard() {
     lastBriefGenerated: recentBriefs[0]?.createdAt
   };
 
+  // Debug logging to see what's happening
+  console.log('Dashboard Debug:', {
+    analyticsLoading,
+    analyticsError,
+    hasAnalyticsData: !!analyticsData,
+    totalCount: analyticsData?.total_count,
+    dashboardStats
+  });
+
+  // Automatically check tokens when data loads (for debugging)
+  useEffect(() => {
+    if (!analyticsLoading && !analyticsError && analyticsData) {
+      handleDebugTokens();
+    }
+  }, [analyticsLoading, analyticsError, analyticsData]);
+
   const handleGenerateBrief = async () => {
     setIsGeneratingBrief(true);
     try {
-      // Mock brief generation - replace with real implementation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Try real data first, but have fallback to demo data
+      const hasRealData = !analyticsError && analyticsData && analyticsData.total_count > 0;
+      
+      const response = await fetch('/api/briefs/enhanced', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          style: 'mission_brief',
+          useRealData: hasRealData,
+          scenario: hasRealData ? undefined : 'normal', // Use normal scenario as fallback
+          timeRange: hasRealData ? {
+            start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            end: new Date().toISOString()
+          } : undefined
+        })
+      });
+
+      const briefData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(briefData.error || 'Failed to generate brief');
+      }
       
       const newBrief = {
         id: Date.now().toString(),
-        title: `Daily Brief - ${new Date().toLocaleDateString()}`,
-        createdAt: new Date().toISOString(),
+        title: briefData.subject || `Brief - ${new Date().toLocaleDateString()}`,
+        createdAt: briefData.generatedAt || new Date().toISOString(),
         status: 'completed' as const,
-        style: 'mission_brief'
+        style: briefData.style || 'mission_brief',
+        dataSource: briefData.dataSource
       };
       
-      setRecentBriefs(prev => [newBrief, ...prev]);
+      setRecentBriefs(prev => [newBrief, ...prev.slice(0, 4)]); // Keep only 5 most recent
+      
+      // Store the brief data for the current brief page
+      sessionStorage.setItem('currentBrief', JSON.stringify(briefData));
       
       toast({
         title: 'Brief Generated',
-        description: 'Your executive brief has been created successfully.',
+        description: briefData.dataSource === 'real' ? 
+          'Your executive brief has been created using your real data.' :
+          'Your executive brief has been created using demo data. Connect your services for personalized insights.',
       });
       
       router.push(`/briefs/current`);
     } catch (error) {
+      console.error('Brief generation error:', error);
       toast({
         title: 'Generation Failed',
-        description: 'Failed to generate brief. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to generate brief. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -188,11 +266,32 @@ export function EnhancedDashboard() {
     await new Promise(resolve => setTimeout(resolve, 1000));
   };
 
+  const handleDebugTokens = async () => {
+    try {
+      const response = await fetch('/api/debug/tokens');
+      const data = await response.json();
+      console.log('🔍 Token Debug Info:', data);
+      toast({
+        title: 'Debug Info',
+        description: `Found ${data.counts?.userTokens || 0} user tokens. Check console for details.`,
+      });
+    } catch (error) {
+      console.error('Debug tokens error:', error);
+      toast({
+        title: 'Debug Failed',
+        description: 'Failed to fetch token debug info',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Determine service connection status based on analytics data
   const gmailStatus = {
     connected: !analyticsError && analyticsData && analyticsData.total_count > 0,
-    lastSync: analyticsError ? undefined : new Date().toISOString(),
-    error: analyticsError || undefined
+    processing: !!processingStatus,
+    lastSync: (!analyticsError && analyticsData && analyticsData.total_count > 0) ? new Date().toISOString() : undefined,
+    error: analyticsError || undefined,
+    processingMessage: processingStatus
   };
 
   const calendarStatus = {
@@ -233,7 +332,11 @@ export function EnhancedDashboard() {
               <div>
                 <p className="text-sm font-medium text-red-600">Total Messages</p>
                 <p className="text-3xl font-bold text-red-700">
-                  {analyticsLoading ? '...' : dashboardStats.unreadEmails}
+                  {analyticsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : (
+                    dashboardStats.unreadEmails
+                  )}
                 </p>
               </div>
               <Mail className="h-8 w-8 text-red-600" />
@@ -247,7 +350,11 @@ export function EnhancedDashboard() {
               <div>
                 <p className="text-sm font-medium text-blue-600">Priority Messages</p>
                 <p className="text-3xl font-bold text-blue-700">
-                  {analyticsLoading ? '...' : dashboardStats.upcomingMeetings}
+                  {analyticsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : (
+                    dashboardStats.upcomingMeetings
+                  )}
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-blue-600" />
@@ -261,7 +368,11 @@ export function EnhancedDashboard() {
               <div>
                 <p className="text-sm font-medium text-green-600">Daily Activity</p>
                 <p className="text-3xl font-bold text-green-700">
-                  {analyticsLoading ? '...' : Math.round(dashboardStats.todaysMeetings / 8)}
+                  {analyticsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : (
+                    Math.round(dashboardStats.todaysMeetings / 8)
+                  )}
                 </p>
               </div>
               <Clock className="h-8 w-8 text-green-600" />

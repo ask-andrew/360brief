@@ -18,7 +18,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 try:
-    from src.data_processing.services.gmail_service import GmailService
+    from data_processing.services.gmail_service import GmailService
     GMAIL_AVAILABLE = True
 except ImportError as e:
     print(f"Gmail service not available: {e}")

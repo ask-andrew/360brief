@@ -20,9 +20,11 @@ type ServiceType = 'gmail' | 'calendar' | 'slack' | 'notion';
 
 interface ServiceStatus {
   connected: boolean;
+  processing?: boolean;
   lastSync?: string;
   error?: string;
   permissions?: string[];
+  processingMessage?: string;
 }
 
 interface ServiceConnectionCardProps {
@@ -96,6 +98,15 @@ export function ServiceConnectionCard({
   };
 
   const getStatusBadge = () => {
+    if (status.processing) {
+      return (
+        <Badge variant="secondary" className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200">
+          <RefreshCw className="w-3 h-3 animate-spin" />
+          Processing...
+        </Badge>
+      );
+    }
+    
     if (!status.connected) {
       return (
         <Badge variant="destructive" className="flex items-center gap-1">
@@ -150,13 +161,20 @@ export function ServiceConnectionCard({
         
         {!isComingSoon && (
           <>
-            {status.connected && status.lastSync && (
+            {status.processing && status.processingMessage && (
+              <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded border border-blue-200 flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                {status.processingMessage}
+              </div>
+            )}
+            
+            {status.connected && status.lastSync && !status.processing && (
               <div className="text-xs text-gray-500">
                 Last synced: {new Date(status.lastSync).toLocaleString()}
               </div>
             )}
             
-            {status.error && (
+            {status.error && !status.processing && (
               <div className="text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
                 {status.error}
               </div>

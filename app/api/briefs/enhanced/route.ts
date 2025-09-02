@@ -7,11 +7,36 @@ import { crisisScenario, normalOperationsScenario, highActivityScenario } from '
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const startDate = searchParams.get('start');
-    const endDate = searchParams.get('end');
+    let startDate = searchParams.get('start');
+    let endDate = searchParams.get('end');
+    const timeRange = searchParams.get('time_range'); // week, month, custom
     const useRealData = searchParams.get('use_real_data') === 'true';
     const style = searchParams.get('style') || 'mission_brief';
     const scenario = searchParams.get('scenario') || 'normal'; // crisis, normal, high_activity
+    
+    // Handle convenient time range presets
+    if (timeRange && !startDate && !endDate) {
+      const now = new Date();
+      const end = now.toISOString();
+      let start: Date;
+      
+      switch (timeRange) {
+        case 'week':
+          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '3days':
+          start = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // Default to week
+      }
+      
+      startDate = start.toISOString();
+      endDate = end;
+    }
     
     // Validate style parameter
     const validStyles = ['mission_brief', 'startup_velocity', 'management_consulting', 'newsletter'];
@@ -55,8 +80,10 @@ export async function GET(req: Request) {
       ...briefData,
       dataSource: useRealData ? 'real' : 'mock',
       scenario: useRealData ? undefined : scenario,
+      timeRange: timeRange || 'week',
       availableStyles: validStyles,
-      availableScenarios: ['normal', 'crisis', 'high_activity']
+      availableScenarios: ['normal', 'crisis', 'high_activity'],
+      availableTimeRanges: ['3days', 'week', 'month']
     });
     
   } catch (e: any) {
@@ -108,10 +135,33 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
 
-      unified = await fetchUnifiedData(user.id, {
-        startDate: timeRange?.start,
-        endDate: timeRange?.end
-      });
+      try {
+        unified = await fetchUnifiedData(user.id, {
+          startDate: timeRange?.start,
+          endDate: timeRange?.end
+        });
+        
+        // If no real data available, fall back to demo data
+        if (!unified.emails.length && !unified.incidents.length && 
+            !unified.calendarEvents.length && !unified.tickets.length) {
+          unified = getScenarioData('normal');
+          const briefData = generateStyledBrief(unified, briefStyle);
+          return NextResponse.json({
+            ...briefData,
+            dataSource: 'mock',
+            warning: 'No recent data available. Using demo data instead. Connect your Gmail for personalized briefs.'
+          });
+        }
+      } catch (error) {
+        console.error('Real data fetch failed, falling back to demo:', error);
+        unified = getScenarioData('normal');
+        const briefData = generateStyledBrief(unified, briefStyle);
+        return NextResponse.json({
+          ...briefData,
+          dataSource: 'mock',
+          warning: 'Unable to access your data. Using demo data instead. Please check your Gmail connection.'
+        });
+      }
     } else {
       unified = getScenarioData(scenario);
     }
@@ -125,7 +175,8 @@ export async function POST(req: Request) {
         style: briefStyle,
         scenario: useRealData ? undefined : scenario,
         timeRange
-      }
+      },
+      availableTimeRanges: ['3days', 'week', 'month']
     });
     
   } catch (e: any) {

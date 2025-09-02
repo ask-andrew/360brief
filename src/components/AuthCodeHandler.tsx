@@ -9,7 +9,9 @@ export function AuthCodeHandler() {
 
   useEffect(() => {
     const code = searchParams?.get('code');
+    const connected = searchParams?.get('connected');
     
+    // Handle OAuth code from Google
     if (code) {
       console.log('🔗 Auth code detected on homepage, redirecting to callback...');
       
@@ -22,6 +24,12 @@ export function AuthCodeHandler() {
       });
       
       router.replace(callbackUrl.toString());
+    }
+    
+    // Handle development redirects from production OAuth flow
+    if (connected === 'gmail' && process.env.NODE_ENV === 'development') {
+      console.log('📧 Gmail connection detected, redirecting to dashboard...');
+      router.replace('/dashboard?connected=gmail');
     }
   }, [searchParams, router]);
 

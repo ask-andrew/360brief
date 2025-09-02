@@ -1,44 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const ANALYTICS_API_BASE = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
+import { generateAuthUrl } from '@/server/google/client';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if analytics service is configured
-    if (!process.env.ANALYTICS_API_BASE) {
-      return NextResponse.json({
-        error: 'Gmail integration not available',
-        message: 'Analytics service not configured for this environment'
-      }, {
-        status: 503,
-      });
-    }
-
-    // Get OAuth2 authorization URL from Python backend
-    const response = await fetch(`${ANALYTICS_API_BASE}/auth/gmail/authorize`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    // Get redirect parameter from query string
+    const searchParams = request.nextUrl.searchParams;
+    const redirect = searchParams.get('redirect') || '/dashboard';
+    
+    // Generate OAuth2 authorization URL using direct Next.js implementation
+    const authUrl = generateAuthUrl({ 
+      redirect,
+      account_type: 'personal' 
     });
-
-    if (!response.ok) {
-      throw new Error(`Gmail auth service responded with status: ${response.status}`);
-    }
-
-    const data = await response.json();
+    
+    console.log('🔄 Gmail authorization URL generated:', authUrl);
     
     // Redirect user to Google OAuth2 consent screen
-    return NextResponse.redirect(data.auth_url);
+    return NextResponse.redirect(authUrl);
     
   } catch (error) {
-    console.error('Gmail Authorization Error:', error);
+    console.error('❌ Gmail Authorization Error:', error);
     
     return NextResponse.json({
       error: 'Failed to initiate Gmail authorization',
-      message: error instanceof Error ? error.message : 'Analytics service unavailable'
+      message: error instanceof Error ? error.message : 'Gmail authorization service unavailable'
     }, {
-      status: 503,
+      status: 500,
     });
   }
 }

@@ -96,7 +96,7 @@ export function EnhancedBriefDashboard() {
   const [briefData, setBriefData] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useRealData, setUseRealData] = useState(false);
+  const [useRealData, setUseRealData] = useState(true);
   const [selectedStyle, setSelectedStyle] = useState('mission_brief');
   const [selectedScenario, setSelectedScenario] = useState('normal');
 
@@ -107,9 +107,11 @@ export function EnhancedBriefDashboard() {
     try {
       const params = new URLSearchParams({
         use_real_data: useRealData.toString(),
-        style: selectedStyle,
+        style: 'mission_brief', // Force mission brief style
         scenario: selectedScenario
       });
+      
+      console.log('🎯 Requesting brief with style:', 'mission_brief', 'selectedStyle:', selectedStyle);
 
       const response = await fetch(`/api/briefs/enhanced?${params}`);
       const data = await response.json();
@@ -117,6 +119,11 @@ export function EnhancedBriefDashboard() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate brief');
       }
+
+      console.log('🎯 Received brief data:', data);
+      console.log('🎯 Data style:', data.style);
+      console.log('🎯 Has missionBrief?', !!data.missionBrief);
+      console.log('🎯 Has startupVelocity?', !!data.startupVelocity);
 
       setBriefData(data);
     } catch (err) {
@@ -128,6 +135,22 @@ export function EnhancedBriefDashboard() {
   };
 
   useEffect(() => {
+    // Check if we have a generated brief from dashboard
+    const storedBrief = sessionStorage.getItem('currentBrief');
+    if (storedBrief) {
+      try {
+        const parsedBrief = JSON.parse(storedBrief);
+        setBriefData(parsedBrief);
+        setSelectedStyle(parsedBrief.style || 'mission_brief');
+        setUseRealData(parsedBrief.dataSource === 'real');
+        // Clear the stored brief after using it
+        sessionStorage.removeItem('currentBrief');
+        return;
+      } catch (error) {
+        console.error('Error parsing stored brief:', error);
+      }
+    }
+    
     fetchBrief();
   }, [useRealData, selectedStyle, selectedScenario]);
 
@@ -168,17 +191,17 @@ export function EnhancedBriefDashboard() {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Data Source Toggle */}
             <div className="flex items-center space-x-3 bg-white/10 rounded-lg p-3">
-              <Label htmlFor="data-source-toggle" className="text-sm">
-                My Data
+              <Label htmlFor="data-source-toggle" className="text-sm text-white/70">
+                Demo Data
               </Label>
               <Switch
                 id="data-source-toggle"
-                checked={!useRealData}
-                onCheckedChange={(checked) => setUseRealData(!checked)}
-                className="data-[state=checked]:bg-white/30"
+                checked={useRealData}
+                onCheckedChange={setUseRealData}
+                className="data-[state=checked]:bg-green-500"
               />
-              <Label htmlFor="data-source-toggle" className="text-sm">
-                Demo Data
+              <Label htmlFor="data-source-toggle" className="text-sm text-white">
+                My Gmail Data {useRealData && '🔗'}
               </Label>
             </div>
 

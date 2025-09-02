@@ -44,21 +44,26 @@ export async function GET(request: NextRequest) {
     const userEmail = user.email || '';
     const analytics = analyzeGmailData(messages, userEmail);
     
-    console.log('Gmail analytics generated successfully');
+    console.log(`✅ Gmail analytics generated successfully - ${analytics.total_count} messages analyzed`);
     
     // Cache the results in the database (optional for MVP)
     try {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+      
       await supabase
         .from('user_analytics_cache')
         .upsert({
           user_id: user.id,
           provider: 'gmail',
           data: analytics,
-          cached_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour
+          cached_at: now.toISOString(),
+          expires_at: expiresAt.toISOString() // Use consistent ISO timestamp format
         });
+      
+      console.log('✅ Analytics data cached successfully');
     } catch (cacheError) {
-      console.warn('Failed to cache analytics data:', cacheError);
+      console.warn('⚠️ Failed to cache analytics data:', cacheError);
       // Continue without caching - not critical for MVP
     }
     

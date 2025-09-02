@@ -25,7 +25,36 @@ export interface EmailItem {
   isRead?: boolean;
   isStarred?: boolean;
   hasAttachments?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: {
+    actionItems?: string[];
+    meetingReferences?: string[];
+    projectContext?: {
+      name?: string;
+      keywords?: string[];
+    };
+    insights?: {
+      hasActionItems?: boolean;
+      hasMeetings?: boolean;
+      hasProjectContext?: boolean;
+      isPositive?: boolean;
+      isUrgent?: boolean;
+      priority?: 'high' | 'medium' | 'low';
+    };
+    nlpInsights?: {
+      sentiment?: {
+        type: 'positive' | 'neutral' | 'negative';
+        score: number;
+        emotionalTones?: string[];
+        urgency?: 'low' | 'medium' | 'high';
+      };
+      intent?: {
+        primary: string;
+        secondary?: string[];
+        complexity?: 'simple' | 'moderate' | 'complex';
+        relatedContexts?: string[];
+      };
+    };
+  };
   createdAt?: string;
   updatedAt?: string;
 }

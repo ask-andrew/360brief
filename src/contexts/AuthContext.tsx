@@ -92,11 +92,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('🔐 Initiating Google OAuth...')
       
+      // For development, we need to use localhost URLs directly and hope Supabase respects them
+      // If that fails, the user will need to configure Supabase OAuth provider settings
+      const redirectUrl = `${window.location.origin}/auth/callback`
+      
+      console.log('🔄 Using redirect URL:', redirectUrl)
+      
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly',
+          redirectTo: redirectUrl,
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.metadata https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -128,11 +134,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('📧 Connecting Gmail...')
       
+      // Use localhost URL directly - environment variables should handle this now
+      const redirectUrl = `${window.location.origin}/auth/callback?connect=gmail`
+      
+      console.log('🔄 Using redirect URL:', redirectUrl)
+      
       const { data, error: connectError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?connect=gmail`,
-          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly',
+          redirectTo: redirectUrl,
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.metadata https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
