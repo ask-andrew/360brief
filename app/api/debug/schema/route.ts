@@ -28,8 +28,8 @@ export async function GET() {
         error: 'Schema query failed',
         schemaError,
         tablesError,
-        tableExists: tables?.length > 0,
-        fallbackTables: tables
+        tableExists: tables ? tables.length > 0 : false,
+        fallbackTables: tables || []
       });
     }
 
