@@ -84,6 +84,8 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
 
   // Primary: Use Next.js analytics route (same as analytics page) 
   const workingUrl = `/api/analytics${params.toString() ? `?${params.toString()}` : ''}`;
+  const legacyUrl: string | null = null; // No legacy API configured
+  const forceDirect = false; // No force direct mode configured
 
   const empty: UnifiedData = {
     emails: [],
