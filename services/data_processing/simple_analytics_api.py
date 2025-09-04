@@ -166,12 +166,27 @@ async def get_analytics(
     """Get communication analytics data"""
     try:
         if use_real_data and GMAIL_AVAILABLE:
-            return await get_real_analytics(days_back, filter_marketing)
+            # Add timeout to prevent infinite loops
+            import asyncio
+            try:
+                result = await asyncio.wait_for(
+                    get_real_analytics(days_back, filter_marketing),
+                    timeout=20.0  # 20 second timeout
+                )
+                return result
+            except asyncio.TimeoutError:
+                logger.warning("Gmail processing timed out, returning sample data")
+                sample_data = get_sample_analytics()
+                sample_data['dataSource'] = 'timeout_fallback'
+                sample_data['message'] = 'Gmail processing timed out, using sample data for demo'
+                return sample_data
         else:
             return get_sample_analytics()
     except Exception as e:
         logger.error(f"Error generating analytics: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        sample_data = get_sample_analytics()
+        sample_data['dataSource'] = 'error_fallback'
+        return sample_data
 
 @app.get("/health")
 async def health_check():

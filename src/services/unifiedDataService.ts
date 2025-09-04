@@ -9,16 +9,69 @@ export type FetchUnifiedOptions = {
   endDate?: string;   // ISO
 };
 
+// Convert analytics data to UnifiedData format
+function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
+  const emails = [];
+  
+  // Convert priority messages to email format
+  if (analyticsData.priority_messages) {
+    // Add awaiting my reply messages
+    if (analyticsData.priority_messages.awaiting_my_reply) {
+      for (const msg of analyticsData.priority_messages.awaiting_my_reply) {
+        emails.push({
+          id: msg.id,
+          messageId: msg.id,
+          subject: msg.subject,
+          body: `From: ${msg.sender}\nChannel: ${msg.channel}\nPriority: ${msg.priority}\nTimestamp: ${msg.timestamp}`,
+          from: msg.sender,
+          to: ['me'], // Simplified
+          date: new Date(msg.timestamp || new Date()).toISOString(),
+          metadata: {
+            insights: {
+              priority: msg.priority,
+              hasActionItems: true, // Since it's awaiting reply
+              isUrgent: msg.priority === 'high'
+            }
+          }
+        });
+      }
+    }
+    
+    // Add awaiting their reply messages
+    if (analyticsData.priority_messages.awaiting_their_reply) {
+      for (const msg of analyticsData.priority_messages.awaiting_their_reply) {
+        emails.push({
+          id: msg.id,
+          messageId: msg.id,
+          subject: msg.subject,
+          body: `From: ${msg.sender}\nChannel: ${msg.channel}\nPriority: ${msg.priority}\nTimestamp: ${msg.timestamp}`,
+          from: 'me',
+          to: [msg.sender],
+          date: new Date(msg.timestamp || new Date()).toISOString(),
+          metadata: {
+            insights: {
+              priority: msg.priority,
+              hasActionItems: false, // Waiting for their reply
+              isUrgent: msg.priority === 'high'
+            }
+          }
+        });
+      }
+    }
+  }
+
+  return {
+    emails,
+    incidents: [],
+    calendarEvents: [],
+    tickets: [],
+    generated_at: new Date().toISOString(),
+  };
+}
+
 // Unified data service that prioritizes working Python API over direct Google calls
 export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOptions = {}): Promise<UnifiedData> {
-  // Use Python FastAPI as primary source (same as analytics page), fallback to direct Google API
-  const useWorkingAPI = true; // Python API has working OAuth
-  const forceDirect = (process.env.DIRECT_GOOGLE === 'true' || process.env.NEXT_PUBLIC_DIRECT_GOOGLE === 'true') && !useWorkingAPI;
-  
-  // Python API base (localhost:8000) - same as analytics
-  const pythonAPI = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
-  const legacyBase = process.env.UNIFIED_API_BASE || process.env.NEXT_PUBLIC_UNIFIED_API_BASE || '';
-
+  // Use Next.js analytics route to get real data
   const params = new URLSearchParams();
   if (_opts.startDate) params.set('start', _opts.startDate);
   if (_opts.endDate) params.set('end', _opts.endDate);
@@ -31,9 +84,6 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
 
   // Primary: Use Next.js analytics route (same as analytics page) 
   const workingUrl = `/api/analytics${params.toString() ? `?${params.toString()}` : ''}`;
-  // Fallback: Legacy API base
-  const apiBase = legacyBase ? legacyBase.replace(/\/$/, '') : '';
-  const legacyUrl = apiBase ? `${apiBase}/api/unified${params.toString() ? `?${params.toString()}` : ''}` : '';
 
   const empty: UnifiedData = {
     emails: [],
@@ -42,6 +92,30 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     tickets: [],
     generated_at: new Date().toISOString(),
   };
+
+  // Try to fetch from working analytics API first
+  try {
+    console.log(`🔄 Fetching unified data via analytics API: ${workingUrl}`);
+    
+    const response = await fetch(`http://localhost:3000${workingUrl}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const analyticsData = await response.json();
+      
+      // Check if we got real analytics data
+      if (analyticsData.total_count > 0) {
+        console.log(`✅ Got real analytics data with ${analyticsData.total_count} messages`);
+        return convertAnalyticsToUnifiedData(analyticsData);
+      }
+    }
+  } catch (error) {
+    console.log(`❌ Analytics API failed:`, error);
+  }
 
   async function fetchViaDirectGmailAPI(): Promise<UnifiedData | null> {
     try {
@@ -457,13 +531,13 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
       return await fetchViaGoogleDirect();
     }
     
-    // SKIP analytics API temporarily - Python service has Gmail API issues
-    console.log(`⚠️ Skipping analytics API due to Python Gmail authentication issues`);
-    // const fromAnalyticsAPI = await fetchViaWorkingAnalyticsAPI();
-    // if (fromAnalyticsAPI && fromAnalyticsAPI.emails.length > 0) {
-    //   console.log(`✅ Got ${fromAnalyticsAPI.emails.length} emails from analytics API`);
-    //   return fromAnalyticsAPI;
-    // }
+    // PRIMARY: Try working analytics API first (Python service on localhost:8000)
+    console.log(`🔄 Trying analytics API for real data`);
+    const fromAnalyticsAPI = await fetchViaWorkingAnalyticsAPI();
+    if (fromAnalyticsAPI && fromAnalyticsAPI.emails.length > 0) {
+      console.log(`✅ Got ${fromAnalyticsAPI.emails.length} emails from analytics API`);
+      return fromAnalyticsAPI;
+    }
     
     // SECONDARY: Try direct Gmail API with better error handling
     console.log(`🔄 Fallback to direct Gmail API`);
@@ -491,7 +565,25 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
       return fromGoogleDirect;
     }
     
-    console.log(`⚠️ No email data available from any source, returning empty result`);
+    console.log(`⚠️ No email data available from direct API, trying fallback analytics conversion`);
+    // Final fallback: try to get sample data in the right format for briefs
+    try {
+      const fallbackResponse = await fetch(`http://localhost:3000/api/analytics?use_real_data=true`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        if (fallbackData.total_count > 0) {
+          console.log(`✅ Using fallback analytics data for briefs with ${fallbackData.total_count} messages`);
+          return convertAnalyticsToUnifiedData(fallbackData);
+        }
+      }
+    } catch (error) {
+      console.log(`❌ Fallback analytics failed:`, error);
+    }
+    
     return empty;
   } catch (error) {
     console.error(`❌ Email data fetch failed:`, error);

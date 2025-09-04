@@ -42,17 +42,23 @@ function useDashboardData() {
       setProcessingStatus(null);
       
       try {
-        // Use the working analytics API (same as analytics page)
+        // Use the quick analytics API that has better timeout handling
         // This API automatically detects if user has real data and serves accordingly
-        const response = await fetch('/api/analytics?use_real_data=true');
+        const response = await fetch('/api/analytics/quick?use_real_data=true');
         
         if (response.ok) {
           const apiData = await response.json();
           
           // Check if data indicates processing status
-          if (apiData.status === 'processing') {
-            setProcessingStatus('Processing your Gmail data...');
+          if (apiData.status === 'processing' || apiData.processing) {
+            const message = apiData.message || 'Processing your Gmail data... This may take 30-60 seconds as we analyze your messages.';
+            setProcessingStatus(message);
             setData(null);
+            
+            // Auto-retry after 15 seconds if processing
+            setTimeout(() => {
+              fetchData();
+            }, 15000);
           } else if (apiData.status === 'error') {
             setError(`Data processing failed: ${apiData.error || 'Unknown error'}`);
             setData(null);
@@ -114,14 +120,12 @@ export function EnhancedDashboard() {
         toast({
           title: 'Gmail Connected!',
           description: 'Your Gmail account has been connected. Processing your data in the background...',
-          duration: 5000,
         });
       } else if (status === 'processing_failed') {
         toast({
           title: 'Gmail Connected',
           description: 'Gmail connected, but background processing failed. You can manually refresh to try again.',
           variant: 'destructive',
-          duration: 8000,
         });
       } else {
         toast({
@@ -291,7 +295,7 @@ export function EnhancedDashboard() {
     processing: !!processingStatus,
     lastSync: (!analyticsError && analyticsData && analyticsData.total_count > 0) ? new Date().toISOString() : undefined,
     error: analyticsError || undefined,
-    processingMessage: processingStatus
+    processingMessage: processingStatus || undefined
   };
 
   const calendarStatus = {
@@ -306,7 +310,9 @@ export function EnhancedDashboard() {
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Welcome back!</h1>
+            <h1 className="text-2xl font-bold">
+              Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}!
+            </h1>
             <p className="text-indigo-100 mt-1">
               Here's your briefing overview for today
             </p>

@@ -176,7 +176,7 @@ class GmailService:
         self,
         start_date: datetime,
         end_date: datetime,
-        max_results: int = 500,
+        max_results: int = 100,
         query: str = None
     ) -> List[Dict[str, Any]]:
         """Fetch emails from Gmail within date range.
@@ -420,7 +420,7 @@ class GmailService:
         self,
         start_date: datetime,
         end_date: datetime,
-        max_results: int = 1000,
+        max_results: int = 100,
         filter_marketing: bool = True
     ) -> Dict[str, Any]:
         """Generate analytics data from Gmail messages.

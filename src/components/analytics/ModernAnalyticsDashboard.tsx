@@ -232,8 +232,8 @@ function useAnalyticsData(isDemo: boolean) {
           return;
         }
         
-        // Fetch real data with Gmail integration
-        const response = await fetch('/api/analytics?use_real_data=true');
+        // Fetch real data with Gmail integration using quick endpoint
+        const response = await fetch('/api/analytics/quick?use_real_data=true');
         if (response.ok) {
           const apiData = await response.json();
           setData(apiData);
@@ -342,7 +342,7 @@ export function ModernAnalyticsDashboard() {
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
                   <Label htmlFor="data-toggle" className="text-white text-sm">
-                    My Data
+                    Demo Data
                   </Label>
                   <Switch
                     id="data-toggle"
@@ -351,7 +351,7 @@ export function ModernAnalyticsDashboard() {
                     className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
                   />
                   <Label htmlFor="data-toggle" className="text-white text-sm">
-                    Demo Data
+                    My Data
                   </Label>
                 </div>
               </div>
@@ -417,7 +417,7 @@ export function ModernAnalyticsDashboard() {
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
                   <Label htmlFor="data-toggle" className="text-white text-sm">
-                    My Data
+                    Demo Data
                   </Label>
                   <Switch
                     id="data-toggle"
@@ -426,7 +426,7 @@ export function ModernAnalyticsDashboard() {
                     className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
                   />
                   <Label htmlFor="data-toggle" className="text-white text-sm">
-                    Demo Data
+                    My Data
                   </Label>
                 </div>
               </div>
