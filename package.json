@@ -17,6 +17,7 @@
     "test:integration": "playwright test tests/integration/",
     "test:e2e": "playwright test tests/e2e/",
     "test:setup": "ts-node scripts/create-test-user.ts",
+    "test:oauth": "ts-node scripts/test-oauth-flow.ts",
     "test:ci": "playwright test --workers=4 --retries=2",
     "test:update-snapshots": "playwright test --update-snapshots",
     "test:debug": "playwright test --debug",

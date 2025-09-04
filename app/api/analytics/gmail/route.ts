@@ -24,19 +24,43 @@ export async function GET(request: NextRequest) {
     const accessToken = await getGmailAccessToken(user.id);
     
     if (!accessToken) {
-      return NextResponse.json({
-        error: 'Gmail not connected',
-        message: 'Please connect your Gmail account first',
+      // Check if this is due to missing or expired token
+      const { data: tokenData } = await supabase
+        .from('user_tokens')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('provider', 'google')
+        .single();
+      
+      const errorResponse = {
+        error: tokenData ? 'Token expired' : 'Gmail not connected',
+        message: tokenData 
+          ? 'Your Gmail connection requires re-authentication' 
+          : 'Please connect your Gmail account first',
         connect_url: '/dashboard'
-      }, {
-        status: 403,
+      };
+      
+      return NextResponse.json(errorResponse, {
+        status: tokenData ? 401 : 403,
       });
     }
     
     console.log('Gmail access token found, fetching messages...');
     
     // Fetch Gmail messages
-    const messages = await fetchGmailMessages(accessToken, 100);
+    let messages;
+    try {
+      messages = await fetchGmailMessages(accessToken, 100);
+    } catch (fetchError) {
+      console.error('Error fetching Gmail messages:', fetchError);
+      return NextResponse.json({
+        error: 'Failed to fetch messages',
+        message: 'Unable to connect to Gmail. Please try reconnecting.',
+        connect_url: '/dashboard'
+      }, {
+        status: 500,
+      });
+    }
     
     console.log(`Fetched ${messages.length} Gmail messages`);
     

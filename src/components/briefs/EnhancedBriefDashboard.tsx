@@ -29,6 +29,7 @@ import {
   Briefcase,
   Info
 } from 'lucide-react';
+import { StyledMissionBrief } from './StyledMissionBrief';
 
 interface BriefData {
   userId: string;
@@ -161,7 +162,7 @@ export function EnhancedBriefDashboard() {
 
     switch (style) {
       case 'mission_brief':
-        return <MissionBriefView data={briefData.missionBrief} />;
+        return <MissionBriefView data={briefData.missionBrief} briefData={briefData} />;
       case 'startup_velocity':
         return <StartupVelocityView data={briefData.startupVelocity} />;
       case 'management_consulting':
@@ -313,60 +314,16 @@ export function EnhancedBriefDashboard() {
 }
 
 // Individual brief style components
-function MissionBriefView({ data }: { data: any }) {
+function MissionBriefView({ data, briefData }: { data: any; briefData: BriefData }) {
   if (!data) return null;
 
+  // Use the new styled component that matches mock preview
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="bg-red-50">
-          <CardTitle className="flex items-center gap-2 text-red-800">
-            <Target className="w-5 h-5" />
-            Mission Brief
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-lg mb-2">Current Status</h3>
-              <p className="text-sm text-muted-foreground mb-2">Primary Issue:</p>
-              <p className="font-medium">{data.currentStatus?.primaryIssue}</p>
-              
-              {data.currentStatus?.businessImpact && (
-                <div className="mt-3">
-                  <p className="text-sm text-muted-foreground mb-2">Business Impact:</p>
-                  <ul className="space-y-1">
-                    {data.currentStatus.businessImpact.map((impact: string, index: number) => (
-                      <li key={index} className="text-sm flex items-start gap-2">
-                        <span className="text-red-500 mt-1">•</span>
-                        {impact}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {data.immediateActions && data.immediateActions.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Immediate Actions</h3>
-                <div className="space-y-3">
-                  {data.immediateActions.map((action: any, index: number) => (
-                    <div key={index} className="border-l-4 border-red-500 pl-4">
-                      <p className="font-medium">{action.title}</p>
-                      <p className="text-sm text-muted-foreground">{action.objective}</p>
-                      {action.owner && (
-                        <p className="text-xs text-blue-600 mt-1">Owner: {action.owner}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <StyledMissionBrief 
+      data={data}
+      generatedAt={briefData.generatedAt}
+      dataSource={briefData.dataSource === 'real' ? 'real' : 'mock'}
+    />
   );
 }
 

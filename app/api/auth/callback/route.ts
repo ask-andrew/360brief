@@ -27,11 +27,30 @@ export async function GET(request: Request) {
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
     
-    if (error) {
-      console.error('Error exchanging code for session:', error);
-      throw error;
+    if (sessionError) {
+      console.error('Error exchanging code for session:', sessionError);
+      throw sessionError;
+    }
+
+    // Ensure user profile exists
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .upsert({ 
+          id: user.id, 
+          email: user.email || '', 
+          // Add any other default profile fields here
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Error creating/updating profile:', profileError);
+      }
     }
 
     // Redirect to the dashboard after successful sign in

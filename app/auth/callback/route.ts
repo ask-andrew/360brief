@@ -32,7 +32,9 @@ export async function GET(request: Request) {
     
     if (exchangeError) {
       console.error('❌ Exchange error:', exchangeError)
-      return NextResponse.redirect(`${requestUrl.origin}/login?error=exchange_failed`)
+      console.error('❌ Exchange error details:', JSON.stringify(exchangeError, null, 2))
+      console.error('❌ Code used for exchange:', code)
+      return NextResponse.redirect(`${requestUrl.origin}/login?error=exchange_failed&details=${encodeURIComponent(exchangeError.message || 'Unknown error')}`)
     }
 
     if (!data?.session) {
@@ -49,7 +51,7 @@ export async function GET(request: Request) {
         provider: 'google',
         access_token: data.session.provider_token,
         refresh_token: data.session.provider_refresh_token,
-        expires_at: data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : null,
+        expires_at: data.session.expires_at || null,
         updated_at: new Date().toISOString(),
       };
       
@@ -68,10 +70,10 @@ export async function GET(request: Request) {
         
         if (insertError) {
           console.error('❌ Token insert error:', insertError);
-          throw insertError;
+          // Continue anyway - user can still use the app without stored tokens
+        } else {
+          console.log('✅ Gmail OAuth tokens stored successfully!');
         }
-        
-        console.log('✅ Gmail OAuth tokens stored successfully!', insertResult);
       } catch (tokenError) {
         console.error('⚠️ Failed to store tokens:', tokenError);
         // Continue anyway - user can still use the app
