@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateStyledBrief } from '@/server/briefs/generateBrief';
+import { toISOString } from '@/lib/utils/timestamp';
 
 // Convert analytics data directly to UnifiedData format (same as unifiedDataService.ts)
 function convertAnalyticsToUnifiedData(analyticsData: any) {
@@ -17,7 +18,7 @@ function convertAnalyticsToUnifiedData(analyticsData: any) {
           body: `From: ${msg.sender}\nChannel: ${msg.channel}\nPriority: ${msg.priority}\nTimestamp: ${msg.timestamp}`,
           from: msg.sender,
           to: ['me'], // Simplified
-          date: new Date(msg.timestamp || new Date()).toISOString(),
+          date: toISOString(msg.timestamp),
           metadata: {
             insights: {
               priority: msg.priority,
@@ -39,7 +40,7 @@ function convertAnalyticsToUnifiedData(analyticsData: any) {
           body: `From: ${msg.sender}\nChannel: ${msg.channel}\nPriority: ${msg.priority}\nTimestamp: ${msg.timestamp}`,
           from: 'me',
           to: [msg.sender],
-          date: new Date(msg.timestamp || new Date()).toISOString(),
+          date: toISOString(msg.timestamp),
           metadata: {
             insights: {
               priority: msg.priority,

@@ -1,13 +1,16 @@
 import { UnifiedData } from '@/types/unified';
 import { google } from 'googleapis';
 import { getValidAccessToken } from '@/lib/gmail/oauth';
-import { getOAuthClient } from '@/server/google/client';
+import { getOAuthClient, refreshAccessToken } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
+import { toISOString, fromUnixTimestamp, toUnixTimestamp, isExpired } from '@/lib/utils/timestamp';
 
 export type FetchUnifiedOptions = {
   startDate?: string; // ISO
   endDate?: string;   // ISO
 };
+
+// Using standardized timestamp utility - removed duplicate function
 
 // Convert analytics data to UnifiedData format
 function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
@@ -25,7 +28,7 @@ function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
           body: `From: ${msg.sender}\nChannel: ${msg.channel}\nPriority: ${msg.priority}\nTimestamp: ${msg.timestamp}`,
           from: msg.sender,
           to: ['me'], // Simplified
-          date: new Date(msg.timestamp || new Date()).toISOString(),
+          date: toISOString(msg.timestamp),
           metadata: {
             insights: {
               priority: msg.priority,
@@ -47,7 +50,7 @@ function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
           body: `From: ${msg.sender}\nChannel: ${msg.channel}\nPriority: ${msg.priority}\nTimestamp: ${msg.timestamp}`,
           from: 'me',
           to: [msg.sender],
-          date: new Date(msg.timestamp || new Date()).toISOString(),
+          date: toISOString(msg.timestamp),
           metadata: {
             insights: {
               priority: msg.priority,
@@ -160,35 +163,57 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
       
       // Check if token is expired and needs refresh
       let accessToken = token.access_token;
-      const now = new Date();
       
-      // Handle timestamp format - database stores bigint (Unix timestamp in seconds)
-      let expiresAt: Date | null = null;
-      if (token.expires_at) {
-        try {
-          // Convert bigint seconds to Date
-          const timestamp = typeof token.expires_at === 'string' 
-            ? parseInt(token.expires_at) 
-            : token.expires_at;
-          expiresAt = new Date(timestamp * 1000); // Convert seconds to milliseconds
-          
-          // Validate the date
-          if (isNaN(expiresAt.getTime())) {
-            console.log(`⚠️ Invalid timestamp: ${token.expires_at}`);
-            expiresAt = null;
-          }
-        } catch (error) {
-          console.log(`⚠️ Error parsing timestamp: ${token.expires_at}`, error);
-          expiresAt = null;
+      if (isExpired(token.expires_at)) {
+        console.log(`🔄 Token expired, will attempt refresh (expires_at: ${token.expires_at})`);
+        
+        if (!token.refresh_token) {
+          console.log(`⚠️ No refresh token available, cannot refresh access token`);
+          return null;
         }
-      }
-      
-      if (expiresAt && expiresAt < now) {
-        console.log(`🔄 Token expired (${expiresAt.toISOString()} < ${now.toISOString()}), will attempt refresh`);
-        // TODO: Implement token refresh using refresh_token
-        // For now, continue with existing token
-      } else if (expiresAt) {
-        console.log(`✅ Token is valid until ${expiresAt.toLocaleString()}`);
+        
+        try {
+          // Refresh the access token
+          const refreshedTokens = await refreshAccessToken(token.refresh_token);
+          
+          if (refreshedTokens.access_token) {
+            console.log(`✅ Successfully refreshed access token`);
+            
+            // Update the token in the database
+            const newExpiresAt = toUnixTimestamp(refreshedTokens.expiry_date);
+              
+            const { error: updateError } = await supabase
+              .from('user_tokens')
+              .update({
+                access_token: refreshedTokens.access_token,
+                expires_at: newExpiresAt,
+                updated_at: new Date(),
+                // Update refresh token if a new one is provided
+                ...(refreshedTokens.refresh_token && { refresh_token: refreshedTokens.refresh_token })
+              })
+              .eq('user_id', user.id)
+              .eq('provider', 'google');
+              
+            if (updateError) {
+              console.log(`⚠️ Failed to update refreshed token in database:`, updateError);
+              // Continue with the refreshed token even if database update fails
+            } else {
+              console.log(`✅ Updated refreshed token in database`);
+            }
+            
+            // Use the new access token
+            accessToken = refreshedTokens.access_token;
+          } else {
+            console.log(`❌ Token refresh failed: no access token in response`);
+            return null;
+          }
+        } catch (refreshError) {
+          console.log(`❌ Token refresh failed:`, refreshError);
+          return null;
+        }
+      } else if (token.expires_at) {
+        const expiresAtDate = fromUnixTimestamp(token.expires_at);
+        console.log(`✅ Token is valid until ${expiresAtDate ? expiresAtDate.toLocaleString() : 'unknown'}`);
       }
       
       // Fetch Gmail messages with time filtering

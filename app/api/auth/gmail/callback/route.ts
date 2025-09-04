@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
+import { toUnixTimestamp } from '@/lib/utils/timestamp';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -57,12 +58,12 @@ export async function GET(request: NextRequest) {
     console.log('🔄 Storing Gmail tokens in Supabase...');
 
     // Store tokens in Supabase (upsert to handle duplicates)  
-    // Fix: Database expects bigint (Unix timestamp in seconds), not TIMESTAMPTZ
-    const expiresAt = tokens.expiry_date 
-      ? Math.floor(tokens.expiry_date / 1000)  // Convert milliseconds to seconds
-      : null;
+    // Convert expiry date to Unix timestamp (seconds since epoch) for database storage
+    const expiresAt = toUnixTimestamp(tokens.expiry_date);
     
-    const { error: tokenError } = await supabase
+    console.log(`🔍 Storing token with expires_at: ${expiresAt} (from ${tokens.expiry_date})`);
+    
+    const { data: insertData, error: tokenError } = await supabase
       .from('user_tokens')
       .upsert({
         user_id: user.id,
@@ -70,18 +71,47 @@ export async function GET(request: NextRequest) {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         expires_at: expiresAt,
+        updated_at: new Date(),
       }, {
         onConflict: 'user_id,provider'
-      });
+      })
+      .select();
 
     if (tokenError) {
-      console.error('❌ Failed to store Gmail tokens:', tokenError);
-      redirectUrl.searchParams.set('auth', 'error');
-      redirectUrl.searchParams.set('message', 'Failed to save Gmail connection');
-      return NextResponse.redirect(redirectUrl);
+      console.error('❌ Token insert error:', tokenError);
+      
+      // More specific error handling for common issues
+      if (tokenError.code === '23505') {
+        console.log('🔄 Duplicate key error - attempting direct update...');
+        
+        // Try direct update instead of upsert
+        const { error: updateError } = await supabase
+          .from('user_tokens')
+          .update({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            expires_at: expiresAt,
+            updated_at: new Date(),
+          })
+          .eq('user_id', user.id)
+          .eq('provider', 'google');
+          
+        if (updateError) {
+          console.error('❌ Token update also failed:', updateError);
+          redirectUrl.searchParams.set('auth', 'error');
+          redirectUrl.searchParams.set('message', 'Failed to save Gmail connection');
+          return NextResponse.redirect(redirectUrl);
+        }
+        
+        console.log('✅ Gmail tokens updated successfully after duplicate error');
+      } else {
+        redirectUrl.searchParams.set('auth', 'error');
+        redirectUrl.searchParams.set('message', 'Failed to save Gmail connection');
+        return NextResponse.redirect(redirectUrl);
+      }
+    } else {
+      console.log('✅ Gmail tokens stored successfully', insertData?.length ? `(${insertData.length} records)` : '');
     }
-
-    console.log('✅ Gmail tokens stored successfully');
     
     // Redirect to dashboard with success message
     redirectUrl.searchParams.set('auth', 'success');
