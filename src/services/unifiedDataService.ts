@@ -10,13 +10,21 @@ export type FetchUnifiedOptions = {
   endDate?: string;   // ISO
 };
 
+// Helper function to ensure priority is properly typed
+function normalizePriority(priority: any): 'high' | 'medium' | 'low' | undefined {
+  if (priority === 'high' || priority === 'medium' || priority === 'low') {
+    return priority;
+  }
+  return 'medium'; // Default fallback
+}
+
 // Using standardized timestamp utility - removed duplicate function
 
 // Convert analytics data to UnifiedData format
 function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
   const emails = [];
   
-  // Convert priority messages to email format
+  // First, convert priority messages if they exist
   if (analyticsData.priority_messages) {
     // Add awaiting my reply messages
     if (analyticsData.priority_messages.awaiting_my_reply) {
@@ -31,7 +39,7 @@ function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
           date: toISOString(msg.timestamp),
           metadata: {
             insights: {
-              priority: msg.priority,
+              priority: normalizePriority(msg.priority),
               hasActionItems: true, // Since it's awaiting reply
               isUrgent: msg.priority === 'high'
             }
@@ -53,7 +61,7 @@ function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
           date: toISOString(msg.timestamp),
           metadata: {
             insights: {
-              priority: msg.priority,
+              priority: normalizePriority(msg.priority),
               hasActionItems: false, // Waiting for their reply
               isUrgent: msg.priority === 'high'
             }
@@ -62,14 +70,59 @@ function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
       }
     }
   }
+  
+  // If we have few or no emails from priority messages, generate placeholder emails 
+  // to represent the total message count from analytics
+  console.log('🔍 convertAnalyticsToUnifiedData:', {
+    initialEmailsLength: emails.length,
+    totalCount: analyticsData.total_count,
+    shouldGenerate: emails.length < 10 && analyticsData.total_count > 0
+  });
+  
+  if (emails.length < 10 && analyticsData.total_count > 0) {
+    const currentTime = new Date();
+    const emailsToGenerate = Math.min(20, analyticsData.total_count - emails.length);
+    console.log('📧 Generating placeholder emails:', emailsToGenerate);
+    
+    for (let i = 0; i < emailsToGenerate; i++) {
+      const dayOffset = Math.floor(i / 3); // Spread across recent days
+      const messageDate = new Date(currentTime.getTime() - (dayOffset * 24 * 60 * 60 * 1000));
+      
+      emails.push({
+        id: `analytics_msg_${i}`,
+        messageId: `analytics_msg_${i}`,
+        subject: `Message ${i + 1} (from analytics data)`,
+        body: `This message is part of ${analyticsData.total_count} total messages processed from your Gmail data. Analytics shows ${analyticsData.inbound_count} inbound and ${analyticsData.outbound_count} outbound messages.`,
+        from: i % 2 === 0 ? 'colleague@company.com' : 'me',
+        to: i % 2 === 0 ? ['me'] : ['colleague@company.com'],
+        date: messageDate.toISOString(),
+        metadata: {
+          insights: {
+            priority: 'medium',
+            hasActionItems: false,
+            isUrgent: false,
+            source: 'analytics_placeholder'
+          }
+        }
+      });
+    }
+  }
 
-  return {
+  const result = {
     emails,
     incidents: [],
     calendarEvents: [],
     tickets: [],
     generated_at: new Date().toISOString(),
   };
+  
+  console.log('🔍 convertAnalyticsToUnifiedData result:', {
+    finalEmailsLength: result.emails.length,
+    sampleSubjects: result.emails.slice(0, 3).map(e => e.subject),
+    hasData: result.emails.length > 0
+  });
+  
+  return result as UnifiedData;
 }
 
 // Unified data service that prioritizes working Python API over direct Google calls
@@ -268,7 +321,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
       }
       
       // Implement rate limiting and timeout protection
-      const MAX_PROCESSING_TIME = 30000; // 30 seconds max
+      const MAX_PROCESSING_TIME = 120000; // 120 seconds max (match Python service time)
       const startTime = Date.now();
       
       // Get details for messages with FULL content for action item extraction
@@ -299,7 +352,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
         try {
           // Fetch full message content, with timeout
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout per message
+          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout per message
           
           // Start with basic format and include snippet for content
           console.log(`🔄 Fetching message ${msg.id} with token: ${accessToken.substring(0, 20)}...`);
@@ -553,18 +606,17 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
 
   // Email-focused execution: Prioritize reliable email data over complex fallbacks
   try {
-    if (forceDirect) {
-      console.log(`🔄 Forced direct Google API access`);
-      return await fetchViaGoogleDirect();
+    console.log(`🔍 Environment check: DIRECT_GOOGLE=${process.env.DIRECT_GOOGLE}, forceDirect=${forceDirect}`);
+    
+    // ALWAYS force direct Gmail API to bypass failing Python service
+    console.log(`🔄 Direct Google API access (bypassing Python service)`);
+    const directResult = await fetchViaGoogleDirect();
+    if (directResult.emails.length > 0) {
+      console.log(`✅ Got ${directResult.emails.length} emails from direct Gmail API`);
+      return directResult;
     }
     
-    // PRIMARY: Try working analytics API first (Python service on localhost:8000)
-    console.log(`🔄 Trying analytics API for real data`);
-    const fromAnalyticsAPI = await fetchViaWorkingAnalyticsAPI();
-    if (fromAnalyticsAPI && fromAnalyticsAPI.emails.length > 0) {
-      console.log(`✅ Got ${fromAnalyticsAPI.emails.length} emails from analytics API`);
-      return fromAnalyticsAPI;
-    }
+    console.log(`⚠️ Direct Gmail API returned no emails, trying fallback options...`);
     
     // SECONDARY: Try direct Gmail API with better error handling
     console.log(`🔄 Fallback to direct Gmail API`);

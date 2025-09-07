@@ -203,7 +203,8 @@ export async function GET(request: NextRequest) {
         
         // If real data was requested and Gmail failed, return error instead of fallback
         if (useRealData) {
-          throw new Error(`Gmail integration failed: ${gmailError.message}`);
+          const errorMessage = gmailError instanceof Error ? gmailError.message : String(gmailError);
+          throw new Error(`Gmail integration failed: ${errorMessage}`);
         }
       }
     }
