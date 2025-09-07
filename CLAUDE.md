@@ -1,34 +1,30 @@
-- memory I'd like your help creating a Memory file based on your knowledge of this 
-  project to help for future context. here are some pieces: 360Brief is a 
-  "one-stop shop" executive briefing platform that solves information overload
-   by consolidating communication streams (emails, Slack, meeting transcripts,
-   project management tools) into actionable insights.
+# memories
+360Brief is a "one-stop shop" executive briefing platform that solves information overload by consolidating communication streams (emails, Slack, meeting transcripts, project management tools) into actionable insights.
 
-  CORE VALUE PROPOSITION: "Multiply time instead of drain time" - transform 
-  noise into clear signals highlighting key projects, blockers, and 
-  achievements.
+CORE VALUE PROPOSITION: "Multiply time instead of drain time" - transform noise into clear signals highlighting key projects, blockers, and achievements.
 
-  TARGET AUDIENCE: SMB to mid-market executives (<1000 employees) - VP 
-  Operations, Head of CS, Head of Product, CEOs of small startups.
+COMPETITIVE DIFFERENTIATION: Democratizes executive intelligence capabilities that previously required custom AI agent setup. Users get professional-grade weekly briefings without technical configuration - just connect accounts and receive structured executive summaries.
 
-  KEY FEATURES:
+TARGET AUDIENCE: SMB to mid-market executives (<1000 employees) - VP Operations, Head of CS, Head of Product, CEOs of small startups who need executive-level situational awareness but lack dedicated intelligence analysts.
 
-  User account creation & channel connections (starting with Google)
-  Data analysis & digest generation
-  Direct actionability (reply from digest)
-  Personalized delivery (web, email, audio)
-  Analytical dashboard with priority messages, patterns, sentiment analysis
-  User preferences & feedback systems
-  BUSINESS MODEL: Freemium subscription
+KEY FEATURES:
+- User account creation & channel connections (starting with Google)
+- Data analysis & digest generation using executive briefing methodology
+- Direct actionability (reply from digest)
+- Personalized delivery (web, email, audio)
+- Analytical dashboard with priority messages, patterns, sentiment analysis
+- User preferences & feedback systems
+- Executive Intelligence Analyst-style output: structured briefings with strategic insights, feature stories, recognition sections, blockers identification, and actionable recommendations
 
-  Free: Basic processing for 1-2 channels (email + calendar)
-  Paid: Additional channels + advanced features
-  PRIVACY APPROACH: Store derived insights, not raw sensitive data. Focus on 
-  user preferences, feedback, engagement stats, and potentially previous 
-  digests.
+BUSINESS MODEL: Freemium subscription
+- Free: Basic processing for 1-2 channels (email + calendar)
+- Paid: Additional channels + advanced features
 
-  TECH STACK: Cloud-native, API integrations, Python for data processing, 
-  multi-tenant architecture for business users.Six core tenets governing the 
+PRIVACY APPROACH: Store derived insights, not raw sensitive data. Focus on user preferences, feedback, engagement stats, and potentially previous digests.
+
+TECH STACK: Cloud-native, API integrations, Python for data processing, multi-tenant architecture for business users.
+
+KEY INSIGHT: 360Brief provides what specialized AI agents like weekly-activity-briefer do, but without requiring users to understand prompts, system configurations, or technical setup. It's executive intelligence as a service.Six core tenets governing the 
   development of an executive briefing/digest application:
 
   User-Centric Value Delivery: Prioritize time-saving, stress-reducing 
@@ -168,6 +164,61 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 4. Debug Python analytics service timeout issues
 5. Test Gmail API authentication flow end-to-end
 6. Verify brief generation works with real Gmail data
+
+## Email Fetching Optimization Strategy (2025-09-05)
+**Priority**: Implement after resolving current OAuth/database issues
+
+### Optimization Plan:
+1. **Phase 1: Metadata-First Approach (Week 1)**
+   - Fetch only metadata (subject, sender, date, labels) initially
+   - Score emails based on importance before fetching full content
+   - Extract first 500 chars of body for top 50-100 emails only
+   - Skip marketing emails and artifacts early in pipeline
+   - Expected: 75% reduction in processing time (15min → 3-4min)
+
+2. **Phase 2: Smart Caching (Week 2)**
+   - Cache processed results with timestamps
+   - Only fetch new emails since last successful run
+   - Store importance scores to avoid recalculation
+   - Implement intelligent cache invalidation
+
+3. **Phase 3: Parallel Processing (Week 3)**
+   - Add async processing with rate limiting (10-20 concurrent)
+   - Process emails in batches of 20-50
+   - Implement exponential backoff for rate limit errors
+
+### Implementation Notes:
+- Current `GmailService` at `services/data_processing/src/data_processing/services/gmail_service.py` needs refactoring
+- Prioritization algorithm should focus on:
+  - Subject keywords (urgent, meeting, decision)
+  - Sender importance (executives, key clients)
+  - Recency and Gmail labels
+- Maintain executive-focused value delivery throughout optimization
+
+## Future Development Items (2025-09-05)
+**Status**: Potential enhancements identified during home page audit
+
+### Demo Page Enhancements:
+- Current demo at `/demo` shows static time lapse animation
+- Consider adding:
+  - Interactive demo with real sample data
+  - Video walkthrough of actual briefing generation
+  - Before/after comparison showing time savings
+  - Live preview of different brief formats (web, email, audio)
+
+### Missing Marketing Pages (if needed for launch):
+- All current home page links are working ✅
+- Consider adding for future marketing:
+  - Customer testimonials/case studies page
+  - Detailed feature comparison page  
+  - Integration showcase page
+  - ROI calculator for executive time savings
+
+### Home Page Status:
+- ✅ Hero section with working signup link
+- ✅ "Watch Demo" button links to functional demo page
+- ✅ All navigation and CTA buttons have valid paths
+- ✅ No broken links found during audit
 
 ### Current Working State:
 - Next.js dev server: ✅ Running on http://localhost:3000

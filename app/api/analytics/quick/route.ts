@@ -126,49 +126,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Try to get quick response from Python service with short timeout
-    const ANALYTICS_API_BASE = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
-    const apiUrl = `${ANALYTICS_API_BASE}/analytics?use_real_data=true`;
-    
-    const controller = new AbortController();
-    const quickTimeout = setTimeout(() => controller.abort(), 8000); // 8 second quick attempt
-    
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-      });
-      clearTimeout(quickTimeout);
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Cache successful real data
-        if (data.total_count > 0) {
-          cachedRealData = data;
-          cacheTimestamp = now;
-          
-          return NextResponse.json({
-            ...data,
-            dataSource: 'real',
-            fresh: true
-          });
-        }
-      }
-    } catch (error) {
-      clearTimeout(quickTimeout);
-      console.log('Python service timeout, using real-looking sample data');
-    }
-
-    // Return real-looking sample data that shows the concept works
-    return NextResponse.json({
-      ...realDataSample,
-      dataSource: 'real_sample',
-      message: 'Using real Gmail structure with sample content for demo'
-    });
+    // REMOVED PYTHON SERVICE FALLBACK - Real data must come from authenticated Gmail integration
+    throw new Error('Real data requested but no valid Gmail connection found - use main analytics endpoint');
 
   } catch (error) {
     console.error('Quick analytics API error:', error);

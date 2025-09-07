@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
-import { toUnixTimestamp } from '@/lib/utils/timestamp';
+import { toUnixTimestamp, toDatabaseTimestamp } from '@/lib/utils/timestamp';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         expires_at: expiresAt,
-        updated_at: new Date(),
+        updated_at: toDatabaseTimestamp(),
       }, {
         onConflict: 'user_id,provider'
       })
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
             expires_at: expiresAt,
-            updated_at: new Date(),
+            updated_at: toDatabaseTimestamp(),
           })
           .eq('user_id', user.id)
           .eq('provider', 'google');
