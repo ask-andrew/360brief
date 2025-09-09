@@ -3,7 +3,7 @@ import { google } from 'googleapis';
 import { getValidAccessToken } from '@/lib/gmail/oauth';
 import { getOAuthClient, refreshAccessToken } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
-import { toDatabaseTimestamp, isDatabaseTimestampExpired } from '@/lib/utils/timestamp';
+import { toDatabaseTimestamp, isDatabaseTimestampExpired, toISOString } from '@/lib/utils/timestamp';
 
 export type FetchUnifiedOptions = {
   startDate?: string; // ISO
@@ -171,6 +171,11 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     params.set('user_id', _userId);
   }
 
+  // Define URLs that will be used later
+  const analyticsUrl = `/api/analytics${params.toString() ? `?${params.toString()}` : ''}`;
+  const workingUrl = analyticsUrl; // Define working URL for later use
+  const legacyUrl = process.env.LEGACY_API_URL; // Optional legacy API URL
+
   const empty: UnifiedData = {
     emails: [],
     incidents: [],
@@ -209,8 +214,6 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     }
   } else {
     // For analytics/dashboard: Use lightweight metadata endpoint
-    const analyticsUrl = `/api/analytics${params.toString() ? `?${params.toString()}` : ''}`;
-    
     try {
       console.log(`🔄 Fetching analytics metadata for ${useCase}: ${analyticsUrl}`);
       
