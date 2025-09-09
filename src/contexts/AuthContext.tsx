@@ -92,9 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('🔐 Initiating Google OAuth...')
       
-      // For development, we need to use localhost URLs directly and hope Supabase respects them
-      // If that fails, the user will need to configure Supabase OAuth provider settings
-      const redirectUrl = `${window.location.origin}/auth/callback`
+      // Always use a single consistent domain for OAuth to avoid losing the PKCE code_verifier.
+      // Prefer an explicit NEXT_PUBLIC_SITE_URL (e.g. https://360brief.com) and fall back to current origin.
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      const redirectUrl = `${siteUrl}/auth/callback`
       
       console.log('🔄 Using redirect URL:', redirectUrl)
       

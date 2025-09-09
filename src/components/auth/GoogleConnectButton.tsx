@@ -28,45 +28,20 @@ export function GoogleConnectButton({
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle button click
+  // Handle button click: let the server endpoint perform the redirect to Google
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const authUrl = `${origin}/api/auth/google/authorize?redirect=${encodeURIComponent(redirectPath)}`;
-      // Try to include Supabase access token for server auth fallback
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      const res = await fetch(authUrl, {
-        credentials: 'include',
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      });
-      if (res.status === 401) {
-        // Not signed in — send to login and then back to redirectPath
-        const next = encodeURIComponent(redirectPath);
-        window.location.href = `/login?next=${next}`;
-        return;
-      }
-
-      const data = await res.json();
-
-      if (!res.ok || !data?.url) {
-        throw new Error(data?.error || 'Failed to start Google OAuth');
-      }
-
-      // Redirect to Google consent screen (server-generated URL)
-      window.location.href = data.url;
-      
-      // onSuccess will be called after successful authentication in the callback
-      // No need to show success toast here as it's handled in the hook
+      // Use the existing Gmail authorize endpoint and let it handle the redirect
+      const authEndpoint = `${origin}/api/auth/gmail/authorize?redirect=${encodeURIComponent(redirectPath)}`;
+      window.location.href = authEndpoint;
     } catch (err) {
       console.error('Error connecting Google account:', err);
       setError(err instanceof Error ? err.message : String(err));
       if (onError) {
         onError(err instanceof Error ? err : new Error(String(err)));
       }
-      
-      // Error toast is shown in the hook
     } finally {
       setIsConnecting(false);
     }
@@ -133,7 +108,8 @@ export function GoogleConnectionStatus({ userId }: { userId: string }) {
     const checkConnection = async () => {
       try {
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const statusUrl = `${origin}/api/user/${userId}/google/status`;
+        // Use the existing auth status endpoint
+        const statusUrl = `${origin}/api/auth/gmail/status`;
         const { data: sessionData } = await supabase.auth.getSession();
         const accessToken = sessionData.session?.access_token;
         const response = await fetch(statusUrl, {
@@ -141,12 +117,13 @@ export function GoogleConnectionStatus({ userId }: { userId: string }) {
           headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
         });
         const data = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(data.error || 'Failed to check Google connection status');
         }
-        
-        setIsConnected(data.isConnected);
+
+        // The status route returns `authenticated`, not `isConnected`
+        setIsConnected(Boolean(data.authenticated));
       } catch (err) {
         console.error('Error checking Google connection status:', err);
         setError('Failed to check Google connection status');
