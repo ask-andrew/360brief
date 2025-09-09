@@ -14,12 +14,19 @@ const nextConfig: NextConfig = {
 
   serverExternalPackages: ['@supabase/supabase-js'],
 
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
+    // Ensure @ alias is set for both client and server builds
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(__dirname, 'src'),
     };
 
+    // Debug logging for Netlify builds
+    if (process.env.NODE_ENV === 'production' && !dev) {
+      console.log('🔧 Webpack alias configured:', config.resolve.alias['@']);
+    }
+
+    // Client-side fallbacks
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
