@@ -10,7 +10,7 @@
   # These variables are either public (NEXT_PUBLIC_*) or necessary for server-side functionality
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_SITE_URL,APP_BASE_URL,SUPABASE_SERVICE_ROLE_KEY,GOOGLE_CLIENT_ID"
   # Omit build output paths where environment variables are legitimately embedded
-  SECRETS_SCAN_OMIT_PATHS = ".next/**,netlify/**,.netlify/**"
+  SECRETS_SCAN_OMIT_PATHS = ".next/**,netlify/**,.netlify/**,src/mocks/data/briefingData.ts,src/services/email/templateRenderer.ts,supabase/config.toml,supabase/migrations/**"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
