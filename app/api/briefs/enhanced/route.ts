@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateBrief, generateStyledBrief } from '@/server/briefs/generateBrief';
 import { fetchUnifiedData } from '@/services/unifiedDataService';
-import { authenticateUser } from '@/lib/auth/server';
+import { createClient } from '@/lib/supabase/server';
 import { crisisScenario, normalOperationsScenario, highActivityScenario } from '@/mocks/data/testScenarios';
 
 export async function GET(req: Request) {
@@ -46,13 +46,14 @@ export async function GET(req: Request) {
     
     if (useRealData) {
       // Resolve authenticated user for real data
-      const auth = await authenticateUser();
-      if (!auth.success) {
-        return auth.response;
+      const supabase = await createClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
       // Fetch real unified data with full content for briefs
-      unified = await fetchUnifiedData(auth.user.id, { 
+      unified = await fetchUnifiedData(user.id, { 
         startDate: startDate ?? undefined, 
         endDate: endDate ?? undefined,
         useCase: 'brief'
@@ -159,13 +160,14 @@ export async function POST(req: Request) {
       // Use provided custom data (for testing/demos)
       unified = customData;
     } else if (useRealData) {
-      const auth = await authenticateUser();
-      if (!auth.success) {
-        return auth.response;
+      const supabase = await createClient();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
       try {
-        unified = await fetchUnifiedData(auth.user.id, {
+        unified = await fetchUnifiedData(user.id, {
           startDate: timeRange?.start,
           endDate: timeRange?.end,
           useCase: 'brief'
