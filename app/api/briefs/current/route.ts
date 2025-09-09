@@ -16,7 +16,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const unified = await fetchUnifiedData(user.id, { startDate: startDate ?? undefined, endDate: endDate ?? undefined });
+    const unified = await fetchUnifiedData(user.id, { 
+      startDate: startDate ?? undefined, 
+      endDate: endDate ?? undefined,
+      useCase: 'brief' 
+    });
     const data = generateBrief(unified);
     return NextResponse.json(data);
   } catch (e: any) {

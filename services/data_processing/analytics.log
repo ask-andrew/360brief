@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+AttributeError: 'FastAPI' object has no attribute 'run'
+Starting service...

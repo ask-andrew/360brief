@@ -1,5 +1,9 @@
 import { createClient } from '../../../src/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { toDatabaseTimestamp } from '../../../src/lib/utils/timestamp'
+
+// Force Node.js runtime for service role operations
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
@@ -46,13 +50,14 @@ export async function GET(request: Request) {
     if (data.session.provider_token && data.session.user) {
       console.log('🔄 Storing Gmail OAuth tokens...')
       
+      // Use sustainable timestamp management
       const tokenData = {
         user_id: data.session.user.id,
         provider: 'google',
         access_token: data.session.provider_token,
         refresh_token: data.session.provider_refresh_token,
-        expires_at: data.session.expires_at || null,
-        updated_at: new Date().toISOString(),
+        expires_at: toDatabaseTimestamp(data.session.expires_at),
+        updated_at: toDatabaseTimestamp(new Date()),
       };
       
       console.log('📊 Token data to store:', {
@@ -64,15 +69,45 @@ export async function GET(request: Request) {
       });
       
       try {
-        const { data: insertResult, error: insertError } = await supabase
-          .from('user_tokens')
-          .upsert(tokenData);
+        // Use service role client to bypass RLS during OAuth callback
+        const { createClient: createServiceClient } = await import('@supabase/supabase-js');
+        const serviceSupabase = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
         
-        if (insertError) {
-          console.error('❌ Token insert error:', insertError);
-          // Continue anyway - user can still use the app without stored tokens
+        // First try to update existing record
+        const { data: updateResult, error: updateError } = await serviceSupabase
+          .from('user_tokens')
+          .update({
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: tokenData.expires_at,
+            updated_at: tokenData.updated_at
+          })
+          .eq('user_id', tokenData.user_id)
+          .eq('provider', tokenData.provider)
+          .select();
+          
+        if (updateError) {
+          console.error('❌ Token update error:', updateError);
+          // Continue without storing tokens - user can still use app
+        }
+        
+        if (updateResult && updateResult.length > 0) {
+          console.log('✅ Gmail OAuth tokens updated successfully!');
         } else {
-          console.log('✅ Gmail OAuth tokens stored successfully!');
+          // No existing record, try insert
+          const { data: insertResult, error: insertError } = await serviceSupabase
+            .from('user_tokens')
+            .insert(tokenData)
+            .select();
+          
+          if (insertError) {
+            console.error('❌ Token insert error:', insertError);
+          } else {
+            console.log('✅ Gmail OAuth tokens inserted successfully!');
+          }
         }
       } catch (tokenError) {
         console.error('⚠️ Failed to store tokens:', tokenError);

@@ -1,0 +1,249 @@
+INFO:     Will watch for changes in these directories: ['/Users/andrewledet/CascadeProjects/360brief/services/data_processing']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [20263] using StatReload
+🚀 Starting 360Brief Analytics API...
+📊 API will be available at http://localhost:8000
+📝 API docs at http://localhost:8000/docs
+✅ Gmail API integration enabled
+INFO:     Started server process [20598]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:54202 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54277 - "GET /analytics?use_real_data=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54366 - "GET /analytics?use_real_data=false HTTP/1.1" 200 OK
+INFO:data_processing.services.gmail_service:Credentials saved to gmail_token.json
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:      - "GET /auth/gmail/status HTTP/1.1" 200 OK
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Filtered to 89 messages within date range
+INFO:data_processing.services.gmail_service:Filtered out 40 marketing emails (49 remain)
+INFO:simple_analytics_api:Retrieved real analytics for 49 emails (marketing filtered)
+INFO:data_processing.services.gmail_service:Filtered to 89 messages within date range
+INFO:data_processing.services.gmail_service:Filtered out 40 marketing emails (49 remain)
+INFO:simple_analytics_api:Retrieved real analytics for 49 emails (marketing filtered)
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Filtered to 89 messages within date range
+INFO:data_processing.services.gmail_service:Filtered out 40 marketing emails (49 remain)
+INFO:simple_analytics_api:Retrieved real analytics for 49 emails (marketing filtered)
+INFO:data_processing.services.gmail_service:Filtered to 89 messages within date range
+INFO:data_processing.services.gmail_service:Filtered out 40 marketing emails (49 remain)
+INFO:simple_analytics_api:Retrieved real analytics for 49 emails (marketing filtered)
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Filtered to 89 messages within date range
+INFO:data_processing.services.gmail_service:Filtered out 40 marketing emails (49 remain)
+INFO:simple_analytics_api:Retrieved real analytics for 49 emails (marketing filtered)
+INFO:data_processing.services.gmail_service:Filtered to 89 messages within date range
+INFO:data_processing.services.gmail_service:Filtered out 40 marketing emails (49 remain)
+INFO:simple_analytics_api:Retrieved real analytics for 49 emails (marketing filtered)
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Authenticated as andrew.ledet@gmail.com
+INFO:data_processing.services.gmail_service:Found 500 messages in date range
+INFO:data_processing.services.gmail_service:Filtered to 89 messages within date range
+INFO:data_processing.services.gmail_service:Filtered out 40 marketing emails (49 remain)
+INFO:simple_analytics_api:Retrieved real analytics for 49 emails (marketing filtered)
+INFO:data_processing.services.gmail_service:Filtered to 89 messages within date range
+INFO:data_processing.services.gmail_service:Filtered out 40 marketing emails (49 remain)
+INFO:simple_analytics_api:Retrieved real analytics for 49 emails (marketing filtered)

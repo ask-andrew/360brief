@@ -1,0 +1,3643 @@
+
+> 360brief@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.4.5
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.12.151:3000
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ✓ externalDir
+     · serverActions
+
+ ✓ Starting...
+ ✓ Ready in 5.5s
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 4.6s (759 modules)
+ ✓ Compiled in 933ms (361 modules)
+ GET /api/health 404 in 52ms
+ ✓ Compiled in 1284ms (759 modules)
+ ○ Compiling /api/briefs/enhanced ...
+ ✓ Compiled /api/briefs/enhanced in 2.8s (1847 modules)
+ GET /api/briefs/enhanced?use_real_data=false&style=mission_brief&scenario=normal 200 in 5279ms
+ ✓ Compiled in 458ms (362 modules)
+ ✓ Compiled in 427ms (362 modules)
+ ✓ Compiled in 317ms (358 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 2.1s (985 modules)
+ GET /dashboard 200 in 2598ms
+ ○ Compiling /briefs/current ...
+ ✓ Compiled /briefs/current in 1155ms (1169 modules)
+ GET /briefs/current 200 in 1557ms
+ ✓ Compiled in 517ms (513 modules)
+ ✓ Compiled /api/briefs/enhanced in 262ms (1771 modules)
+ POST /api/briefs/enhanced 200 in 2170ms
+ ○ Compiling /api/health ...
+ ✓ Compiled /api/health in 650ms (2252 modules)
+ GET /api/health 200 in 748ms
+ ○ Compiling /api/analytics ...
+ ✓ Compiled /api/analytics in 621ms (1687 modules)
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=false
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=false 202 in 999ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 774ms (579 modules)
+ GET /dashboard 200 in 1108ms
+ ✓ Compiled /favicon.ico in 175ms (596 modules)
+ GET /favicon.ico 200 in 375ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.2s (2054 modules)
+ GET / 200 in 3982ms
+ GET /favicon.ico 200 in 71ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1468ms (2061 modules)
+ GET /login 200 in 1616ms
+ GET /favicon.ico 200 in 47ms
+ ○ Compiling /auth/callback ...
+ ✓ Compiled /auth/callback in 535ms (2083 modules)
+🔄 Auth callback received: {
+  hasCode: true,
+  error: null,
+  origin: 'http://localhost:3000',
+  searchParams: { code: '3d010cf9-e974-4ca5-b544-da37a164e50b' }
+}
+🔄 Exchanging code for session...
+🔄 Storing Gmail OAuth tokens...
+📊 Token data to store: {
+  user_id: 'ef25c737-514e-466a-b7da-0076ae720031',
+  provider: 'google',
+  hasAccessToken: true,
+  hasRefreshToken: true,
+  expires_at: 1756997929
+}
+❌ Token insert error: {
+  code: '23505',
+  details: null,
+  hint: null,
+  message: 'duplicate key value violates unique constraint "user_tokens_user_id_provider_key"'
+}
+✅ Session exchange successful!
+ GET /auth/callback?code=3d010cf9-e974-4ca5-b544-da37a164e50b 307 in 1818ms
+ GET /dashboard 200 in 282ms
+ GET /favicon.ico 200 in 35ms
+ ✓ Compiled /api/analytics in 422ms (1152 modules)
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 610ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 132ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 172ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 163ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 231ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 125ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 183ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 174ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 126ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 107ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 166ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 139ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 281ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 128ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 247ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 381ms
+ GET / 200 in 498ms
+ GET /dashboard 200 in 128ms
+ GET /favicon.ico 200 in 28ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 171ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 94ms
+ ○ Compiling /briefs/current ...
+ ✓ Compiled /briefs/current in 1241ms (1171 modules)
+ GET /briefs/current 200 in 1511ms
+ ○ Compiling /api/briefs/enhanced ...
+ ✓ Compiled /api/briefs/enhanced in 2.9s (2255 modules)
+ GET /favicon.ico 200 in 5978ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 123ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+🔄 Token expired (2025-09-02T23:29:30.000Z < 2025-09-04T14:01:56.901Z), will attempt refresh
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+⚠️ Gmail API responded with 401: Unauthorized
+🔄 Fallback to legacy API
+🔄 Final fallback to direct Google API
+❌ Email data fetch failed: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type bigint: "2025-09-04T15:01:56.536Z"'
+}
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 7630ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 92ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+🔄 Token expired (2025-09-02T23:29:30.000Z < 2025-09-04T14:01:58.188Z), will attempt refresh
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+⚠️ Gmail API responded with 401: Unauthorized
+🔄 Fallback to legacy API
+🔄 Final fallback to direct Google API
+❌ Email data fetch failed: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type bigint: "2025-09-04T15:01:57.516Z"'
+}
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 999ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 115ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 91ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 160ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 98ms
+ GET /api/briefs/enhanced?use_real_data=false&style=mission_brief&scenario=normal 200 in 18ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 98ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+🔄 Token expired (2025-09-02T23:29:30.000Z < 2025-09-04T14:02:23.161Z), will attempt refresh
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+⚠️ Gmail API responded with 401: Unauthorized
+🔄 Fallback to legacy API
+🔄 Final fallback to direct Google API
+❌ Email data fetch failed: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type bigint: "2025-09-04T15:02:22.629Z"'
+}
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 1182ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 116ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+🔄 Token expired (2025-09-02T23:29:30.000Z < 2025-09-04T14:02:26.751Z), will attempt refresh
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+⚠️ Gmail API responded with 401: Unauthorized
+🔄 Fallback to legacy API
+🔄 Final fallback to direct Google API
+❌ Email data fetch failed: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type bigint: "2025-09-04T15:02:25.998Z"'
+}
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 947ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 90ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 103ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 733ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 146ms
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 3.7s (2759 modules)
+ GET /analytics 200 in 4083ms
+ ✓ Compiled /favicon.ico in 333ms (1808 modules)
+ GET /favicon.ico 200 in 438ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 127ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 95ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 145ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 100ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 172ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 147ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 107ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 110ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 191ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 135ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 102ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 99ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 105ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 101ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 97ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 105ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 109ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 109ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 100ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 100ms
+ GET /analytics 200 in 329ms
+ GET /favicon.ico 200 in 83ms
+ ○ Compiling /api/auth/gmail/status ...
+ ✓ Compiled /api/auth/gmail/status in 1259ms (1679 modules)
+Gmail Status Error: TypeError: fetch failed
+    at async GET (app/api/auth/gmail/status/route.ts:7:21)
+   5 | export async function GET(request: NextRequest) {
+   6 |   try {
+>  7 |     const response = await fetch(`${ANALYTICS_API_BASE}/auth/gmail/status`, {
+     |                     ^
+   8 |       method: 'GET',
+   9 |       headers: {
+  10 |         'Content-Type': 'application/json', {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+ GET /api/auth/gmail/status 503 in 1542ms
+ ✓ Compiled in 3.7s (1670 modules)
+ GET /analytics 200 in 318ms
+ ✓ Compiled in 977ms (1670 modules)
+ GET /analytics 200 in 119ms
+ ✓ Compiled in 1429ms (1674 modules)
+ GET /analytics 200 in 131ms
+ ✓ Compiled in 878ms (1674 modules)
+ GET /analytics 200 in 123ms
+ ○ Compiling /api/analytics ...
+ ✓ Compiled /api/analytics in 2.3s (724 modules)
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=false
+🔄 Checking Python analytics service...
+ GET /api/analytics?use_real_data=false 200 in 2578ms
+ GET /dashboard 200 in 118ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ ✓ Compiled /favicon.ico in 200ms (726 modules)
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ GET /favicon.ico 200 in 503ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3128ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3562ms
+ ○ Compiling /api/briefs/enhanced ...
+ ✓ Compiled /api/briefs/enhanced in 2.8s (1810 modules)
+ POST /api/briefs/enhanced 200 in 6169ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3141ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3106ms
+ GET /dashboard 200 in 293ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ GET /briefs/current 200 in 155ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3113ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3149ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3132ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3103ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3160ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3101ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3129ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3137ms
+ GET /briefs/current 200 in 35ms
+ GET /favicon.ico 200 in 41ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 3095ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 3169ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+🔄 Token expired (2025-09-02T23:29:30.000Z < 2025-09-04T14:12:41.022Z), will attempt refresh
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+🔄 Token expired (2025-09-02T23:29:30.000Z < 2025-09-04T14:12:41.125Z), will attempt refresh
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+⚠️ Gmail API responded with 401: Unauthorized
+🔄 Fallback to legacy API
+🔄 Final fallback to direct Google API
+⚠️ Gmail API responded with 401: Unauthorized
+🔄 Fallback to legacy API
+🔄 Final fallback to direct Google API
+❌ Email data fetch failed: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type bigint: "2025-09-04T15:12:40.528Z"'
+}
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 4333ms
+❌ Email data fetch failed: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type bigint: "2025-09-04T15:12:40.584Z"'
+}
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 4384ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3106ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3111ms
+ GET /api/briefs/enhanced?use_real_data=false&style=mission_brief&scenario=normal 200 in 35ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3119ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3110ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 3112ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+🔄 Token expired (2025-09-02T23:29:30.000Z < 2025-09-04T14:13:13.266Z), will attempt refresh
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+⚠️ Gmail API responded with 401: Unauthorized
+🔄 Fallback to legacy API
+🔄 Final fallback to direct Google API
+❌ Email data fetch failed: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type bigint: "2025-09-04T15:13:12.676Z"'
+}
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 4129ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 3109ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+🔄 Token expired (2025-09-02T23:29:30.000Z < 2025-09-04T14:13:22.186Z), will attempt refresh
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+⚠️ Gmail API responded with 401: Unauthorized
+🔄 Fallback to legacy API
+🔄 Final fallback to direct Google API
+❌ Email data fetch failed: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input syntax for type bigint: "2025-09-04T15:13:21.656Z"'
+}
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 4229ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3087ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3111ms
+ GET /analytics 200 in 56ms
+ GET /favicon.ico 200 in 24ms
+ ○ Compiling /api/auth/gmail/status ...
+ ✓ Compiled /api/auth/gmail/status in 1047ms (1812 modules)
+Gmail Status Error: Error [TimeoutError]: The operation was aborted due to timeout
+    at async GET (app/api/auth/gmail/status/route.ts:7:21)
+   5 | export async function GET(request: NextRequest) {
+   6 |   try {
+>  7 |     const response = await fetch(`${ANALYTICS_API_BASE}/auth/gmail/status`, {
+     |                     ^
+   8 |       method: 'GET',
+   9 |       headers: {
+  10 |         'Content-Type': 'application/json', {
+  code: 23,
+  INDEX_SIZE_ERR: 1,
+  DOMSTRING_SIZE_ERR: 2,
+  HIERARCHY_REQUEST_ERR: 3,
+  WRONG_DOCUMENT_ERR: 4,
+  INVALID_CHARACTER_ERR: 5,
+  NO_DATA_ALLOWED_ERR: 6,
+  NO_MODIFICATION_ALLOWED_ERR: 7,
+  NOT_FOUND_ERR: 8,
+  NOT_SUPPORTED_ERR: 9,
+  INUSE_ATTRIBUTE_ERR: 10,
+  INVALID_STATE_ERR: 11,
+  SYNTAX_ERR: 12,
+  INVALID_MODIFICATION_ERR: 13,
+  NAMESPACE_ERR: 14,
+  INVALID_ACCESS_ERR: 15,
+  VALIDATION_ERR: 16,
+  TYPE_MISMATCH_ERR: 17,
+  SECURITY_ERR: 18,
+  NETWORK_ERR: 19,
+  ABORT_ERR: 20,
+  URL_MISMATCH_ERR: 21,
+  QUOTA_EXCEEDED_ERR: 22,
+  TIMEOUT_ERR: 23,
+  INVALID_NODE_TYPE_ERR: 24,
+  DATA_CLONE_ERR: 25
+}
+ GET /api/auth/gmail/status 503 in 6246ms
+ ○ Compiling /api/auth/gmail/authorize ...
+ ✓ Compiled /api/auth/gmail/authorize in 817ms (2769 modules)
+🔄 Gmail authorization URL generated: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.metadata%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.modify%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar.events.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile%20openid&prompt=consent&state=eyJyZWRpcmVjdCI6Ii9kYXNoYm9hcmQiLCJhY2NvdW50X3R5cGUiOiJwZXJzb25hbCJ9&response_type=code&client_id=903551999211-1i1buetcsfq1lrbmsjqr7nvfmaqgn105.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fgmail%2Fcallback
+ GET /api/auth/gmail/authorize 307 in 2428ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ GET /api/analytics?use_real_data=true 200 in 123ms
+ GET /api/analytics?use_real_data=true 200 in 484ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ ○ Compiling /api/auth/gmail/callback ...
+ ✓ Compiled /api/auth/gmail/callback in 503ms (2771 modules)
+🔄 Gmail callback received code, exchanging for tokens...
+⚠️ Warning: Could not create/update profile: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'new row violates row-level security policy for table "profiles"'
+}
+🔄 Storing Gmail tokens in Supabase...
+✅ Gmail tokens stored successfully
+ GET /api/auth/gmail/callback?state=eyJyZWRpcmVjdCI6Ii9kYXNoYm9hcmQiLCJhY2NvdW50X3R5cGUiOiJwZXJzb25hbCJ9&code=4/0AVMBsJgAnZ4HcsMfp40QBg4zY-FyvhtIQdPnD8bGhLcza3LOGTeFpIZPhmmAHYldZA3UBw&scope=email%20profile%20https://www.googleapis.com/auth/gmail.readonly%20https://www.googleapis.com/auth/calendar.events.readonly%20https://www.googleapis.com/auth/calendar.readonly%20https://www.googleapis.com/auth/gmail.metadata%20https://www.googleapis.com/auth/gmail.modify%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/userinfo.email%20openid&authuser=0&prompt=consent 307 in 2181ms
+ GET /dashboard?auth=success&message=Gmail+connected+successfully%21 200 in 356ms
+ GET /favicon.ico 200 in 69ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3118ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3245ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3153ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3198ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3147ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3160ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3208ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3146ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3101ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3096ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3116ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3096ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3126ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3099ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3126ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3102ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3092ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3092ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3096ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3102ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3097ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3106ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3108ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3093ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3089ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3091ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3115ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3111ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3102ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3127ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3111ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3110ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3110ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3275ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3114ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3113ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3109ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 3100ms
+ ✓ Compiled in 2.1s (1693 modules)
+ GET /dashboard?auth=success&message=Gmail+connected+successfully%21 200 in 268ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30134ms
+ ✓ Compiled in 1067ms (1693 modules)
+ GET /dashboard?auth=success&message=Gmail+connected+successfully%21 200 in 189ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30096ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30108ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30100ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30105ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30101ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30109ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30095ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30118ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30096ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30101ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30112ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30109ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30114ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30123ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30169ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30101ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30103ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30119ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30106ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30118ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30101ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30131ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30175ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30187ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ ✓ Compiled in 958ms (969 modules)
+ GET /dashboard?auth=success&message=Gmail+connected+successfully%21 200 in 61ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30226ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ ✓ Compiled in 506ms (969 modules)
+ GET /dashboard?auth=success&message=Gmail+connected+successfully%21 200 in 48ms
+ ✓ Compiled in 2.6s (1693 modules)
+ GET /dashboard?auth=success&message=Gmail+connected+successfully%21 200 in 278ms
+ ✓ Compiled in 1153ms (1693 modules)
+ GET /dashboard?auth=success&message=Gmail+connected+successfully%21 200 in 177ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30126ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ ○ Compiling /api/analytics/quick ...
+ ✓ Compiled /api/analytics/quick in 952ms (1681 modules)
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 9080ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30134ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30124ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30119ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30117ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30122ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30106ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30106ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30122ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30121ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30139ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30132ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30137ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30124ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30226ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30292ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30167ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30129ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30112ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30166ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30138ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30133ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30146ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30111ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30138ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30119ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30176ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30221ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30124ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30114ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30126ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30164ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ GET /briefs/current 200 in 130ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 5s (1808 modules)
+ ✓ Compiled (1810 modules)
+ GET /favicon.ico 200 in 5925ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30174ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 30169ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30117ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+✅ Token is valid until 9/4/2025, 10:13:53 AM
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+✅ Gmail API returned 20 message IDs (simple query)
+🔄 Fetching message 19915277d259436c with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915277d259436c - snippet: ...
+🔄 Fetching message 199151c7be9a148e with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199151c7be9a148e - snippet: ...
+🔄 Fetching message 199150f1a314f90f with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150f1a314f90f - snippet: ...
+🔄 Fetching message 199150de27191f34 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150de27191f34 - snippet: ...
+🔄 Fetching message 19915078d64a809d with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915078d64a809d - snippet: ...
+🔄 Fetching message 19915077972a300a with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915077972a300a - snippet: ...
+🔄 Fetching message 1991505d8a6781f7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991505d8a6781f7 - snippet: ...
+🔄 Fetching message 19915041dd35c444 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915041dd35c444 - snippet: ...
+🔄 Fetching message 19915005594a696b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915005594a696b - snippet: ...
+🔄 Fetching message 19914fe3c52f6a09 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914fe3c52f6a09 - snippet: ...
+🔄 Fetching message 19914f6a72243fbe with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914f6a72243fbe - snippet: ...
+🔄 Fetching message 19914d4279522ebf with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914d4279522ebf - snippet: ...
+🔄 Fetching message 19913342259b6424 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19913342259b6424 - snippet: ...
+🔄 Fetching message 1991225e104fa1a8 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991225e104fa1a8 - snippet: ...
+🔄 Fetching message 19911347403a6add with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19911347403a6add - snippet: ...
+🔄 Fetching message 199111ad3a7a2b8b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199111ad3a7a2b8b - snippet: ...
+🔄 Fetching message 19910feed8af0771 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910feed8af0771 - snippet: ...
+🔄 Fetching message 19910e756977ba23 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910e756977ba23 - snippet: ...
+🔄 Fetching message 19910ce9a047b5f1 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910ce9a047b5f1 - snippet: ...
+🔄 Fetching message 19910cd77db832a7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910cd77db832a7 - snippet: ...
+📊 Message processing stats: {
+  totalFetched: 20,
+  nullMessages: 0,
+  validObjects: 20,
+  withIds: 20,
+  withFrom: 20
+}
+✅ Successfully fetched 20 Gmail messages
+✅ Got 20 emails from direct Gmail
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 46421ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 30115ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+✅ Token is valid until 9/4/2025, 10:13:53 AM
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+✅ Gmail API returned 20 message IDs (simple query)
+🔄 Fetching message 19915277d259436c with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915277d259436c - snippet: ...
+🔄 Fetching message 199151c7be9a148e with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199151c7be9a148e - snippet: ...
+🔄 Fetching message 199150f1a314f90f with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150f1a314f90f - snippet: ...
+🔄 Fetching message 199150de27191f34 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150de27191f34 - snippet: ...
+🔄 Fetching message 19915078d64a809d with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915078d64a809d - snippet: ...
+🔄 Fetching message 19915077972a300a with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915077972a300a - snippet: ...
+🔄 Fetching message 1991505d8a6781f7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991505d8a6781f7 - snippet: ...
+🔄 Fetching message 19915041dd35c444 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915041dd35c444 - snippet: ...
+🔄 Fetching message 19915005594a696b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915005594a696b - snippet: ...
+🔄 Fetching message 19914fe3c52f6a09 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914fe3c52f6a09 - snippet: ...
+🔄 Fetching message 19914f6a72243fbe with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914f6a72243fbe - snippet: ...
+🔄 Fetching message 19914d4279522ebf with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914d4279522ebf - snippet: ...
+🔄 Fetching message 19913342259b6424 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19913342259b6424 - snippet: ...
+🔄 Fetching message 1991225e104fa1a8 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991225e104fa1a8 - snippet: ...
+🔄 Fetching message 19911347403a6add with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19911347403a6add - snippet: ...
+🔄 Fetching message 199111ad3a7a2b8b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199111ad3a7a2b8b - snippet: ...
+🔄 Fetching message 19910feed8af0771 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910feed8af0771 - snippet: ...
+🔄 Fetching message 19910e756977ba23 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910e756977ba23 - snippet: ...
+🔄 Fetching message 19910ce9a047b5f1 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910ce9a047b5f1 - snippet: ...
+🔄 Fetching message 19910cd77db832a7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910cd77db832a7 - snippet: ...
+📊 Message processing stats: {
+  totalFetched: 20,
+  nullMessages: 0,
+  validObjects: 20,
+  withIds: 20,
+  withFrom: 20
+}
+✅ Successfully fetched 20 Gmail messages
+✅ Got 20 emails from direct Gmail
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 35386ms
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true 202 in 30119ms
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ GET /api/analytics?use_real_data=true 200 in 20314ms
+ GET /briefs/current 200 in 474ms
+ GET /favicon.ico 200 in 31ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+Analytics API Error: Error: Service processing - returning status
+    at GET (app/api/analytics/route.ts:37:12)
+  35 |       clearTimeout(quickTimeout);
+  36 |       // If timeout, return processing status immediately
+> 37 |       throw new Error('Service processing - returning status');
+     |            ^
+  38 |     }
+  39 |
+  40 |     if (!response.ok) {
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 202 in 30103ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+✅ Token is valid until 9/4/2025, 10:13:53 AM
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+✅ Gmail API returned 20 message IDs (simple query)
+🔄 Fetching message 199153478f238d3b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199153478f238d3b - snippet: ...
+🔄 Fetching message 19915277d259436c with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915277d259436c - snippet: ...
+🔄 Fetching message 199151c7be9a148e with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199151c7be9a148e - snippet: ...
+🔄 Fetching message 199150f1a314f90f with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150f1a314f90f - snippet: ...
+🔄 Fetching message 199150de27191f34 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150de27191f34 - snippet: ...
+🔄 Fetching message 19915078d64a809d with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915078d64a809d - snippet: ...
+🔄 Fetching message 19915077972a300a with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915077972a300a - snippet: ...
+🔄 Fetching message 1991505d8a6781f7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991505d8a6781f7 - snippet: ...
+🔄 Fetching message 19915041dd35c444 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915041dd35c444 - snippet: ...
+🔄 Fetching message 19915005594a696b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915005594a696b - snippet: ...
+🔄 Fetching message 19914fe3c52f6a09 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914fe3c52f6a09 - snippet: ...
+🔄 Fetching message 19914f6a72243fbe with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914f6a72243fbe - snippet: ...
+🔄 Fetching message 19914d4279522ebf with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914d4279522ebf - snippet: ...
+🔄 Fetching message 19913342259b6424 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19913342259b6424 - snippet: ...
+🔄 Fetching message 1991225e104fa1a8 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991225e104fa1a8 - snippet: ...
+🔄 Fetching message 19911347403a6add with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19911347403a6add - snippet: ...
+🔄 Fetching message 199111ad3a7a2b8b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199111ad3a7a2b8b - snippet: ...
+🔄 Fetching message 19910feed8af0771 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910feed8af0771 - snippet: ...
+🔄 Fetching message 19910e756977ba23 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910e756977ba23 - snippet: ...
+🔄 Fetching message 19910ce9a047b5f1 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910ce9a047b5f1 - snippet: ...
+📊 Message processing stats: {
+  totalFetched: 20,
+  nullMessages: 0,
+  validObjects: 20,
+  withIds: 20,
+  withFrom: 20
+}
+✅ Successfully fetched 20 Gmail messages
+✅ Got 20 emails from direct Gmail
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 35637ms
+ ○ Compiling /api/analytics/quick ...
+ ✓ Compiled /api/analytics/quick in 1019ms (724 modules)
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 9211ms
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 8019ms
+ GET /dashboard 200 in 134ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 925ms (726 modules)
+ GET /favicon.ico 200 in 1006ms
+ GET /api/analytics/quick?use_real_data=true 200 in 2025ms
+ GET /dashboard 200 in 280ms
+ GET /favicon.ico 200 in 32ms
+Python service timeout, using real-looking sample data
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 8031ms
+ ○ Compiling /api/debug/tokens ...
+ ✓ Compiled /api/debug/tokens in 882ms (1701 modules)
+ GET /api/debug/tokens 200 in 1995ms
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 8023ms
+ GET /api/debug/tokens 200 in 490ms
+ GET /analytics 200 in 103ms
+ GET /favicon.ico 200 in 23ms
+ ○ Compiling /api/auth/gmail/status ...
+ ✓ Compiled /api/auth/gmail/status in 546ms (748 modules)
+ GET /api/auth/gmail/status 200 in 1926ms
+ GET /api/auth/gmail/status 200 in 45ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1260ms (1684 modules)
+ GET /analytics/quick 404 in 1681ms
+ ✓ Compiled /favicon.ico in 186ms (727 modules)
+ GET /favicon.ico 200 in 259ms
+ GET /analytics 200 in 284ms
+ GET /favicon.ico 200 in 28ms
+ GET /briefs/current 200 in 58ms
+ ○ Compiling /api/briefs/enhanced ...
+ ✓ Compiled /api/briefs/enhanced in 3.4s (1811 modules)
+ GET /favicon.ico 200 in 3728ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+ ○ Compiling /api/analytics ...
+ ✓ Compiled /api/analytics in 1761ms (1813 modules)
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 200 in 29841ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+✅ Token is valid until 9/4/2025, 10:13:53 AM
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+✅ Gmail API returned 20 message IDs (simple query)
+🔄 Fetching message 19915410551e0333 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915410551e0333 - snippet: ...
+🔄 Fetching message 199153478f238d3b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199153478f238d3b - snippet: ...
+🔄 Fetching message 19915277d259436c with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915277d259436c - snippet: ...
+🔄 Fetching message 199151c7be9a148e with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199151c7be9a148e - snippet: ...
+🔄 Fetching message 199150f1a314f90f with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150f1a314f90f - snippet: ...
+🔄 Fetching message 199150de27191f34 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150de27191f34 - snippet: ...
+🔄 Fetching message 19915078d64a809d with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915078d64a809d - snippet: ...
+🔄 Fetching message 19915077972a300a with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915077972a300a - snippet: ...
+🔄 Fetching message 1991505d8a6781f7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991505d8a6781f7 - snippet: ...
+🔄 Fetching message 19915041dd35c444 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915041dd35c444 - snippet: ...
+🔄 Fetching message 19915005594a696b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915005594a696b - snippet: ...
+🔄 Fetching message 19914fe3c52f6a09 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914fe3c52f6a09 - snippet: ...
+🔄 Fetching message 19914f6a72243fbe with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914f6a72243fbe - snippet: ...
+🔄 Fetching message 19914d4279522ebf with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914d4279522ebf - snippet: ...
+🔄 Fetching message 19913342259b6424 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19913342259b6424 - snippet: ...
+🔄 Fetching message 1991225e104fa1a8 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991225e104fa1a8 - snippet: ...
+🔄 Fetching message 19911347403a6add with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19911347403a6add - snippet: ...
+🔄 Fetching message 199111ad3a7a2b8b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199111ad3a7a2b8b - snippet: ...
+🔄 Fetching message 19910feed8af0771 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910feed8af0771 - snippet: ...
+🔄 Fetching message 19910e756977ba23 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910e756977ba23 - snippet: ...
+📊 Message processing stats: {
+  totalFetched: 20,
+  nullMessages: 0,
+  validObjects: 20,
+  withIds: 20,
+  withFrom: 20
+}
+✅ Successfully fetched 20 Gmail messages
+✅ Got 20 emails from direct Gmail
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 41553ms
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 200 in 23981ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+✅ Token is valid until 9/4/2025, 10:13:53 AM
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+✅ Gmail API returned 20 message IDs (simple query)
+🔄 Fetching message 19915410551e0333 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915410551e0333 - snippet: ...
+🔄 Fetching message 199153478f238d3b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199153478f238d3b - snippet: ...
+🔄 Fetching message 19915277d259436c with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915277d259436c - snippet: ...
+🔄 Fetching message 199151c7be9a148e with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199151c7be9a148e - snippet: ...
+🔄 Fetching message 199150f1a314f90f with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150f1a314f90f - snippet: ...
+🔄 Fetching message 199150de27191f34 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150de27191f34 - snippet: ...
+🔄 Fetching message 19915078d64a809d with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915078d64a809d - snippet: ...
+🔄 Fetching message 19915077972a300a with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915077972a300a - snippet: ...
+🔄 Fetching message 1991505d8a6781f7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991505d8a6781f7 - snippet: ...
+🔄 Fetching message 19915041dd35c444 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915041dd35c444 - snippet: ...
+🔄 Fetching message 19915005594a696b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915005594a696b - snippet: ...
+🔄 Fetching message 19914fe3c52f6a09 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914fe3c52f6a09 - snippet: ...
+🔄 Fetching message 19914f6a72243fbe with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914f6a72243fbe - snippet: ...
+🔄 Fetching message 19914d4279522ebf with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914d4279522ebf - snippet: ...
+🔄 Fetching message 19913342259b6424 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19913342259b6424 - snippet: ...
+🔄 Fetching message 1991225e104fa1a8 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991225e104fa1a8 - snippet: ...
+🔄 Fetching message 19911347403a6add with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19911347403a6add - snippet: ...
+🔄 Fetching message 199111ad3a7a2b8b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199111ad3a7a2b8b - snippet: ...
+🔄 Fetching message 19910feed8af0771 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910feed8af0771 - snippet: ...
+🔄 Fetching message 19910e756977ba23 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910e756977ba23 - snippet: ...
+📊 Message processing stats: {
+  totalFetched: 20,
+  nullMessages: 0,
+  validObjects: 20,
+  withIds: 20,
+  withFrom: 20
+}
+✅ Successfully fetched 20 Gmail messages
+✅ Got 20 emails from direct Gmail
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 32953ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 200 in 22221ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+✅ Token is valid until 9/4/2025, 10:13:53 AM
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+✅ Gmail API returned 20 message IDs (simple query)
+🔄 Fetching message 19915410551e0333 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915410551e0333 - snippet: ...
+🔄 Fetching message 199153478f238d3b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199153478f238d3b - snippet: ...
+🔄 Fetching message 19915277d259436c with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915277d259436c - snippet: ...
+🔄 Fetching message 199151c7be9a148e with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199151c7be9a148e - snippet: ...
+🔄 Fetching message 199150f1a314f90f with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150f1a314f90f - snippet: ...
+🔄 Fetching message 199150de27191f34 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150de27191f34 - snippet: ...
+🔄 Fetching message 19915078d64a809d with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915078d64a809d - snippet: ...
+🔄 Fetching message 19915077972a300a with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915077972a300a - snippet: ...
+🔄 Fetching message 1991505d8a6781f7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991505d8a6781f7 - snippet: ...
+🔄 Fetching message 19915041dd35c444 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915041dd35c444 - snippet: ...
+🔄 Fetching message 19915005594a696b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915005594a696b - snippet: ...
+🔄 Fetching message 19914fe3c52f6a09 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914fe3c52f6a09 - snippet: ...
+🔄 Fetching message 19914f6a72243fbe with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914f6a72243fbe - snippet: ...
+🔄 Fetching message 19914d4279522ebf with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914d4279522ebf - snippet: ...
+🔄 Fetching message 19913342259b6424 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19913342259b6424 - snippet: ...
+🔄 Fetching message 1991225e104fa1a8 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991225e104fa1a8 - snippet: ...
+🔄 Fetching message 19911347403a6add with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19911347403a6add - snippet: ...
+🔄 Fetching message 199111ad3a7a2b8b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199111ad3a7a2b8b - snippet: ...
+🔄 Fetching message 19910feed8af0771 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910feed8af0771 - snippet: ...
+🔄 Fetching message 19910e756977ba23 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910e756977ba23 - snippet: ...
+📊 Message processing stats: {
+  totalFetched: 20,
+  nullMessages: 0,
+  validObjects: 20,
+  withIds: 20,
+  withFrom: 20
+}
+✅ Successfully fetched 20 Gmail messages
+✅ Got 20 emails from direct Gmail
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 27808ms
+ ○ Compiling /briefs/settings ...
+ ✓ Compiled /briefs/settings in 2.2s (2770 modules)
+ GET /briefs/settings 200 in 2423ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 787ms (2776 modules)
+ GET /favicon.ico 200 in 882ms
+ GET /api/user/connected-accounts 500 in 1298ms
+ GET /api/user/connected-accounts 500 in 1318ms
+Error creating default preferences: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input value for enum digest_style: "mission_brief"'
+}
+Error in GET /api/user/preferences: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input value for enum digest_style: "mission_brief"'
+}
+ GET /api/user/preferences 500 in 1448ms
+Error creating default preferences: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input value for enum digest_style: "mission_brief"'
+}
+Error in GET /api/user/preferences: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input value for enum digest_style: "mission_brief"'
+}
+ GET /api/user/preferences 500 in 1470ms
+ ✓ Compiled /api/auth/google/authorize in 446ms (2778 modules)
+ GET /api/auth/google/authorize?account_type=personal&redirect=%2Fbriefs%2Fsettings 500 in 1993ms
+Error saving preferences: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input value for enum digest_style: "mission_brief"'
+}
+Error in POST /api/user/preferences: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input value for enum digest_style: "mission_brief"'
+}
+ POST /api/user/preferences 500 in 409ms
+Error saving preferences: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input value for enum digest_style: "newsletter"'
+}
+Error in POST /api/user/preferences: {
+  code: '22P02',
+  details: null,
+  hint: null,
+  message: 'invalid input value for enum digest_style: "newsletter"'
+}
+ POST /api/user/preferences 500 in 502ms
+ GET /dashboard 200 in 87ms
+ ○ Compiling /api/analytics/quick ...
+ ✓ Compiled /api/analytics/quick in 643ms (1815 modules)
+ GET /favicon.ico 200 in 960ms
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 8962ms
+ ○ Compiling /api/debug/tokens ...
+ ✓ Compiled /api/debug/tokens in 606ms (1817 modules)
+ GET /api/debug/tokens 200 in 1115ms
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 8023ms
+ GET /api/debug/tokens 200 in 480ms
+ ○ Compiling /api/analytics ...
+ ✓ Compiled /api/analytics in 1219ms (729 modules)
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true
+🔄 Checking Python analytics service...
+ GET /api/analytics?use_real_data=true 200 in 11854ms
+ ○ Compiling /api/briefs/enhanced ...
+ ✓ Compiled /api/briefs/enhanced in 868ms (1813 modules)
+ GET /api/briefs/enhanced?use_real_data=true 401 in 2641ms
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief 401 in 12ms
+ ✓ Compiled in 1632ms (971 modules)
+ GET /dashboard 200 in 138ms
+ ✓ Compiled in 482ms (971 modules)
+ GET /dashboard 200 in 42ms
+ GET /dashboard 200 in 219ms
+ ○ Compiling /api/analytics/quick ...
+ ✓ Compiled /api/analytics/quick in 1055ms (1813 modules)
+ ✓ Compiled (1815 modules)
+ GET /favicon.ico 200 in 1428ms
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 9355ms
+ ✓ Compiled /api/debug/tokens in 494ms (751 modules)
+ GET /api/debug/tokens 200 in 1189ms
+ GET /analytics 200 in 125ms
+ GET /favicon.ico 200 in 45ms
+Python service timeout, using real-looking sample data
+ GET /api/analytics/quick?use_real_data=true 200 in 8025ms
+ ○ Compiling /api/auth/gmail/status ...
+ ✓ Compiled /api/auth/gmail/status in 575ms (753 modules)
+ GET /api/auth/gmail/status 200 in 4026ms
+ GET /briefs/current 200 in 92ms
+ ✓ Compiled /api/briefs/enhanced in 332ms (1819 modules)
+ GET /favicon.ico 200 in 2479ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+ ✓ Compiled /api/analytics in 261ms (1821 modules)
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 200 in 10114ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+✅ Token is valid until 9/4/2025, 10:13:53 AM
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+✅ Gmail API returned 20 message IDs (simple query)
+🔄 Fetching message 1991544e1335c995 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991544e1335c995 - snippet: ...
+🔄 Fetching message 19915410551e0333 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915410551e0333 - snippet: ...
+🔄 Fetching message 199153478f238d3b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199153478f238d3b - snippet: ...
+🔄 Fetching message 19915277d259436c with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915277d259436c - snippet: ...
+🔄 Fetching message 199151c7be9a148e with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199151c7be9a148e - snippet: ...
+🔄 Fetching message 199150f1a314f90f with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150f1a314f90f - snippet: ...
+🔄 Fetching message 199150de27191f34 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150de27191f34 - snippet: ...
+🔄 Fetching message 19915078d64a809d with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915078d64a809d - snippet: ...
+🔄 Fetching message 19915077972a300a with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915077972a300a - snippet: ...
+🔄 Fetching message 1991505d8a6781f7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991505d8a6781f7 - snippet: ...
+🔄 Fetching message 19915041dd35c444 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915041dd35c444 - snippet: ...
+🔄 Fetching message 19915005594a696b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915005594a696b - snippet: ...
+🔄 Fetching message 19914fe3c52f6a09 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914fe3c52f6a09 - snippet: ...
+🔄 Fetching message 19914f6a72243fbe with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914f6a72243fbe - snippet: ...
+🔄 Fetching message 19914d4279522ebf with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914d4279522ebf - snippet: ...
+🔄 Fetching message 19913342259b6424 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19913342259b6424 - snippet: ...
+🔄 Fetching message 1991225e104fa1a8 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991225e104fa1a8 - snippet: ...
+🔄 Fetching message 19911347403a6add with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19911347403a6add - snippet: ...
+🔄 Fetching message 199111ad3a7a2b8b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199111ad3a7a2b8b - snippet: ...
+🔄 Fetching message 19910feed8af0771 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19910feed8af0771 - snippet: ...
+📊 Message processing stats: {
+  totalFetched: 20,
+  nullMessages: 0,
+  validObjects: 20,
+  withIds: 20,
+  withFrom: 20
+}
+✅ Successfully fetched 20 Gmail messages
+✅ Got 20 emails from direct Gmail
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 18022ms
+🔄 Trying analytics API for real data
+🔄 Using working analytics API route (same as analytics page)
+🔄 Fetching from: http://localhost:3000/api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 200 in 9096ms
+🔄 Fallback to direct Gmail API
+🔄 Fetching Gmail data directly (same as analytics page)
+🔄 Looking for tokens for user: ef25c737-514e-466a-b7da-0076ae720031
+✅ Token is valid until 9/4/2025, 10:13:53 AM
+🔄 Fetching Gmail messages for user ef25c737-514e-466a-b7da-0076ae720031
+✅ Gmail API returned 20 message IDs (simple query)
+🔄 Fetching message 1991548e6138cf06 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991548e6138cf06 - snippet: ...
+🔄 Fetching message 1991544e1335c995 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991544e1335c995 - snippet: ...
+🔄 Fetching message 19915410551e0333 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915410551e0333 - snippet: ...
+🔄 Fetching message 199153478f238d3b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199153478f238d3b - snippet: ...
+🔄 Fetching message 19915277d259436c with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915277d259436c - snippet: ...
+🔄 Fetching message 199151c7be9a148e with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199151c7be9a148e - snippet: ...
+🔄 Fetching message 199150f1a314f90f with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150f1a314f90f - snippet: ...
+🔄 Fetching message 199150de27191f34 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199150de27191f34 - snippet: ...
+🔄 Fetching message 19915078d64a809d with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915078d64a809d - snippet: ...
+🔄 Fetching message 19915077972a300a with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915077972a300a - snippet: ...
+🔄 Fetching message 1991505d8a6781f7 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991505d8a6781f7 - snippet: ...
+🔄 Fetching message 19915041dd35c444 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915041dd35c444 - snippet: ...
+🔄 Fetching message 19915005594a696b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19915005594a696b - snippet: ...
+🔄 Fetching message 19914fe3c52f6a09 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914fe3c52f6a09 - snippet: ...
+🔄 Fetching message 19914f6a72243fbe with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914f6a72243fbe - snippet: ...
+🔄 Fetching message 19914d4279522ebf with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19914d4279522ebf - snippet: ...
+🔄 Fetching message 19913342259b6424 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19913342259b6424 - snippet: ...
+🔄 Fetching message 1991225e104fa1a8 with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 1991225e104fa1a8 - snippet: ...
+🔄 Fetching message 19911347403a6add with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 19911347403a6add - snippet: ...
+🔄 Fetching message 199111ad3a7a2b8b with token: ya29.A0AS3H6NwZUZYgg...
+📧 Successfully fetched message 199111ad3a7a2b8b - snippet: ...
+📊 Message processing stats: {
+  totalFetched: 20,
+  nullMessages: 0,
+  validObjects: 20,
+  withIds: 20,
+  withFrom: 20
+}
+✅ Successfully fetched 20 Gmail messages
+✅ Got 20 emails from direct Gmail
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 15643ms
+ ✓ Compiled in 1843ms (1681 modules)
+ GET /briefs/current 200 in 250ms
+ ✓ Compiled in 537ms (971 modules)
+ GET /briefs/current 200 in 34ms
+ ○ Compiling /api/briefs/enhanced ...
+ ✓ Compiled /api/briefs/enhanced in 641ms (1811 modules)
+ GET /api/briefs/enhanced?use_real_data=false&style=mission_brief 200 in 2389ms
+ GET /briefs/current 200 in 1825ms
+ ✓ Compiled in 1458ms (2768 modules)
+ GET /briefs/current 200 in 1092ms
+ GET /briefs/current 200 in 25ms
+ ○ Compiling /api/briefs/demo ...
+ ✓ Compiled /api/briefs/demo in 680ms (2770 modules)
+❌ Real data fetch failed for demo: RangeError: Invalid time value
+    at Date1.toISOString (<anonymous>)
+    at convertAnalyticsToUnifiedData (app/api/briefs/demo/route.ts:20:54)
+    at GET (app/api/briefs/demo/route.ts:91:22)
+  18 |           from: msg.sender,
+  19 |           to: ['me'], // Simplified
+> 20 |           date: new Date(msg.timestamp || new Date()).toISOString(),
+     |                                                      ^
+  21 |           metadata: {
+  22 |             insights: {
+  23 |               priority: msg.priority,
+ GET /api/briefs/demo?use_real_data=true&style=mission_brief 200 in 13215ms
+❌ Real data fetch failed for demo: RangeError: Invalid time value
+    at Date1.toISOString (<anonymous>)
+    at convertAnalyticsToUnifiedData (app/api/briefs/demo/route.ts:20:54)
+    at GET (app/api/briefs/demo/route.ts:91:22)
+  18 |           from: msg.sender,
+  19 |           to: ['me'], // Simplified
+> 20 |           date: new Date(msg.timestamp || new Date()).toISOString(),
+     |                                                      ^
+  21 |           metadata: {
+  22 |             insights: {
+  23 |               priority: msg.priority,
+ GET /api/briefs/demo?use_real_data=true&style=mission_brief 200 in 10497ms
+ ✓ Compiled in 2.1s (1702 modules)
+ GET /briefs/current 200 in 295ms
+📊 Analytics response: {
+  total_count: 49,
+  has_priority_messages: true,
+  awaiting_my_reply_count: 6
+}
+❌ Real data fetch failed for demo: RangeError: Invalid time value
+    at Date1.toISOString (<anonymous>)
+    at convertAnalyticsToUnifiedData (app/api/briefs/demo/route.ts:20:54)
+    at GET (app/api/briefs/demo/route.ts:96:22)
+  18 |           from: msg.sender,
+  19 |           to: ['me'], // Simplified
+> 20 |           date: new Date(msg.timestamp || new Date()).toISOString(),
+     |                                                      ^
+  21 |           metadata: {
+  22 |             insights: {
+  23 |               priority: msg.priority,
+ GET /api/briefs/demo?use_real_data=true&style=mission_brief 200 in 9015ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.4s (1693 modules)
+ GET /briefs/current 404 in 1831ms
+ GET /briefs/current 200 in 54ms
+ GET /briefs/current 200 in 305ms
+ ○ Compiling /api/briefs/enhanced ...
+ ✓ Compiled /api/briefs/enhanced in 526ms (734 modules)
+ ✓ Compiled /api/briefs/test-real in 1ms (1816 modules)
+ ✓ Compiled in 599ms (2779 modules)
+ GET /favicon.ico 200 in 5720ms
+🧪 Testing Python service connection...
+🔄 Fetching unified data via analytics API: /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+ ○ Compiling /api/analytics ...
+ ✓ Compiled /api/analytics in 1846ms (1820 modules)
+Fetching analytics from: http://localhost:8000/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031
+🔄 Checking Python analytics service...
+ GET /api/briefs/test-real 200 in 23846ms
+ GET /api/analytics?use_real_data=true&user_id=ef25c737-514e-466a-b7da-0076ae720031 200 in 18521ms
+✅ Got real analytics data with 49 messages
+❌ Analytics API failed: RangeError: Invalid time value
+    at Date1.toISOString (<anonymous>)
+    at convertAnalyticsToUnifiedData (src/services/unifiedDataService.ts:28:54)
+    at fetchUnifiedData (src/services/unifiedDataService.ts:113:15)
+    at async GET (app/api/briefs/enhanced/route.ts:56:16)
+  26 |           from: msg.sender,
+  27 |           to: ['me'], // Simplified
+> 28 |           date: new Date(msg.timestamp || new Date()).toISOString(),
+     |                                                      ^
+  29 |           metadata: {
+  30 |             insights: {
+  31 |               priority: msg.priority,
+❌ Email data fetch failed: ReferenceError: forceDirect is not defined
+    at fetchUnifiedData (src/services/unifiedDataService.ts:529:4)
+    at async GET (app/api/briefs/enhanced/route.ts:56:16)
+  527 |   // Email-focused execution: Prioritize reliable email data over complex fallbacks
+  528 |   try {
+> 529 |     if (forceDirect) {
+      |    ^
+  530 |       console.log(`🔄 Forced direct Google API access`);
+  531 |       return await fetchViaGoogleDirect();
+  532 |     }
+ GET /api/briefs/enhanced?use_real_data=true&style=mission_brief&scenario=normal 200 in 27971ms
+ ✓ Compiled in 1124ms (2795 modules)
+ GET /briefs/current 200 in 128ms
+📊 Analytics response: {
+  total_count: 49,
+  has_priority_messages: true,
+  awaiting_my_reply_count: 6
+}
+❌ Real data fetch failed for demo: RangeError: Invalid time value
+    at Date1.toISOString (<anonymous>)
+    at convertAnalyticsToUnifiedData (app/api/briefs/demo/route.ts:20:54)
+    at GET (app/api/briefs/demo/route.ts:102:22)
+  18 |           from: msg.sender,
+  19 |           to: ['me'], // Simplified
+> 20 |           date: new Date(msg.timestamp || new Date()).toISOString(),
+     |                                                      ^
+  21 |           metadata: {
+  22 |             insights: {
+  23 |               priority: msg.priority,
+ GET /api/briefs/demo?use_real_data=true&style=mission_brief 200 in 9394ms
+ ✓ Compiled in 2.7s (1681 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json',
+  page: '/briefs/current'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1990ms (2009 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'
+}
+ GET /briefs/current 500 in 4432ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json',
+  page: '/briefs/current'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'
+}
+ GET /briefs/current 500 in 417ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json',
+  page: '/briefs/current'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'
+}
+ GET /briefs/current 500 in 345ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json',
+  page: '/briefs/current'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'
+}
+ GET /briefs/current 500 in 659ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json',
+  page: '/briefs/current'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'
+}
+ GET /briefs/current 500 in 374ms
+ ✓ Compiled /favicon.ico in 269ms (907 modules)
+ ⨯ Error: Cannot find module './431.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/favicon.ico/route.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/favicon.ico/route.js:1:41165)
+    at Object.<anonymous> (.next/server/app/favicon.ico/route.js:1:41216) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 331ms
+ ✓ Compiled in 604ms (1118 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1151ms (1913 modules)
+ ⨯ Error: Cannot find module './431.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/_not-found/page.js:2:8045)
+    at Object.<anonymous> (.next/server/app/_not-found/page.js:2:8101) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ✓ Compiled /_error in 317ms (2000 modules)
+ GET /_next/static/webpack/703dabc5d40460a4.webpack.hot-update.json 500 in 1558ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/routes-manifest.json',
+  page: '/briefs/current'
+}
+ ⨯ Error: Cannot find module './8548.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/briefs/current/page.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/pages/_document.js:1:327)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:374) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /briefs/current 500 in 535ms
+ ⨯ Error: Cannot find module './431.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/briefs/current/page.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/_not-found/page.js:2:8045)
+    at Object.<anonymous> (.next/server/app/_not-found/page.js:2:8101) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/chunks/fallback/webpack.js 500 in 47ms
+ ⨯ Error: Cannot find module './431.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/briefs/current/page.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/_not-found/page.js:2:8045)
+    at Object.<anonymous> (.next/server/app/_not-found/page.js:2:8101) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ⨯ Error: Cannot find module './431.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/briefs/current/page.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/_not-found/page.js:2:8045)
+    at Object.<anonymous> (.next/server/app/_not-found/page.js:2:8101) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/chunks/fallback/react-refresh.js 500 in 76ms
+ GET /_next/static/chunks/fallback/main.js 500 in 72ms
+ ⨯ Error: Cannot find module './431.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/briefs/current/page.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/_not-found/page.js:2:8045)
+    at Object.<anonymous> (.next/server/app/_not-found/page.js:2:8101) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/chunks/fallback/pages/_app.js 500 in 41ms
+ ⨯ Error: Cannot find module './431.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/briefs/current/page.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/_not-found/page.js:2:8045)
+    at Object.<anonymous> (.next/server/app/_not-found/page.js:2:8101) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /_next/static/chunks/fallback/pages/_error.js 500 in 41ms
+ ✓ Compiled /favicon.ico in 248ms (908 modules)
+ ⨯ Error: Cannot find module './431.js'
+Require stack:
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/webpack-runtime.js
+- /Users/andrewledet/CascadeProjects/360brief/.next/server/app/favicon.ico/route.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/require.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/load-components.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/utils.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/options.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/swc/index.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/config.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/next.js
+- /Users/andrewledet/CascadeProjects/360brief/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/favicon.ico/route.js:1:41165)
+    at Object.<anonymous> (.next/server/app/favicon.ico/route.js:1:41216) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/favicon.ico'
+}
+ GET /favicon.ico 500 in 315ms
+ GET /briefs/current 404 in 67ms
+ GET /briefs/current 404 in 34ms
+ GET /favicon.ico 404 in 24ms
+ GET /briefs/current 404 in 20ms
+ GET /briefs/current 404 in 20ms
+ GET /briefs/current 404 in 16ms
+ GET /briefs/current 404 in 19ms
+ ○ Compiling / ...
+ ✓ Compiled / in 3.1s (1380 modules)
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.]
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.] {
+  page: '/briefs/current'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'
+}
+ GET /briefs/current 500 in 2923ms
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.]
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.] {
+  page: '/'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'
+}
+ GET / 500 in 5144ms
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.]
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.] {
+  page: '/'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'
+}
+ GET / 500 in 775ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.]
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.] {
+  page: '/briefs/current'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'
+}
+ GET /_next/static/chunks/fallback/webpack.js 500 in 705ms
+ GET /_next/static/chunks/fallback/react-refresh.js 500 in 705ms
+ GET /_next/static/chunks/fallback/main.js 500 in 705ms
+ GET /_next/static/chunks/fallback/pages/_error.js 500 in 705ms
+ GET /_next/static/chunks/fallback/pages/_app.js 500 in 705ms
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.]
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.] {
+  page: '/'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/pages/_document.js'
+}
+ GET / 500 in 762ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/andrewledet/CascadeProjects/360brief/.next/server/app/_not-found/page.js'
+}
+ GET /_next/static/chunks/fallback/webpack.js 500 in 159ms
+ GET /_next/static/chunks/fallback/main.js 500 in 170ms
+ GET /_next/static/chunks/fallback/pages/_app.js 500 in 170ms
+ GET /_next/static/chunks/fallback/react-refresh.js 500 in 170ms
+ GET /_next/static/chunks/fallback/pages/_error.js 500 in 170ms
+[?25h

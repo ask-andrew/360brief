@@ -52,10 +52,23 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Authentication required for real data' }, { status: 401 });
       }
 
-      // Fetch real unified data
+      // Fetch real unified data with full content for briefs
       unified = await fetchUnifiedData(user.id, { 
         startDate: startDate ?? undefined, 
-        endDate: endDate ?? undefined 
+        endDate: endDate ?? undefined,
+        useCase: 'brief'
+      });
+      
+      console.log('🔍 Real unified data counts:', {
+        emails: unified.emails.length,
+        incidents: unified.incidents.length,
+        calendarEvents: unified.calendarEvents.length,
+        tickets: unified.tickets.length,
+        totalEmails: unified.emails.length,
+        sampleEmail: unified.emails[0]?.subject,
+        source: 'fetchUnifiedData',
+        willFallback: !unified.emails.length && !unified.incidents.length && 
+                     !unified.calendarEvents.length && !unified.tickets.length
       });
       
       // If no real data available, fall back to mock data with warning
@@ -83,7 +96,8 @@ export async function GET(req: Request) {
       timeRange: timeRange || 'week',
       availableStyles: validStyles,
       availableScenarios: ['normal', 'crisis', 'high_activity'],
-      availableTimeRanges: ['3days', 'week', 'month']
+      availableTimeRanges: ['3days', 'week', 'month'],
+      rawAnalyticsData: unified // Include raw data for LLM experimentation
     });
     
   } catch (e: any) {
@@ -138,7 +152,8 @@ export async function POST(req: Request) {
       try {
         unified = await fetchUnifiedData(user.id, {
           startDate: timeRange?.start,
-          endDate: timeRange?.end
+          endDate: timeRange?.end,
+          useCase: 'brief'
         });
         
         // If no real data available, fall back to demo data
@@ -176,7 +191,8 @@ export async function POST(req: Request) {
         scenario: useRealData ? undefined : scenario,
         timeRange
       },
-      availableTimeRanges: ['3days', 'week', 'month']
+      availableTimeRanges: ['3days', 'week', 'month'],
+      rawAnalyticsData: unified // Include raw data for LLM experimentation
     });
     
   } catch (e: any) {

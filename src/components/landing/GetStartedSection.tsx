@@ -30,7 +30,7 @@ export function GetStartedSection() {
               className="px-10 py-7 text-lg font-semibold group transition-all duration-200 hover:shadow-xl hover:shadow-primary/20 hover:scale-[1.02]"
               asChild
             >
-              <Link href="/signup" className="flex items-center gap-2">
+              <Link href="/beta" className="flex items-center gap-2">
                 Get Started Free
                 <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>

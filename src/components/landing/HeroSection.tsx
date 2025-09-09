@@ -41,7 +41,7 @@ export function HeroSection() {
           {/* CTA Buttons */}
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
             <Link 
-              href="/signup"
+              href="/beta"
               className={cn(
                 'group inline-flex items-center justify-center rounded-xl bg-primary/10 px-8 py-6 text-lg font-semibold text-foreground',
                 'transition-all hover:bg-primary/20 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',

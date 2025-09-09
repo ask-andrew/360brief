@@ -1,4 +1,4 @@
-""Configuration management for the data processing service."""
+"""Configuration management for the data processing service."""
 import os
 from pathlib import Path
 from typing import Optional
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
 
 def get_settings() -> Settings:
-    ""Get application settings."""
+    """Get application settings."""
     return Settings()
 
 

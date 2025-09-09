@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   FileText, 
   AlertTriangle, 
@@ -27,7 +29,9 @@ import {
   Newspaper,
   Target,
   Briefcase,
-  Info
+  Info,
+  Code,
+  ChevronDown
 } from 'lucide-react';
 import { StyledMissionBrief } from './StyledMissionBrief';
 
@@ -46,6 +50,7 @@ interface BriefData {
   startupVelocity?: any;
   consulting?: any;
   newsletter?: any;
+  rawAnalyticsData?: any;  // Add this for LLM experimentation
 }
 
 const STYLE_CONFIGS = {
@@ -100,6 +105,7 @@ export function EnhancedBriefDashboard() {
   const [useRealData, setUseRealData] = useState(true);
   const [selectedStyle, setSelectedStyle] = useState('mission_brief');
   const [selectedScenario, setSelectedScenario] = useState('normal');
+  const [showJsonOutput, setShowJsonOutput] = useState(false);
 
   const fetchBrief = async () => {
     setLoading(true);
@@ -308,6 +314,67 @@ export function EnhancedBriefDashboard() {
         </Card>
       ) : (
         renderBriefContent()
+      )}
+
+      {/* JSON Output Section for LLM Experimentation */}
+      {briefData && (
+        <Collapsible open={showJsonOutput} onOpenChange={setShowJsonOutput}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <span className="flex items-center gap-2">
+                <Code className="w-4 h-4" />
+                JSON Output for LLM Experimentation
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showJsonOutput ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Raw Analytics Data</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Copy this JSON data to experiment with different LLMs and prompting strategies
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={JSON.stringify(briefData, null, 2)}
+                  readOnly
+                  className="min-h-[400px] font-mono text-xs"
+                  placeholder="JSON data will appear here..."
+                />
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(briefData, null, 2));
+                      // Could add a toast notification here
+                    }}
+                  >
+                    Copy to Clipboard
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const blob = new Blob([JSON.stringify(briefData, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `360brief-data-${new Date().toISOString().split('T')[0]}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    Download JSON
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
       )}
     </div>
   );

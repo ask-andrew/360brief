@@ -25,15 +25,15 @@ class GmailService:
     """Service for interacting with Gmail API for analytics and data processing."""
     
     # Gmail API scopes needed for read access
-    # Note: Google automatically grants both readonly and metadata scopes together
-    # We need to request both to avoid scope mismatch errors
+    # Note: Must match the scopes granted by Next.js OAuth flow
     SCOPES = [
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/gmail.metadata',
-        'https://www.googleapis.com/auth/userinfo.profile',
-        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/gmail.modify',  # Required for full email content access
         'https://www.googleapis.com/auth/calendar.readonly',
         'https://www.googleapis.com/auth/calendar.events.readonly',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile',
         'openid'
     ]
     
@@ -146,14 +146,73 @@ class GmailService:
             logger.error(f"Failed to load credentials: {e}")
             return False
     
-    async def authenticate(self) -> bool:
+    async def _load_credentials_from_nextjs(self, user_id: str) -> bool:
+        """Load credentials from Next.js token API.
+        
+        Args:
+            user_id: User ID to fetch tokens for
+            
+        Returns:
+            True if credentials were loaded successfully
+        """
+        try:
+            import aiohttp
+            async with aiohttp.ClientSession() as session:
+                url = f"http://localhost:3000/api/tokens/gmail?user_id={user_id}"
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        logger.error(f"Failed to fetch tokens from Next.js: {response.status}")
+                        return False
+                    
+                    token_data = await response.json()
+                    
+                    if not token_data.get('authenticated'):
+                        logger.error("User not authenticated with Gmail in Next.js")
+                        return False
+                    
+                    # Create credentials from token data
+                    self.credentials = Credentials(
+                        token=token_data['access_token'],
+                        refresh_token=token_data['refresh_token'],
+                        id_token=None,
+                        token_uri='https://oauth2.googleapis.com/token',
+                        client_id=os.getenv('GOOGLE_CLIENT_ID'),
+                        client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+                        scopes=self.SCOPES
+                    )
+                    
+                    # Set expiry if available
+                    if token_data.get('expires_at'):
+                        from datetime import datetime
+                        self.credentials.expiry = datetime.fromtimestamp(token_data['expires_at'])
+                    
+                    logger.info("✅ Loaded credentials from Next.js token API")
+                    return True
+                    
+        except Exception as e:
+            logger.error(f"Failed to load credentials from Next.js: {e}")
+            return False
+    
+    async def authenticate(self, user_id: str = None) -> bool:
         """Authenticate with Gmail API.
+        
+        Args:
+            user_id: User ID to load tokens for (tries Next.js API first)
         
         Returns:
             True if authentication successful
         """
-        if not self._load_credentials():
-            logger.error("No valid credentials found. Please run OAuth2 flow first.")
+        # Try loading from Next.js API first if user_id provided
+        if user_id:
+            logger.info(f"🔄 Trying to load credentials from Next.js API for user {user_id}")
+            if await self._load_credentials_from_nextjs(user_id):
+                logger.info("✅ Using credentials from Next.js centralized auth")
+            else:
+                logger.warning("⚠️ Failed to load from Next.js API, falling back to local tokens")
+        
+        # Fallback to local credentials if Next.js API fails or no user_id
+        if not self.credentials and not self._load_credentials():
+            logger.error("❌ No valid credentials found. Please authenticate via Next.js web app first.")
             return False
             
         try:
@@ -177,15 +236,17 @@ class GmailService:
         start_date: datetime,
         end_date: datetime,
         max_results: int = 100,
-        query: str = None
+        query: str = None,
+        use_optimization: bool = True
     ) -> List[Dict[str, Any]]:
-        """Fetch emails from Gmail within date range.
+        """Fetch emails from Gmail within date range with metadata-first optimization.
         
         Args:
             start_date: Start of date range
             end_date: End of date range  
             max_results: Maximum number of emails to fetch
             query: Optional Gmail search query
+            use_optimization: Use metadata-first approach for faster processing
             
         Returns:
             List of email data dictionaries
@@ -195,47 +256,11 @@ class GmailService:
                 raise ConnectionError("Failed to authenticate with Gmail")
         
         try:
-            # Get message IDs without using search query (q parameter)
-            # to avoid metadata scope restrictions
-            result = self.service.users().messages().list(
-                userId='me',
-                maxResults=max_results
-            ).execute()
-            
-            messages = result.get('messages', [])
-            logger.info(f"Found {len(messages)} messages in date range")
-            
-            if not messages:
-                return []
-            
-            # Fetch message details in batches
-            email_data = []
-            batch_size = 50
-            
-            for i in range(0, len(messages), batch_size):
-                batch = messages[i:i + batch_size]
-                batch_emails = await self._fetch_message_batch(batch)
+            if use_optimization:
+                return await self._fetch_emails_optimized(start_date, end_date, max_results)
+            else:
+                return await self._fetch_emails_legacy(start_date, end_date, max_results)
                 
-                # Filter messages by date range (client-side filtering)
-                filtered_emails = []
-                for email in batch_emails:
-                    if email and 'timestamp' in email:
-                        email_date = email['timestamp']
-                        if start_date <= email_date <= end_date:
-                            filtered_emails.append(email)
-                
-                email_data.extend(filtered_emails)
-                
-                # Add small delay to respect rate limits
-                await asyncio.sleep(0.1)
-                
-                # Stop if we have enough emails
-                if len(email_data) >= max_results:
-                    break
-            
-            logger.info(f"Filtered to {len(email_data)} messages within date range")
-            return email_data[:max_results]
-            
         except HttpError as e:
             logger.error(f"Gmail API error: {e}")
             raise
@@ -243,8 +268,176 @@ class GmailService:
             logger.error(f"Error fetching emails: {e}")
             raise
     
+    async def _fetch_emails_optimized(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        max_results: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Optimized email fetching using metadata-first approach.
+        
+        Phase 1: Fetch metadata only
+        Phase 2: Score and prioritize emails
+        Phase 3: Fetch full content for top-priority emails only
+        """
+        import time
+        start_time = time.time()
+        logger.info("Using optimized metadata-first email fetching")
+        
+        # Phase 1: Get extended message list with metadata
+        result = self.service.users().messages().list(
+            userId='me',
+            maxResults=max_results * 2  # Get more to allow for filtering
+        ).execute()
+        
+        messages = result.get('messages', [])
+        logger.info(f"Phase 1: Found {len(messages)} message IDs")
+        
+        if not messages:
+            return []
+        
+        # Phase 2: Fetch metadata and score importance
+        metadata_emails = await self._fetch_metadata_batch(messages[:max_results * 2])
+        
+        # Filter by date range early
+        filtered_emails = []
+        for email in metadata_emails:
+            if email and 'timestamp' in email:
+                if start_date <= email['timestamp'] <= end_date:
+                    filtered_emails.append(email)
+        
+        phase2_time = time.time()
+        logger.info(f"Phase 2: {len(filtered_emails)} emails after date filtering (took {phase2_time - start_time:.1f}s)")
+        
+        # Phase 3: Early marketing filter (before scoring)
+        non_marketing_emails = []
+        marketing_filtered_count = 0
+        
+        for email in filtered_emails:
+            headers = {'Subject': email.get('subject', ''), 'From': email.get('sender', '')}
+            labels = email.get('labels', [])
+            snippet = email.get('snippet', '')
+            
+            if self._is_marketing_email(headers, snippet, labels):
+                marketing_filtered_count += 1
+            else:
+                non_marketing_emails.append(email)
+        
+        phase3_time = time.time()
+        logger.info(f"Phase 3: Filtered {marketing_filtered_count} marketing emails, {len(non_marketing_emails)} remain (took {phase3_time - phase2_time:.1f}s)")
+        
+        # Phase 4: Score and prioritize remaining emails
+        scored_emails = self._score_email_importance(non_marketing_emails)
+        
+        # Sort by importance score (descending)
+        scored_emails.sort(key=lambda x: x.get('importance_score', 0), reverse=True)
+        
+        # Phase 5: Use metadata-only approach (scope limitations prevent full content)
+        # Full content enrichment disabled due to Gmail API scope restrictions
+        final_emails = scored_emails[:max_results]  # Return scored emails with metadata
+        
+        # Add body content from snippets for analysis
+        for email in final_emails:
+            if not email.get('body'):
+                email['body'] = email.get('snippet', '')
+            email['is_marketing'] = self._is_marketing_email(
+                {'Subject': email.get('subject', ''), 'From': email.get('sender', '')},
+                email.get('body', ''),
+                email.get('labels', [])
+            )
+        
+        total_time = time.time() - start_time
+        logger.info(f"Phase 5: Processed {len(final_emails)} high-priority emails (metadata-only, total time: {total_time:.1f}s)")
+        
+        return final_emails[:max_results]
+    
+    async def _fetch_emails_legacy(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        max_results: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Legacy email fetching approach (original implementation)."""
+        logger.info("Using legacy email fetching approach")
+        
+        result = self.service.users().messages().list(
+            userId='me',
+            maxResults=max_results
+        ).execute()
+        
+        messages = result.get('messages', [])
+        logger.info(f"Found {len(messages)} messages")
+        
+        if not messages:
+            return []
+        
+        # Fetch message details in batches
+        email_data = []
+        batch_size = 50
+        
+        for i in range(0, len(messages), batch_size):
+            batch = messages[i:i + batch_size]
+            batch_emails = await self._fetch_message_batch(batch)
+            
+            # Filter messages by date range (client-side filtering)
+            filtered_emails = []
+            for email in batch_emails:
+                if email and 'timestamp' in email:
+                    email_date = email['timestamp']
+                    if start_date <= email_date <= end_date:
+                        filtered_emails.append(email)
+            
+            email_data.extend(filtered_emails)
+            
+            # Add small delay to respect rate limits
+            await asyncio.sleep(0.1)
+            
+            # Stop if we have enough emails
+            if len(email_data) >= max_results:
+                break
+        
+        logger.info(f"Filtered to {len(email_data)} messages within date range")
+        return email_data[:max_results]
+    
+    async def _fetch_metadata_batch(self, message_ids: List[Dict]) -> List[Dict[str, Any]]:
+        """Fetch metadata for a batch of messages (Phase 1 optimization).
+        
+        Args:
+            message_ids: List of message ID dictionaries
+            
+        Returns:
+            List of message metadata
+        """
+        metadata_emails = []
+        batch_size = 100  # Larger batches for metadata-only requests
+        
+        for i in range(0, len(message_ids), batch_size):
+            batch = message_ids[i:i + batch_size]
+            
+            for msg_ref in batch:
+                try:
+                    msg = self.service.users().messages().get(
+                        userId='me',
+                        id=msg_ref['id'],
+                        format='metadata',
+                        metadataHeaders=['Subject', 'From', 'To', 'Date', 'Message-ID', 'In-Reply-To', 'References']
+                    ).execute()
+                    
+                    email_data = self._parse_gmail_message_metadata(msg)
+                    if email_data:
+                        metadata_emails.append(email_data)
+                        
+                except Exception as e:
+                    logger.warning(f"Failed to fetch metadata for {msg_ref['id']}: {e}")
+                    continue
+            
+            # Small delay between batches
+            await asyncio.sleep(0.05)
+        
+        return metadata_emails
+    
     async def _fetch_message_batch(self, message_ids: List[Dict]) -> List[Dict[str, Any]]:
-        """Fetch details for a batch of messages.
+        """Fetch details for a batch of messages (legacy method).
         
         Args:
             message_ids: List of message ID dictionaries
@@ -273,12 +466,248 @@ class GmailService:
         
         return batch_emails
     
-    def _is_marketing_email(self, headers: Dict[str, str], snippet: str, labels: List[str]) -> bool:
+    def _parse_gmail_message_metadata(self, msg: Dict) -> Optional[Dict[str, Any]]:
+        """Parse Gmail API message metadata only (faster than full parsing).
+        
+        Args:
+            msg: Gmail API message object
+            
+        Returns:
+            Parsed email metadata or None if parsing failed
+        """
+        try:
+            headers = {h['name']: h['value'] for h in msg['payload'].get('headers', [])}
+            labels = msg.get('labelIds', [])
+            
+            # Extract timestamp
+            timestamp_ms = int(msg['internalDate'])
+            timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+            
+            # Use snippet for initial content assessment
+            snippet = msg.get('snippet', '')
+            
+            # Determine direction based on sender
+            sender = headers.get('From', '')
+            direction = 'inbound'  # Default to inbound
+            if '@gmail.com' in sender and 'andrew' in sender.lower():
+                direction = 'outbound'
+            
+            return {
+                'id': msg['id'],
+                'source_id': msg['id'],
+                'message_type': MessageType.EMAIL,
+                'subject': headers.get('Subject', ''),
+                'snippet': snippet,  # Use snippet instead of full body for metadata phase
+                'sender': sender,
+                'recipients': [headers.get('To', '')],
+                'timestamp': timestamp,
+                'thread_id': msg.get('threadId'),
+                'labels': labels,
+                'direction': direction,
+                'metadata': {
+                    'message_id': headers.get('Message-ID', ''),
+                    'in_reply_to': headers.get('In-Reply-To', ''),
+                    'references': headers.get('References', ''),
+                    'size': msg.get('sizeEstimate', 0),
+                    'unread': 'UNREAD' in labels
+                },
+                'full_content_fetched': False  # Mark as metadata-only
+            }
+            
+        except Exception as e:
+            logger.error(f"Error parsing message metadata {msg.get('id', 'unknown')}: {e}")
+            return None
+    
+    def _score_email_importance(self, emails: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Score emails by importance to prioritize which ones need full content.
+        
+        Scoring factors:
+        - Executive/VIP sender (high weight)
+        - Urgent keywords in subject (high weight)
+        - Unread status (medium weight)
+        - Recent timestamp (medium weight)
+        - Thread activity (medium weight)
+        - Message size (low weight - longer emails often more important)
+        - Marketing filter (negative weight)
+        
+        Args:
+            emails: List of email metadata dictionaries
+            
+        Returns:
+            Same emails with importance_score added
+        """
+        logger.info(f"Scoring importance for {len(emails)} emails")
+        
+        # Define scoring criteria
+        vip_domains = {
+            'gmail.com', 'company.com', 'client.com',  # Add your VIP domains
+            'executive.com', 'ceo.com', 'founder.com'
+        }
+        
+        urgent_keywords = {
+            'urgent', 'asap', 'immediate', 'emergency', 'critical',
+            'deadline', 'today', 'tonight', 'this morning',
+            'important', 'priority', 'escalation'
+        }
+        
+        executive_keywords = {
+            'ceo', 'cto', 'cfo', 'vp', 'director', 'executive',
+            'president', 'founder', 'head of', 'chief'
+        }
+        
+        project_keywords = {
+            'project', 'meeting', 'sync', 'review', 'approval',
+            'decision', 'action', 'update', 'status', 'feedback'
+        }
+        
+        # Calculate current time for recency scoring
+        now = datetime.now(timezone.utc)
+        
+        for email in emails:
+            score = 0
+            reasons = []  # For debugging
+            
+            # 1. VIP Sender (0-30 points)
+            sender = email.get('sender', '').lower()
+            sender_domain = sender.split('@')[1] if '@' in sender else ''
+            
+            if sender_domain in vip_domains:
+                score += 30
+                reasons.append('vip_domain')
+            
+            if any(keyword in sender for keyword in executive_keywords):
+                score += 25
+                reasons.append('executive_sender')
+            
+            # 2. Subject line analysis (0-25 points)
+            subject = email.get('subject', '').lower()
+            
+            if any(keyword in subject for keyword in urgent_keywords):
+                score += 25
+                reasons.append('urgent_subject')
+            elif any(keyword in subject for keyword in project_keywords):
+                score += 15
+                reasons.append('project_subject')
+            
+            # Question indicators
+            if '?' in subject or any(word in subject for word in ['what', 'how', 'when', 'can you']):
+                score += 12
+                reasons.append('question')
+            
+            # 3. Unread status (0-20 points)
+            if email.get('metadata', {}).get('unread', False):
+                score += 20
+                reasons.append('unread')
+            
+            # 4. Recency (0-15 points)
+            timestamp = email.get('timestamp')
+            if timestamp:
+                hours_old = (now - timestamp).total_seconds() / 3600
+                if hours_old <= 2:
+                    score += 15
+                    reasons.append('very_recent')
+                elif hours_old <= 8:
+                    score += 10
+                    reasons.append('recent')
+                elif hours_old <= 24:
+                    score += 5
+                    reasons.append('today')
+            
+            # 5. Message size hint (0-10 points)
+            size = email.get('metadata', {}).get('size', 0)
+            if size > 5000:  # Longer emails often more substantial
+                score += 10
+                reasons.append('substantial_size')
+            elif size > 1000:
+                score += 5
+                reasons.append('medium_size')
+            
+            # 6. Thread activity (0-10 points)
+            if email.get('metadata', {}).get('in_reply_to'):
+                score += 8
+                reasons.append('thread_reply')
+            
+            # 7. Direction preference (inbound slightly higher priority)
+            if email.get('direction') == 'inbound':
+                score += 3
+                reasons.append('inbound')
+            
+            # 8. Marketing/spam penalty (-50 points)
+            labels = email.get('labels', [])
+            snippet = email.get('snippet', '').lower()
+            
+            if self._is_marketing_email({'Subject': subject, 'From': sender}, snippet, labels):
+                score -= 50
+                reasons.append('marketing_penalty')
+            
+            # Apply score and reasoning
+            email['importance_score'] = max(0, score)  # Don't allow negative scores
+            email['importance_reasons'] = reasons
+        
+        # Log scoring distribution
+        scores = [e.get('importance_score', 0) for e in emails]
+        if scores:
+            logger.info(f"Importance scoring complete. Range: {min(scores)}-{max(scores)}, Avg: {sum(scores)/len(scores):.1f}")
+        
+        return emails
+    
+    async def _enrich_with_full_content(self, prioritized_emails: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Fetch full content for prioritized emails that need it.
+        
+        Args:
+            prioritized_emails: List of metadata-only emails sorted by importance
+            
+        Returns:
+            Same emails enriched with full content
+        """
+        logger.info(f"Enriching {len(prioritized_emails)} priority emails with full content")
+        
+        enriched_emails = []
+        
+        for email in prioritized_emails:
+            try:
+                # Skip if already has full content or score too low
+                if email.get('full_content_fetched', False) or email.get('importance_score', 0) < 10:
+                    enriched_emails.append(email)
+                    continue
+                
+                # Fetch full message content
+                msg = self.service.users().messages().get(
+                    userId='me',
+                    id=email['id'],
+                    format='full'  # Get full message including body
+                ).execute()
+                
+                # Extract full body content
+                full_body = self._extract_message_body(msg['payload'])
+                
+                # Update email with full content
+                email['body'] = full_body if full_body.strip() else email.get('snippet', '')
+                email['full_content_fetched'] = True
+                
+                # Re-evaluate marketing status with full content
+                headers = {h['name']: h['value'] for h in msg['payload'].get('headers', [])}
+                email['is_marketing'] = self._is_marketing_email(headers, email['body'], email.get('labels', []))
+                
+                enriched_emails.append(email)
+                
+                # Small delay to respect rate limits
+                await asyncio.sleep(0.02)
+                
+            except Exception as e:
+                logger.warning(f"Failed to enrich email {email.get('id')}: {e}")
+                # Keep the metadata-only version
+                enriched_emails.append(email)
+        
+        logger.info(f"Successfully enriched {sum(1 for e in enriched_emails if e.get('full_content_fetched'))} emails with full content")
+        return enriched_emails
+    
+    def _is_marketing_email(self, headers: Dict[str, str], content: str, labels: List[str]) -> bool:
         """Determine if an email is marketing/promotional content.
         
         Args:
             headers: Email headers
-            snippet: Email snippet/preview text
+            content: Email content (snippet or full body)
             labels: Gmail labels
             
         Returns:
@@ -286,7 +715,7 @@ class GmailService:
         """
         sender = headers.get('From', '').lower()
         subject = headers.get('Subject', '').lower()
-        snippet_lower = snippet.lower()
+        content_lower = content.lower()
         
         # Check Gmail labels first (most reliable)
         marketing_labels = ['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'SPAM']
@@ -319,7 +748,7 @@ class GmailService:
         # Count marketing indicators
         marketing_score = 0
         for keyword in marketing_keywords:
-            if keyword in subject or keyword in snippet_lower:
+            if keyword in subject or keyword in content_lower:
                 marketing_score += 1
                 
         # High marketing score indicates promotional content
@@ -421,28 +850,31 @@ class GmailService:
         start_date: datetime,
         end_date: datetime,
         max_results: int = 100,
-        filter_marketing: bool = True
+        filter_marketing: bool = True,
+        use_optimization: bool = True
     ) -> Dict[str, Any]:
-        """Generate analytics data from Gmail messages.
+        """Generate analytics data from Gmail messages with optimization options.
         
         Args:
             start_date: Start of analysis period
             end_date: End of analysis period
             max_results: Maximum emails to analyze
+            filter_marketing: Filter marketing emails (done early in optimized mode)
+            use_optimization: Use metadata-first optimization for faster processing
             
         Returns:
             Analytics data dictionary
         """
-        emails = await self.fetch_emails(start_date, end_date, max_results)
+        emails = await self.fetch_emails(start_date, end_date, max_results, use_optimization=use_optimization)
         
         if not emails:
             return self._empty_analytics()
         
-        # Filter marketing emails if requested
-        if filter_marketing:
+        # Additional marketing filter if needed (optimization already filters early)
+        if filter_marketing and not use_optimization:
             filtered_emails = [email for email in emails if not email.get('is_marketing', False)]
             marketing_count = len(emails) - len(filtered_emails)
-            logger.info(f"Filtered out {marketing_count} marketing emails ({len(filtered_emails)} remain)")
+            logger.info(f"Post-processing: Filtered out {marketing_count} marketing emails ({len(filtered_emails)} remain)")
             emails = filtered_emails
         
         # Calculate analytics

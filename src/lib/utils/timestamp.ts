@@ -1,9 +1,9 @@
 /**
  * Standardized timestamp utilities for 360Brief
  * 
- * Database stores Unix timestamps as bigint (seconds since epoch)
+ * Database stores timestamps as TIMESTAMPTZ (ISO format)
  * Application uses JavaScript Date objects and ISO strings
- * APIs may return various timestamp formats
+ * OAuth APIs may return Unix timestamps (seconds or milliseconds)
  */
 
 /**
@@ -109,20 +109,99 @@ export function isExpired(expiresAt: number | string | null): boolean {
 }
 
 /**
- * Database-safe timestamp for insertion
+ * Database-safe timestamp for insertion (Unix seconds for bigint columns)
  * @param timestamp Any timestamp format
  * @returns Unix timestamp in seconds or null
  */
 export function toDatabaseTimestamp(timestamp: any = new Date()): number | null {
-  return toUnixTimestamp(timestamp);
+  if (!timestamp) return null;
+  
+  // Handle Google OAuth expiry_date (Unix milliseconds)
+  if (typeof timestamp === 'number') {
+    // If timestamp is in milliseconds (> year 2100), convert to seconds
+    if (timestamp > 4102444800) {
+      return Math.floor(timestamp / 1000);
+    }
+    // Already in seconds
+    return timestamp;
+  }
+  
+  // Handle ISO strings
+  if (typeof timestamp === 'string') {
+    const date = new Date(timestamp);
+    return !isNaN(date.getTime()) ? Math.floor(date.getTime() / 1000) : null;
+  }
+  
+  // Handle Date objects
+  if (timestamp instanceof Date) {
+    return !isNaN(timestamp.getTime()) ? Math.floor(timestamp.getTime() / 1000) : null;
+  }
+  
+  return null;
 }
 
 /**
  * Convert database timestamp to displayable format
- * @param dbTimestamp Unix timestamp from database
+ * @param dbTimestamp TIMESTAMPTZ from database (ISO string)
  * @returns Formatted date string
  */
-export function fromDatabaseTimestamp(dbTimestamp: number | string | null): string {
-  const date = fromUnixTimestamp(dbTimestamp);
-  return date ? date.toLocaleString() : 'Unknown';
+export function fromDatabaseTimestamp(dbTimestamp: string | null): string {
+  if (!dbTimestamp) return 'Unknown';
+  const date = new Date(dbTimestamp);
+  return !isNaN(date.getTime()) ? date.toLocaleString() : 'Unknown';
 }
+
+/**
+ * Check if a database timestamp is expired
+ * @param expiresAt Unix timestamp from database (number) or ISO string (legacy)
+ * @returns true if expired, false if still valid
+ */
+export function isDatabaseTimestampExpired(expiresAt: number | string | null): boolean {
+  if (!expiresAt) return false;
+  
+  let expiryMs: number;
+  
+  if (typeof expiresAt === 'number') {
+    // Unix timestamp in seconds, convert to milliseconds
+    expiryMs = expiresAt * 1000;
+  } else if (typeof expiresAt === 'string') {
+    // Legacy ISO string format
+    const expiryDate = new Date(expiresAt);
+    if (isNaN(expiryDate.getTime())) return false;
+    expiryMs = expiryDate.getTime();
+  } else {
+    return false;
+  }
+  
+  return expiryMs < Date.now();
+}
+
+/**
+ * Check if a database timestamp is near expiry (within buffer minutes)
+ * @param expiresAt Unix timestamp from database (number) or ISO string (legacy)
+ * @param bufferMinutes Minutes before expiry to consider "near expiry" (default 10)
+ * @returns true if expires within buffer time, false otherwise
+ */
+export function isTokenNearExpiry(expiresAt: number | string | null, bufferMinutes: number = 10): boolean {
+  if (!expiresAt) return false;
+  
+  let expiryMs: number;
+  
+  if (typeof expiresAt === 'number') {
+    // Unix timestamp in seconds, convert to milliseconds
+    expiryMs = expiresAt * 1000;
+  } else if (typeof expiresAt === 'string') {
+    // Legacy ISO string format
+    const expiryDate = new Date(expiresAt);
+    if (isNaN(expiryDate.getTime())) return false;
+    expiryMs = expiryDate.getTime();
+  } else {
+    return false;
+  }
+  
+  const bufferMs = bufferMinutes * 60 * 1000;
+  const thresholdTime = Date.now() + bufferMs;
+  
+  return expiryMs < thresholdTime;
+}
+

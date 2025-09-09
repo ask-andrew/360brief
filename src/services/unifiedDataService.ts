@@ -3,11 +3,12 @@ import { google } from 'googleapis';
 import { getValidAccessToken } from '@/lib/gmail/oauth';
 import { getOAuthClient, refreshAccessToken } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
-import { toISOString, fromUnixTimestamp, toUnixTimestamp, isExpired } from '@/lib/utils/timestamp';
+import { toDatabaseTimestamp, isDatabaseTimestampExpired } from '@/lib/utils/timestamp';
 
 export type FetchUnifiedOptions = {
   startDate?: string; // ISO
   endDate?: string;   // ISO
+  useCase?: 'analytics' | 'brief' | 'dashboard'; // Determines data depth
 };
 
 // Helper function to ensure priority is properly typed
@@ -20,7 +21,39 @@ function normalizePriority(priority: any): 'high' | 'medium' | 'low' | undefined
 
 // Using standardized timestamp utility - removed duplicate function
 
-// Convert analytics data to UnifiedData format
+// Convert full email data to UnifiedData format (for briefs)
+function convertFullEmailsToUnifiedData(emailData: any): UnifiedData {
+  const emails = emailData.emails?.map((email: any) => ({
+    id: email.id,
+    messageId: email.id,
+    subject: email.subject || '(no subject)',
+    body: email.body || email.snippet || '',
+    bodyHtml: email.bodyHtml,
+    from: email.from?.emailAddress?.address || 'unknown',
+    to: Array.isArray(email.to) ? email.to : [email.to?.emailAddress?.address || 'unknown'],
+    date: email.date,
+    threadId: email.threadId,
+    labels: email.labelIds,
+    isRead: !email.labelIds?.includes('UNREAD'),
+    metadata: {
+      insights: {
+        priority: 'medium' as const,
+        hasActionItems: false,
+        isUrgent: false
+      }
+    }
+  })) || [];
+
+  return {
+    emails,
+    incidents: [],
+    calendarEvents: [],
+    tickets: [],
+    generated_at: new Date().toISOString(),
+  };
+}
+
+// Convert analytics data to UnifiedData format (for dashboard/analytics)
 function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
   const emails = [];
   
@@ -125,23 +158,18 @@ function convertAnalyticsToUnifiedData(analyticsData: any): UnifiedData {
   return result as UnifiedData;
 }
 
-// Unified data service that prioritizes working Python API over direct Google calls
+// Unified data service with differentiated fetching based on use case
 export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOptions = {}): Promise<UnifiedData> {
-  // Use Next.js analytics route to get real data
-  const params = new URLSearchParams();
-  if (_opts.startDate) params.set('start', _opts.startDate);
-  if (_opts.endDate) params.set('end', _opts.endDate);
-  params.set('use_real_data', 'true'); // Force real data for briefs
+  const { startDate, endDate, useCase = 'analytics' } = _opts;
   
-  // Add user ID if available for Python API to identify the user
+  const params = new URLSearchParams();
+  if (startDate) params.set('start', startDate);
+  if (endDate) params.set('end', endDate);
+  params.set('use_real_data', 'true');
+  
   if (_userId) {
     params.set('user_id', _userId);
   }
-
-  // Primary: Use Next.js analytics route (same as analytics page) 
-  const workingUrl = `/api/analytics${params.toString() ? `?${params.toString()}` : ''}`;
-  const legacyUrl: string | null = null; // No legacy API configured
-  const forceDirect = false; // No force direct mode configured
 
   const empty: UnifiedData = {
     emails: [],
@@ -151,28 +179,59 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     generated_at: new Date().toISOString(),
   };
 
-  // Try to fetch from working analytics API first
-  try {
-    console.log(`🔄 Fetching unified data via analytics API: ${workingUrl}`);
+  // Choose endpoint based on use case
+  if (useCase === 'brief') {
+    // For briefs: Use full content endpoint
+    const fullEmailUrl = `/api/emails/get-full-messages${params.toString() ? `?${params.toString()}` : ''}`;
     
-    const response = await fetch(`http://localhost:3000${workingUrl}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      const analyticsData = await response.json();
+    try {
+      console.log(`🔄 Fetching FULL email data for brief generation: ${fullEmailUrl}`);
       
-      // Check if we got real analytics data
-      if (analyticsData.total_count > 0) {
-        console.log(`✅ Got real analytics data with ${analyticsData.total_count} messages`);
-        return convertAnalyticsToUnifiedData(analyticsData);
+      const response = await fetch(`http://localhost:3000${fullEmailUrl}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const emailData = await response.json();
+        
+        if (emailData.emails && emailData.emails.length > 0) {
+          console.log(`✅ Got ${emailData.emails.length} full emails for brief generation`);
+          return convertFullEmailsToUnifiedData(emailData);
+        }
       }
+      
+      console.log('❌ Full email endpoint failed or returned no data');
+    } catch (error) {
+      console.log(`❌ Full email API failed:`, error);
     }
-  } catch (error) {
-    console.log(`❌ Analytics API failed:`, error);
+  } else {
+    // For analytics/dashboard: Use lightweight metadata endpoint
+    const analyticsUrl = `/api/analytics${params.toString() ? `?${params.toString()}` : ''}`;
+    
+    try {
+      console.log(`🔄 Fetching analytics metadata for ${useCase}: ${analyticsUrl}`);
+      
+      const response = await fetch(`http://localhost:3000${analyticsUrl}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const analyticsData = await response.json();
+        
+        if (analyticsData.total_count > 0) {
+          console.log(`✅ Got analytics metadata with ${analyticsData.total_count} messages`);
+          return convertAnalyticsToUnifiedData(analyticsData);
+        }
+      }
+    } catch (error) {
+      console.log(`❌ Analytics API failed:`, error);
+    }
   }
 
   async function fetchViaDirectGmailAPI(): Promise<UnifiedData | null> {
@@ -217,7 +276,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
       // Check if token is expired and needs refresh
       let accessToken = token.access_token;
       
-      if (isExpired(token.expires_at)) {
+      if (isDatabaseTimestampExpired(token.expires_at as string)) {
         console.log(`🔄 Token expired, will attempt refresh (expires_at: ${token.expires_at})`);
         
         if (!token.refresh_token) {
@@ -232,15 +291,15 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
           if (refreshedTokens.access_token) {
             console.log(`✅ Successfully refreshed access token`);
             
-            // Update the token in the database
-            const newExpiresAt = toUnixTimestamp(refreshedTokens.expiry_date);
+            // Update the token in the database using sustainable timestamp format
+            const newExpiresAt = toDatabaseTimestamp(refreshedTokens.expiry_date);
               
             const { error: updateError } = await supabase
               .from('user_tokens')
               .update({
                 access_token: refreshedTokens.access_token,
                 expires_at: newExpiresAt,
-                updated_at: new Date(),
+                updated_at: toDatabaseTimestamp(new Date()),
                 // Update refresh token if a new one is provided
                 ...(refreshedTokens.refresh_token && { refresh_token: refreshedTokens.refresh_token })
               })
@@ -265,8 +324,8 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
           return null;
         }
       } else if (token.expires_at) {
-        const expiresAtDate = fromUnixTimestamp(token.expires_at);
-        console.log(`✅ Token is valid until ${expiresAtDate ? expiresAtDate.toLocaleString() : 'unknown'}`);
+        const expiresAtDate = new Date(token.expires_at as string);
+        console.log(`✅ Token is valid until ${!isNaN(expiresAtDate.getTime()) ? expiresAtDate.toLocaleString() : 'unknown'}`);
       }
       
       // Fetch Gmail messages with time filtering
@@ -606,7 +665,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
 
   // Email-focused execution: Prioritize reliable email data over complex fallbacks
   try {
-    console.log(`🔍 Environment check: DIRECT_GOOGLE=${process.env.DIRECT_GOOGLE}, forceDirect=${forceDirect}`);
+    console.log(`🔍 Environment check: DIRECT_GOOGLE=${process.env.DIRECT_GOOGLE}`);
     
     // ALWAYS force direct Gmail API to bypass failing Python service
     console.log(`🔄 Direct Google API access (bypassing Python service)`);

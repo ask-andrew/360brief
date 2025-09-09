@@ -57,9 +57,58 @@ export async function exchangeCodeForTokens(code: string) {
   return tokens;
 }
 
-export async function refreshAccessToken(refreshToken: string) {
+export async function refreshAccessToken(refreshToken: string, retryCount: number = 0): Promise<any> {
   const oauth2Client = getOAuthClient();
   oauth2Client.setCredentials({ refresh_token: refreshToken });
-  const { credentials } = await oauth2Client.refreshAccessToken();
-  return credentials;
+  
+  try {
+    console.log(`🔄 Attempting token refresh (attempt ${retryCount + 1})`);
+    const { credentials } = await oauth2Client.refreshAccessToken();
+    
+    // Ensure we have both access_token and expiry_date
+    if (!credentials.access_token) {
+      throw new Error('No access token received from refresh');
+    }
+    
+    // Google returns expiry_date as Unix timestamp in milliseconds
+    const expiryDate = credentials.expiry_date;
+    
+    console.log(`✅ Token refresh successful, expires at: ${expiryDate ? new Date(expiryDate).toISOString() : 'unknown'}`);
+    
+    return {
+      access_token: credentials.access_token,
+      refresh_token: credentials.refresh_token || refreshToken, // Keep original if not returned
+      expiry_date: expiryDate,
+      token_type: credentials.token_type || 'Bearer'
+    };
+    
+  } catch (error: any) {
+    console.error(`❌ Token refresh failed (attempt ${retryCount + 1}):`, error.message);
+    
+    // Implement exponential backoff for transient errors
+    if (retryCount < 3 && isRetriableError(error)) {
+      const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+      console.log(`⏰ Retrying token refresh in ${delay}ms...`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return refreshAccessToken(refreshToken, retryCount + 1);
+    }
+    
+    // Re-throw with more context
+    throw new Error(`Token refresh failed after ${retryCount + 1} attempts: ${error.message}`);
+  }
+}
+
+function isRetriableError(error: any): boolean {
+  // Retry on network errors, rate limits, and temporary server errors
+  const retriableCodes = [429, 500, 502, 503, 504];
+  const httpStatus = error.response?.status || error.status;
+  
+  return (
+    retriableCodes.includes(httpStatus) ||
+    error.code === 'ECONNRESET' ||
+    error.code === 'ETIMEDOUT' ||
+    error.message?.includes('network') ||
+    error.message?.includes('timeout')
+  );
 }

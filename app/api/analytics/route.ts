@@ -80,6 +80,27 @@ export async function GET(request: NextRequest) {
     const useRealData = searchParams.get('use_real_data') === 'true';
     const daysBack = parseInt(searchParams.get('days_back') || '7'); // Default to 7 days
     
+    // If real data NOT requested, go straight to Python service
+    if (!useRealData) {
+      console.log('🔄 Using Python analytics service for mock data');
+      const analyticsUrl = `${ANALYTICS_API_BASE}/analytics?use_real_data=false`;
+      const response = await fetch(analyticsUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Analytics service error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return NextResponse.json(data, {
+        status: 200,
+        headers: { 'Cache-Control': 'public, max-age=300' }
+      });
+    }
+    
     // If real data requested, try Gmail directly using working logic
     if (useRealData) {
       try {
@@ -119,7 +140,7 @@ export async function GET(request: NextRequest) {
                   .from('user_tokens')
                   .update({
                     access_token: credentials.access_token,
-                    expires_at: credentials.expiry_date ? Math.floor(credentials.expiry_date / 1000) : null,
+                    expires_at: credentials.expiry_date ? new Date(credentials.expiry_date).toISOString() : null,
                   })
                   .eq('user_id', user.id)
                   .eq('provider', 'google');
@@ -209,9 +230,44 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // REMOVED FALLBACK LOGIC - No more silent fallbacks to mock data
-    // If we reach here, real data was requested but failed
-    throw new Error('Real data requested but no valid Gmail connection found');
+    // If we reach here and useRealData was requested, provide helpful error
+    if (useRealData) {
+      throw new Error('Real data requested but no valid Gmail connection found');
+    }
+    
+    // Fallback to Python analytics service for mock data
+    console.log('🔄 Checking Python analytics service...');
+    const analyticsUrl = `${ANALYTICS_API_BASE}/analytics?use_real_data=false`;
+    
+    const quickTimeout = setTimeout(() => {
+      clearTimeout(quickTimeout);
+      throw new Error('Service processing - returning status');
+    }, 5000);
+    
+    try {
+      const response = await fetch(analyticsUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      clearTimeout(quickTimeout);
+      
+      if (!response.ok) {
+        throw new Error(`Analytics service error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Python analytics service returned data');
+      return NextResponse.json(data, {
+        status: 200,
+        headers: { 'Cache-Control': 'public, max-age=300' }
+      });
+    } catch (fetchError) {
+      console.error('❌ Python service failed, using mock data:', fetchError);
+      clearTimeout(quickTimeout);
+      throw fetchError;
+    }
     
   } catch (error) {
     console.error('Analytics API Error:', error);

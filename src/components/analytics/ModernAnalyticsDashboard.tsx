@@ -226,19 +226,35 @@ function useAnalyticsData(isDemo: boolean) {
         const authStatus = await authResponse.json();
         
         if (!authStatus.authenticated) {
-          setError('Gmail not connected. Please connect your Gmail account to view real data.');
+          let errorMessage = 'Gmail not connected. Please connect your Gmail account to view real data.';
+          if (authStatus.expired) {
+            errorMessage = 'Gmail connection expired. Please reconnect your Gmail account.';
+          } else if (authStatus.error) {
+            errorMessage = `Gmail authentication issue: ${authStatus.error}`;
+          }
+          setError(errorMessage);
           setData(mockAnalyticsData);
           setLoading(false);
           return;
         }
         
+        console.log('✅ Gmail authenticated, fetching real analytics data...');
+        
         // Fetch real data with Gmail integration using quick endpoint
         const response = await fetch('/api/analytics/quick?use_real_data=true');
         if (response.ok) {
           const apiData = await response.json();
+          console.log('✅ Real analytics data received:', {
+            dataSource: apiData.dataSource,
+            totalCount: apiData.total_count,
+            message: apiData.message,
+            cached: apiData.cached
+          });
           setData(apiData);
         } else {
-          throw new Error('Failed to fetch analytics data');
+          const errorData = await response.json();
+          console.error('❌ Analytics endpoint error:', errorData);
+          throw new Error(errorData.error || `Failed to fetch analytics data (${response.status})`);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -314,7 +330,7 @@ function LeadershipTip() {
 
 export function ModernAnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
-  const [isDemo, setIsDemo] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
   const { data, loading, error } = useAnalyticsData(isDemo);
 
   const formatResponseTime = (minutes: number) => {
@@ -346,8 +362,8 @@ export function ModernAnalyticsDashboard() {
                   </Label>
                   <Switch
                     id="data-toggle"
-                    checked={isDemo}
-                    onCheckedChange={setIsDemo}
+                    checked={!isDemo}
+                    onCheckedChange={(checked) => setIsDemo(!checked)}
                     className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
                   />
                   <Label htmlFor="data-toggle" className="text-white text-sm">
@@ -421,8 +437,8 @@ export function ModernAnalyticsDashboard() {
                   </Label>
                   <Switch
                     id="data-toggle"
-                    checked={isDemo}
-                    onCheckedChange={setIsDemo}
+                    checked={!isDemo}
+                    onCheckedChange={(checked) => setIsDemo(!checked)}
                     className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
                   />
                   <Label htmlFor="data-toggle" className="text-white text-sm">
@@ -506,16 +522,16 @@ export function ModernAnalyticsDashboard() {
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
                 <Label htmlFor="data-toggle" className="text-white text-sm">
-                  My Data
+                  Demo Data
                 </Label>
                 <Switch
                   id="data-toggle"
-                  checked={isDemo}
-                  onCheckedChange={setIsDemo}
+                  checked={!isDemo}
+                  onCheckedChange={(checked) => setIsDemo(!checked)}
                   className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
                 />
                 <Label htmlFor="data-toggle" className="text-white text-sm">
-                  Demo Data
+                  My Data
                 </Label>
               </div>
             </div>

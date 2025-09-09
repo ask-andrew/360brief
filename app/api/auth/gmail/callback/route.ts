@@ -3,6 +3,9 @@ import { exchangeCodeForTokens } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
 import { toUnixTimestamp, toDatabaseTimestamp } from '@/lib/utils/timestamp';
 
+// Force Node.js runtime for service role operations
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
@@ -57,22 +60,32 @@ export async function GET(request: NextRequest) {
 
     console.log('🔄 Storing Gmail tokens in Supabase...');
 
-    // Store tokens in Supabase (upsert to handle duplicates)  
-    // Convert expiry date to Unix timestamp (seconds since epoch) for database storage
-    const expiresAt = toUnixTimestamp(tokens.expiry_date);
+    // Store tokens using sustainable timestamp utilities and service role for RLS bypass
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js');
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     
-    console.log(`🔍 Storing token with expires_at: ${expiresAt} (from ${tokens.expiry_date})`);
+    const tokenData = {
+      user_id: user.id,
+      provider: 'google',
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: toDatabaseTimestamp(tokens.expiry_date),
+      updated_at: toDatabaseTimestamp(new Date()),
+    };
     
-    const { data: insertData, error: tokenError } = await supabase
+    console.log(`🔍 Storing token data:`, {
+      user_id: tokenData.user_id,
+      provider: tokenData.provider,
+      expires_at: tokenData.expires_at,
+      expires_raw: tokens.expiry_date
+    });
+    
+    const { data: insertData, error: tokenError } = await serviceSupabase
       .from('user_tokens')
-      .upsert({
-        user_id: user.id,
-        provider: 'google',
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_at: expiresAt,
-        updated_at: toDatabaseTimestamp(),
-      }, {
+      .upsert(tokenData, {
         onConflict: 'user_id,provider'
       })
       .select();
@@ -85,13 +98,13 @@ export async function GET(request: NextRequest) {
         console.log('🔄 Duplicate key error - attempting direct update...');
         
         // Try direct update instead of upsert
-        const { error: updateError } = await supabase
+        const { error: updateError } = await serviceSupabase
           .from('user_tokens')
           .update({
-            access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            expires_at: expiresAt,
-            updated_at: toDatabaseTimestamp(),
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: tokenData.expires_at,
+            updated_at: tokenData.updated_at,
           })
           .eq('user_id', user.id)
           .eq('provider', 'google');
