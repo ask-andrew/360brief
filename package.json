@@ -74,7 +74,8 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.0.14",
-    "zustand": "^5.0.7"
+    "zustand": "^5.0.7",
+    "autoprefixer": "^10.4.21"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -89,7 +90,6 @@
     "@types/react-dom": "^19.1.7",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
-    "autoprefixer": "^10.4.21",
     "dotenv": "^17.2.1",
     "eslint": "^9.32.0",
     "eslint-config-next": "15.4.5",
