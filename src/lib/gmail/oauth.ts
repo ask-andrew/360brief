@@ -25,8 +25,9 @@ export async function getValidAccessToken(userId: string): Promise<string> {
     .eq('provider', 'google')
     .limit(1);
 
-  if (regularError) {
-    console.log(`⚠️ Regular client failed: ${regularError.message}, trying service role...`);
+  if (regularError || !regularAccounts || regularAccounts.length === 0) {
+    const reason = regularError ? `error: ${regularError.message}` : 'no tokens found';
+    console.log(`⚠️ Regular client failed (${reason}), trying service role...`);
     
     // Fallback to service role client
     const { createClient: createServiceClient } = await import('@supabase/supabase-js');
@@ -116,7 +117,13 @@ export async function getValidAccessToken(userId: string): Promise<string> {
 
     if (!newAccess) throw new Error('Failed to refresh Google access token');
 
-    console.log(`✅ Token refresh successful, new expiry: ${newExpiryMs ? new Date(newExpiryMs).toISOString() : 'unknown'}`);
+    console.log(`✅ Token refresh successful, expires at timestamp: ${newExpiryMs || 'unknown'}`);
+    console.log('🔍 Raw refresh token data:', {
+      access_token: newAccess ? 'present' : 'missing',
+      expiry_date: creds.expiry_date,
+      expiry_date_type: typeof creds.expiry_date,
+      refresh_token: newRefresh ? 'present' : 'missing'
+    });
 
     // Use service role client to bypass RLS for token updates
     const { createClient: createServiceClient } = await import('@supabase/supabase-js');
@@ -131,10 +138,12 @@ export async function getValidAccessToken(userId: string): Promise<string> {
     
     console.log('🔍 Debug token refresh timestamps:', {
       newExpiryMs,
+      newExpiryMs_type: typeof newExpiryMs,
       convertedExpiresAt,
       convertedExpiresAt_type: typeof convertedExpiresAt,
       convertedUpdatedAt,
-      convertedUpdatedAt_type: typeof convertedUpdatedAt
+      convertedUpdatedAt_type: typeof convertedUpdatedAt,
+      isValidTimestamp: convertedExpiresAt !== null && typeof convertedExpiresAt === 'number'
     });
     
     const updateData: any = {
@@ -142,6 +151,16 @@ export async function getValidAccessToken(userId: string): Promise<string> {
       expires_at: convertedExpiresAt,
       updated_at: convertedUpdatedAt,
     };
+    
+    // Validate that we have proper numeric timestamps for database
+    if (convertedExpiresAt !== null && typeof convertedExpiresAt !== 'number') {
+      console.error('❌ Invalid expires_at format for database:', convertedExpiresAt, typeof convertedExpiresAt);
+      throw new Error(`Invalid expires_at timestamp format: expected number, got ${typeof convertedExpiresAt}`);
+    }
+    if (convertedUpdatedAt !== null && typeof convertedUpdatedAt !== 'number') {
+      console.error('❌ Invalid updated_at format for database:', convertedUpdatedAt, typeof convertedUpdatedAt);
+      throw new Error(`Invalid updated_at timestamp format: expected number, got ${typeof convertedUpdatedAt}`);
+    }
 
     // Only update refresh token if we got a new one
     if (newRefresh) {

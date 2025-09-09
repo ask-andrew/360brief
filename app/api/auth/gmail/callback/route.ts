@@ -82,8 +82,20 @@ export async function GET(request: NextRequest) {
       user_id: tokenData.user_id,
       provider: tokenData.provider,
       expires_at: tokenData.expires_at,
-      expires_raw: tokens.expiry_date
+      expires_at_type: typeof tokenData.expires_at,
+      expires_raw: tokens.expiry_date,
+      expires_raw_type: typeof tokens.expiry_date
     });
+    
+    // Validate that we have proper numeric timestamps for database
+    if (tokenData.expires_at !== null && typeof tokenData.expires_at !== 'number') {
+      console.error('❌ Invalid expires_at format for database:', tokenData.expires_at, typeof tokenData.expires_at);
+      throw new Error(`Invalid expires_at timestamp format: expected number, got ${typeof tokenData.expires_at}`);
+    }
+    if (tokenData.updated_at !== null && typeof tokenData.updated_at !== 'number') {
+      console.error('❌ Invalid updated_at format for database:', tokenData.updated_at, typeof tokenData.updated_at);
+      throw new Error(`Invalid updated_at timestamp format: expected number, got ${typeof tokenData.updated_at}`);
+    }
     
     const { data: insertData, error: tokenError } = await serviceSupabase
       .from('user_tokens')

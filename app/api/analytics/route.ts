@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { google } from 'googleapis';
+import { toDatabaseTimestamp } from '@/lib/utils/timestamp';
 
 const ANALYTICS_API_BASE = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
 
@@ -161,7 +162,7 @@ export async function GET(request: NextRequest) {
                   .from('user_tokens')
                   .update({
                     access_token: credentials.access_token,
-                    expires_at: credentials.expiry_date ? new Date(credentials.expiry_date).toISOString() : null,
+                    expires_at: credentials.expiry_date ? toDatabaseTimestamp(credentials.expiry_date) : null,
                   })
                   .eq('user_id', user.id)
                   .eq('provider', 'google');
