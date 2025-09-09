@@ -74,3 +74,6 @@ MANIFEST
 # Gmail API credentials (never commit these!)
 /services/data_processing/gmail_credentials.json
 /services/data_processing/gmail_token.json
+
+# Local Netlify folder
+.netlify
