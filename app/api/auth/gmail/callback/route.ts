@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
 import { toUnixTimestamp, toDatabaseTimestamp } from '@/lib/utils/timestamp';
+import { validateTokenData, logDatabaseOperation } from '@/lib/utils/database';
 
 // Force Node.js runtime for service role operations
 export const runtime = 'nodejs';

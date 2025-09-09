@@ -132,31 +132,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       setError(null)
       
-      console.log('📧 Connecting Gmail...')
+      console.log('📧 Connecting Gmail via direct OAuth...')
       
-      // Use localhost URL directly - environment variables should handle this now
-      const redirectUrl = `${window.location.origin}/auth/callback?connect=gmail`
-      
-      console.log('🔄 Using redirect URL:', redirectUrl)
-      
-      const { data, error: connectError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.metadata https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      })
-      
-      if (connectError) {
-        console.error('❌ Gmail connect error:', connectError)
-        throw connectError
-      }
-      
-      console.log('✅ Gmail connection initiated:', data)
+      // Use direct Gmail OAuth flow instead of Supabase OAuth
+      // This redirects to /api/auth/gmail/authorize which handles the full OAuth flow
+      window.location.href = '/api/auth/gmail/authorize'
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to connect Gmail'
@@ -166,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     try {

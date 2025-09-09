@@ -126,10 +126,21 @@ export async function getValidAccessToken(userId: string): Promise<string> {
     );
 
     // Persist updated tokens using sustainable timestamp format
+    const convertedExpiresAt = newExpiryMs ? toDatabaseTimestamp(newExpiryMs) : null;
+    const convertedUpdatedAt = toDatabaseTimestamp(new Date());
+    
+    console.log('🔍 Debug token refresh timestamps:', {
+      newExpiryMs,
+      convertedExpiresAt,
+      convertedExpiresAt_type: typeof convertedExpiresAt,
+      convertedUpdatedAt,
+      convertedUpdatedAt_type: typeof convertedUpdatedAt
+    });
+    
     const updateData: any = {
       access_token: newAccess,
-      expires_at: newExpiryMs ? toDatabaseTimestamp(newExpiryMs) : null,
-      updated_at: toDatabaseTimestamp(new Date()),
+      expires_at: convertedExpiresAt,
+      updated_at: convertedUpdatedAt,
     };
 
     // Only update refresh token if we got a new one

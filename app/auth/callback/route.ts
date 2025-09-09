@@ -50,13 +50,24 @@ export async function GET(request: Request) {
     if (data.session.provider_token && data.session.user) {
       console.log('🔄 Storing Gmail OAuth tokens...')
       
-      // Use sustainable timestamp management
+      // Use sustainable timestamp management - debug session expires_at type
+      console.log('🔍 Debug session expires_at:', {
+        value: data.session.expires_at,
+        type: typeof data.session.expires_at
+      });
+      
+      const convertedExpiresAt = toDatabaseTimestamp(data.session.expires_at);
+      console.log('🔍 Debug converted expires_at:', {
+        value: convertedExpiresAt,
+        type: typeof convertedExpiresAt
+      });
+      
       const tokenData = {
         user_id: data.session.user.id,
         provider: 'google',
         access_token: data.session.provider_token,
         refresh_token: data.session.provider_refresh_token,
-        expires_at: toDatabaseTimestamp(data.session.expires_at),
+        expires_at: convertedExpiresAt,
         updated_at: toDatabaseTimestamp(new Date()),
       };
       
@@ -65,7 +76,8 @@ export async function GET(request: Request) {
         provider: tokenData.provider,
         hasAccessToken: !!tokenData.access_token,
         hasRefreshToken: !!tokenData.refresh_token,
-        expires_at: tokenData.expires_at
+        expires_at: tokenData.expires_at,
+        expires_at_type: typeof tokenData.expires_at
       });
       
       try {

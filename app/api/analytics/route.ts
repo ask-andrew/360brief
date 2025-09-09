@@ -4,6 +4,38 @@ import { google } from 'googleapis';
 
 const ANALYTICS_API_BASE = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
 
+// Function to generate mock analytics data when no real data is available
+function generateMockAnalyticsData(): any {
+  const now = new Date();
+  const daysBack = 7;
+  
+  return {
+    message: "Mock analytics data - Connect Gmail for real insights",
+    total_count: 45,
+    period_days: daysBack,
+    daily_counts: [8, 12, 6, 9, 10, 0, 0], // Last 7 days
+    top_senders: [
+      { name: "Team Updates", count: 12 },
+      { name: "Project Manager", count: 8 },
+      { name: "Client Communications", count: 6 },
+      { name: "System Notifications", count: 4 }
+    ],
+    categories: {
+      work: 28,
+      personal: 10,
+      notifications: 7
+    },
+    dataSource: 'mock_data',
+    processing_metadata: {
+      source: 'nextjs_builtin_mock',
+      processed_at: now.toISOString(),
+      message_count: 45,
+      days_analyzed: daysBack,
+      is_real_data: false
+    }
+  };
+}
+
 // Function to convert Gmail data to analytics format
 function convertGmailToAnalytics(messages: any[], daysBack: number = 7): any {
   const now = new Date();
@@ -80,22 +112,11 @@ export async function GET(request: NextRequest) {
     const useRealData = searchParams.get('use_real_data') === 'true';
     const daysBack = parseInt(searchParams.get('days_back') || '7'); // Default to 7 days
     
-    // If real data NOT requested, go straight to Python service
+    // If real data NOT requested, use built-in mock data
     if (!useRealData) {
-      console.log('🔄 Using Python analytics service for mock data');
-      const analyticsUrl = `${ANALYTICS_API_BASE}/analytics?use_real_data=false`;
-      const response = await fetch(analyticsUrl, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(5000)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Analytics service error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return NextResponse.json(data, {
+      console.log('📊 Using built-in NextJS mock analytics data');
+      const mockData = generateMockAnalyticsData();
+      return NextResponse.json(mockData, {
         status: 200,
         headers: { 'Cache-Control': 'public, max-age=300' }
       });
@@ -235,39 +256,13 @@ export async function GET(request: NextRequest) {
       throw new Error('Real data requested but no valid Gmail connection found');
     }
     
-    // Fallback to Python analytics service for mock data
-    console.log('🔄 Checking Python analytics service...');
-    const analyticsUrl = `${ANALYTICS_API_BASE}/analytics?use_real_data=false`;
-    
-    const quickTimeout = setTimeout(() => {
-      clearTimeout(quickTimeout);
-      throw new Error('Service processing - returning status');
-    }, 5000);
-    
-    try {
-      const response = await fetch(analyticsUrl, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(5000)
-      });
-      
-      clearTimeout(quickTimeout);
-      
-      if (!response.ok) {
-        throw new Error(`Analytics service error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ Python analytics service returned data');
-      return NextResponse.json(data, {
-        status: 200,
-        headers: { 'Cache-Control': 'public, max-age=300' }
-      });
-    } catch (fetchError) {
-      console.error('❌ Python service failed, using mock data:', fetchError);
-      clearTimeout(quickTimeout);
-      throw fetchError;
-    }
+    // Return built-in mock data instead of relying on Python service
+    console.log('📊 Using built-in NextJS mock analytics data');
+    const mockData = generateMockAnalyticsData();
+    return NextResponse.json(mockData, {
+      status: 200,
+      headers: { 'Cache-Control': 'public, max-age=60' }
+    });
     
   } catch (error) {
     console.error('Analytics API Error:', error);

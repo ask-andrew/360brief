@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateBrief, generateStyledBrief } from '@/server/briefs/generateBrief';
 import { fetchUnifiedData } from '@/services/unifiedDataService';
-import { createClient } from '@/lib/supabase/server';
+import { authenticateUser } from '@/lib/auth/server';
 import { crisisScenario, normalOperationsScenario, highActivityScenario } from '@/mocks/data/testScenarios';
 
 export async function GET(req: Request) {
@@ -46,14 +46,13 @@ export async function GET(req: Request) {
     
     if (useRealData) {
       // Resolve authenticated user for real data
-      const supabase = await createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        return NextResponse.json({ error: 'Authentication required for real data' }, { status: 401 });
+      const auth = await authenticateUser();
+      if (!auth.success) {
+        return auth.response;
       }
 
       // Fetch real unified data with full content for briefs
-      unified = await fetchUnifiedData(user.id, { 
+      unified = await fetchUnifiedData(auth.user.id, { 
         startDate: startDate ?? undefined, 
         endDate: endDate ?? undefined,
         useCase: 'brief'
@@ -101,10 +100,27 @@ export async function GET(req: Request) {
     });
     
   } catch (e: any) {
-    console.error('Enhanced brief generation error:', e);
+    const errorDetails = {
+      timestamp: new Date().toISOString(),
+      endpoint: '/api/briefs/enhanced',
+      method: 'GET',
+      error: e?.message ?? 'Unknown error',
+      stack: e?.stack,
+      userAgent: req.headers.get('user-agent'),
+    };
+    
+    console.error('📋 Enhanced brief generation error:', JSON.stringify(errorDetails, null, 2));
+    
+    // Return user-friendly error with debugging info
     return NextResponse.json({ 
-      error: e?.message ?? 'Failed to generate enhanced brief',
-      dataSource: 'error'
+      error: 'Brief generation failed',
+      message: e?.message?.includes('token') ? 'Gmail connection expired. Please reconnect your account.' :
+               e?.message?.includes('scope') ? 'Gmail permissions insufficient. Please reconnect with full access.' :
+               e?.message?.includes('quota') ? 'Gmail API quota exceeded. Please try again later.' :
+               'Unable to generate brief. Please try again or contact support.',
+      dataSource: 'error',
+      timestamp: errorDetails.timestamp,
+      ...(process.env.NODE_ENV === 'development' && { debug: errorDetails })
     }, { status: 500 });
   }
 }
@@ -143,14 +159,13 @@ export async function POST(req: Request) {
       // Use provided custom data (for testing/demos)
       unified = customData;
     } else if (useRealData) {
-      const supabase = await createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      const auth = await authenticateUser();
+      if (!auth.success) {
+        return auth.response;
       }
 
       try {
-        unified = await fetchUnifiedData(user.id, {
+        unified = await fetchUnifiedData(auth.user.id, {
           startDate: timeRange?.start,
           endDate: timeRange?.end,
           useCase: 'brief'
@@ -196,9 +211,26 @@ export async function POST(req: Request) {
     });
     
   } catch (e: any) {
+    const errorDetails = {
+      timestamp: new Date().toISOString(),
+      endpoint: '/api/briefs/enhanced',
+      method: 'POST',
+      error: e?.message ?? 'Unknown error',
+      stack: e?.stack,
+      userAgent: req.headers.get('user-agent'),
+    };
+    
+    console.error('📋 Enhanced brief generation error (POST):', JSON.stringify(errorDetails, null, 2));
+    
     return NextResponse.json({ 
-      error: e?.message ?? 'Failed to generate brief',
-      dataSource: 'error'
+      error: 'Brief generation failed',
+      message: e?.message?.includes('token') ? 'Gmail connection expired. Please reconnect your account.' :
+               e?.message?.includes('scope') ? 'Gmail permissions insufficient. Please reconnect with full access.' :
+               e?.message?.includes('quota') ? 'Gmail API quota exceeded. Please try again later.' :
+               'Unable to generate brief. Please try again or contact support.',
+      dataSource: 'error',
+      timestamp: errorDetails.timestamp,
+      ...(process.env.NODE_ENV === 'development' && { debug: errorDetails })
     }, { status: 500 });
   }
 }
