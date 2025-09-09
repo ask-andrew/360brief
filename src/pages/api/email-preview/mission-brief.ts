@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { digestGenerator } from '../../../services/email/digestGenerator';
+import { digestGenerator } from '@/services/email/digestGenerator';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 

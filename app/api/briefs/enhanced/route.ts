@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateBrief, generateStyledBrief } from '@/server/briefs/generateBrief';
 import { fetchUnifiedData } from '@/services/unifiedDataService';
-import { authenticateUser } from '../../../../src/lib/auth/server';
+import { authenticateUser } from '@/lib/auth/server';
 import { crisisScenario, normalOperationsScenario, highActivityScenario } from '@/mocks/data/testScenarios';
 
 export async function GET(req: Request) {

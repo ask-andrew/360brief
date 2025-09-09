@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Col, Row, Spin, Typography, Tabs, Alert, Image, Tooltip, Switch, Space, Drawer, Tag, List, Select, Button } from 'antd';
 import { LoadingOutlined, ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined, MailOutlined, MailFilled } from '@ant-design/icons';
 import NextImage from 'next/image';
-import { useBriefData } from '../../hooks/useBriefData';
+import { useBriefData } from '@/hooks/useBriefData';
 
 // Import components
 import CommunicationPulse from './metrics/CommunicationPulse';
@@ -13,7 +13,7 @@ import CommunicationVolume from './charts/CommunicationVolume';
 import { EnhancedActionCenter } from './action/EnhancedActionCenter';
 import { mockEnhancedData } from './action/mockEnhancedData';
 import ProjectNetworkView from './ProjectNetworkView';
-import DashboardDownload from '../common/DashboardDownload';
+import DashboardDownload from '@/components/common/DashboardDownload';
 
 const { Title } = Typography;
 

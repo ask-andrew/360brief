@@ -1,6 +1,6 @@
-import { createClient } from '../../../src/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { toDatabaseTimestamp } from '../../../src/lib/utils/timestamp'
+import { toDatabaseTimestamp } from '@/lib/utils/timestamp'
 
 // Force Node.js runtime for service role operations
 export const runtime = 'nodejs';

@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient as createClientSSR } from '@supabase/supabase-js';
-import { Database } from '../types/database.types';
+import { Database } from '@/lib/types/database.types';
 
 // Simple cookie getter that doesn't try to parse JSON
 const getCookie = (name: string): string | null => {

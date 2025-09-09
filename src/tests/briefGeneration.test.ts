@@ -1,6 +1,6 @@
 // Test file to demonstrate enhanced brief generation
-import { generateBrief, generateStyledBrief } from '../server/briefs/generateBrief';
-import { crisisScenario, normalOperationsScenario, highActivityScenario } from '../mocks/data/testScenarios';
+import { generateBrief, generateStyledBrief } from '@/server/briefs/generateBrief';
+import { crisisScenario, normalOperationsScenario, highActivityScenario } from '@/mocks/data/testScenarios';
 
 // Crisis scenario tests
 console.log('=== CRISIS SCENARIO ===');
