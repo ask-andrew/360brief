@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
 import { toUnixTimestamp, toDatabaseTimestamp } from '@/lib/utils/timestamp';
-import { validateTokenData, logDatabaseOperation } from '@/lib/utils/database';
+// Note: Removed unused imports validateTokenData and logDatabaseOperation 
+// These were imported from @/lib/utils/database but never used in this route
 
 // Force Node.js runtime for service role operations
 export const runtime = 'nodejs';
