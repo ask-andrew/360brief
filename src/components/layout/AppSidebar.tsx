@@ -107,9 +107,9 @@ export function AppSidebar() {
         },
         { 
           name: 'Connections', 
-          href: '/preferences/connections', 
+          href: '/connections', 
           icon: LinkIcon,
-          current: pathname?.startsWith('/preferences/connections')
+          current: pathname?.startsWith('/connections')
         }
       ]
     },

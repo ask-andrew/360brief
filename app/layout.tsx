@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Poiret_One } from 'next/font/google';
 import './globals.css';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { ToastProvider } from '@/components/ui/use-toast';
-import { Toaster } from '@/components/ui/toaster';
-import { QueryProvider } from '@/providers/QueryProvider';
+import { Providers } from '@/app/providers';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -36,12 +33,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${poiretOne.variable}`}>
       <body className={inter.className}>
-        <QueryProvider>
-          <ToastProvider>
-            <AuthProvider>{children}</AuthProvider>
-            <Toaster />
-          </ToastProvider>
-        </QueryProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

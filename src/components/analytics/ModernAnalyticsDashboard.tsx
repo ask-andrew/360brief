@@ -30,8 +30,11 @@ import {
   Timer,
   ArrowRight,
   Info,
-  ExternalLink
+  ExternalLink,
+  Mail as MailIcon,
+  Trash2
 } from 'lucide-react';
+import { EmailSenderAnalytics } from './EmailSenderAnalytics';
 
 // Mock data - same structure as your existing analytics but simplified
 const mockAnalyticsData = {
@@ -195,6 +198,10 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
           <div className="p-3 bg-primary/10 rounded-lg">
             <Icon className="w-6 h-6 text-primary" />
           </div>
+          {/* Email Sender Analytics */}
+          <div className="mt-6">
+            <EmailSenderAnalytics />
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -240,17 +247,48 @@ function useAnalyticsData(isDemo: boolean) {
         
         console.log('✅ Gmail authenticated, fetching real analytics data...');
         
-        // Fetch real data with Gmail integration using quick endpoint
-        const response = await fetch('/api/analytics/quick?use_real_data=true');
+        // Fetch real data with Gmail integration - use simple test endpoint first
+        const response = await fetch('/api/analytics-simple');
         if (response.ok) {
           const apiData = await response.json();
           console.log('✅ Real analytics data received:', {
             dataSource: apiData.dataSource,
             totalCount: apiData.total_count,
             message: apiData.message,
-            cached: apiData.cached
+            cached: apiData.cached,
+            processing: apiData.processing,
+            fullData: apiData
           });
+          
+          // Handle processing status - retry after delay
+          if (apiData.processing && apiData.status === 'processing') {
+            console.log('⏳ Analytics still processing, will retry in 5 seconds...');
+            setData({
+              ...apiData,
+              message: apiData.message || 'Processing your Gmail data...'
+            });
+            
+            // Retry after 5 seconds
+            setTimeout(() => {
+              checkAuthAndFetchData();
+            }, 5000);
+            return;
+          }
+          
           setData(apiData);
+        } else if (response.status === 202) {
+          // Handle HTTP 202 Processing
+          const processingData = await response.json();
+          console.log('⏳ Analytics processing (HTTP 202), retrying in 5 seconds...');
+          setData({
+            ...processingData,
+            message: processingData.message || 'Processing your Gmail data...'
+          });
+          
+          setTimeout(() => {
+            checkAuthAndFetchData();
+          }, 5000);
+          return;
         } else {
           const errorData = await response.json();
           console.error('❌ Analytics endpoint error:', errorData);
@@ -719,6 +757,9 @@ export function ModernAnalyticsDashboard() {
         </TabsContent>
 
         <TabsContent value="communication" className="space-y-6">
+          {/* Email Sender Analytics */}
+          <EmailSenderAnalytics />
+          
           {/* Priority Messages Section */}
           <Card>
             <CardHeader>

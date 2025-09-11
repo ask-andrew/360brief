@@ -3,6 +3,39 @@ import { generateBrief, generateStyledBrief } from '@/server/briefs/generateBrie
 import { fetchUnifiedData } from '@/services/unifiedDataService';
 import { createClient } from '@/lib/supabase/server';
 import { crisisScenario, normalOperationsScenario, highActivityScenario } from '@/mocks/data/testScenarios';
+import { google } from 'googleapis';
+
+// Helper function to extract email body from Gmail API payload
+function extractEmailBody(payload: any): string {
+  if (!payload) return '';
+  
+  // Handle multipart messages
+  if (payload.parts) {
+    for (const part of payload.parts) {
+      if (part.mimeType === 'text/plain' && part.body?.data) {
+        return Buffer.from(part.body.data, 'base64url').toString('utf-8');
+      } else if (part.mimeType === 'text/html' && part.body?.data) {
+        const html = Buffer.from(part.body.data, 'base64url').toString('utf-8');
+        // Basic HTML to text conversion
+        return html.replace(/<[^>]*>/g, '').trim();
+      } else if (part.parts) {
+        // Recursive search in nested parts
+        const nestedBody = extractEmailBody(part);
+        if (nestedBody) return nestedBody;
+      }
+    }
+  }
+  
+  // Handle single-part messages
+  if (payload.mimeType === 'text/plain' && payload.body?.data) {
+    return Buffer.from(payload.body.data, 'base64url').toString('utf-8');
+  } else if (payload.mimeType === 'text/html' && payload.body?.data) {
+    const html = Buffer.from(payload.body.data, 'base64url').toString('utf-8');
+    return html.replace(/<[^>]*>/g, '').trim();
+  }
+  
+  return '';
+}
 
 export async function GET(req: Request) {
   try {
@@ -43,42 +76,255 @@ export async function GET(req: Request) {
     const briefStyle = validStyles.includes(style) ? style as any : 'mission_brief';
 
     let unified;
+    let user = null;
     
     if (useRealData) {
       // Resolve authenticated user for real data
       const supabase = await createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+      if (userError || !authUser) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+      user = authUser;
 
-      // Fetch real unified data with full content for briefs
-      unified = await fetchUnifiedData(user.id, { 
-        startDate: startDate ?? undefined, 
-        endDate: endDate ?? undefined,
-        useCase: 'brief'
-      });
+      // Fetch real Gmail data for brief generation
+      console.log('🔄 Fetching real Gmail data for brief generation');
+      // Progressive fetch diagnostics (hoisted for fallback debug)
+      type Attempt = { query: string; maxResults: number; listed: number; processed: number; error?: string };
+      let attempts: Attempt[] = [];
+      let scopeVerified: boolean | undefined = undefined;
+      let scopeList: string | undefined = undefined;
+      let tokenRefreshed = false;
       
-      console.log('🔍 Real unified data counts:', {
+      try {
+        // Get Gmail tokens with same logic as debug endpoint
+        const { data: tokens, error: tokenError } = await supabase
+          .from('user_tokens')
+          .select('access_token, refresh_token, expires_at')
+          .eq('user_id', user.id)
+          .eq('provider', 'google')
+          .limit(1);
+        
+        if (tokenError || !tokens?.[0]) {
+          throw new Error('No Gmail tokens found - please reconnect Gmail');
+        }
+
+        const token = tokens[0];
+        
+        // Check if token needs refresh (same logic as debug endpoint)
+        const now = Math.floor(Date.now() / 1000);
+        const expiresAtTimestamp = typeof token.expires_at === 'string' 
+          ? parseInt(token.expires_at, 10)
+          : typeof token.expires_at === 'number' 
+            ? token.expires_at 
+            : null;
+        
+        let accessToken = token.access_token;
+        
+        if (expiresAtTimestamp && expiresAtTimestamp < now) {
+          console.log('🔄 Token expired, refreshing...');
+          
+          if (!token.refresh_token) {
+            throw new Error('Token expired and no refresh token available');
+          }
+          
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET
+          );
+          oauth2Client.setCredentials({
+            access_token: token.access_token,
+            refresh_token: token.refresh_token,
+          });
+          
+          const { credentials } = await oauth2Client.refreshAccessToken();
+          
+          if (credentials.access_token) {
+            await supabase
+              .from('user_tokens')
+              .update({
+                access_token: credentials.access_token,
+                expires_at: credentials.expiry_date ? Math.floor(credentials.expiry_date / 1000) : null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user.id)
+              .eq('provider', 'google');
+            
+            accessToken = credentials.access_token;
+            tokenRefreshed = true;
+          }
+        }
+        
+        // Ensure token has full gmail.readonly scope (briefs require content access) AFTER accessToken is finalized
+        try {
+          const infoRes = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${accessToken}`);
+          const info = await infoRes.json();
+          const scopes: string = info.scope || '';
+          scopeList = scopes;
+          const hasFullRead = scopes.includes('https://www.googleapis.com/auth/gmail.readonly');
+          scopeVerified = hasFullRead;
+          if (!hasFullRead) {
+            console.warn('⚠️ Gmail token missing gmail.readonly scope. Briefs need full content access.');
+            return NextResponse.json({
+              error: 'Insufficient Gmail permissions',
+              message: 'Please reconnect Gmail with full read permission to generate briefs.',
+              reconnect: '/api/auth/gmail/authorize?redirect=/briefs/current'
+            }, { status: 403 });
+          }
+        } catch (e) {
+          console.warn('⚠️ Unable to verify Gmail token scopes; proceeding. Error:', e);
+        }
+        
+        // Fetch Gmail messages (progressive filtering)
+        const oauth2Client = new google.auth.OAuth2();
+        oauth2Client.setCredentials({ access_token: accessToken });
+        const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+        attempts = [];
+        const passes = [
+          { name: 'strict_7d', maxResults: 50, skipPromotions: true, skipNoreply: true, windowDays: 7 },
+          { name: 'relaxed_14d', maxResults: 75, skipPromotions: true, skipNoreply: false, windowDays: 14 },
+          { name: 'open_30d', maxResults: 100, skipPromotions: false, skipNoreply: false, windowDays: 30 },
+          { name: 'no_filter', maxResults: 100, skipPromotions: false, skipNoreply: false, windowDays: undefined as number | undefined },
+        ];
+
+        const realEmails: Array<{ id: string; messageId: string; subject: string; body: string; from: string; to: string[]; date: string; labels: string[]; isRead: boolean; metadata: { insights: { priority: 'high' | 'medium' | 'low'; hasActionItems: boolean; isUrgent: boolean } } }> = [];
+
+        for (const pass of passes) {
+          if (realEmails.length >= 10) break;
+          let messages: Array<{ id?: string | null }> = [];
+          try {
+            const listResp = await gmail.users.messages.list({ userId: 'me', maxResults: pass.maxResults });
+            messages = (listResp.data.messages || []) as Array<{ id?: string | null }>;
+          } catch (err: any) {
+            const msg = err?.message ? String(err.message) : 'list_failed';
+            attempts.push({ query: pass.name, maxResults: pass.maxResults, listed: 0, processed: 0, error: msg });
+            continue;
+          }
+          let processed = 0;
+
+          for (let i = 0; i < Math.min(10 - realEmails.length, messages.length); i++) {
+            const msg = messages[i];
+            try {
+              const meta = await gmail.users.messages.get({
+                userId: 'me',
+                id: msg.id!,
+                format: 'metadata',
+                metadataHeaders: ['subject', 'from', 'to', 'date'],
+              });
+              const headers = (meta.data.payload?.headers || []) as Array<{ name?: string | null; value?: string | null }>;
+              const getHeader = (name: string) => {
+                const target = name.toLowerCase();
+                const found = headers.find((h) => typeof h?.name === 'string' && (h!.name as string).toLowerCase() === target);
+                return (found?.value as string) || '';
+              };
+
+              const subject = getHeader('subject');
+              const from = getHeader('from');
+              const toValue = getHeader('to') || user.email || '';
+              const dateStr = getHeader('date');
+              const date = dateStr ? new Date(dateStr) : new Date();
+              const snippet = meta.data.snippet || '';
+              const isPromoLabel = meta.data.labelIds?.includes('CATEGORY_PROMOTIONS') || meta.data.labelIds?.includes('CATEGORY_SOCIAL');
+              const isNoreply = /noreply|no-reply/i.test(from);
+
+              // Time window filter
+              if (pass.windowDays) {
+                const cutoff = Date.now() - pass.windowDays * 24 * 60 * 60 * 1000;
+                if (date.getTime() < cutoff) {
+                  continue;
+                }
+              }
+
+              // Strict filters
+              if (pass.skipPromotions && (isPromoLabel)) continue;
+              if (pass.skipNoreply && isNoreply) continue;
+
+              if (subject) {
+                const hasUrgentKeywords = /urgent|asap|important|action.*required|deadline|due/i.test(subject + ' ' + snippet);
+                const isUnread = meta.data.labelIds?.includes('UNREAD') ?? false;
+                const hasActionKeywords = /meeting|schedule|review|approve|feedback|decision|follow.*up/i.test(subject + ' ' + snippet);
+                const priority: 'high' | 'medium' | 'low' = hasUrgentKeywords ? 'high' : hasActionKeywords ? 'medium' : 'low';
+                realEmails.push({
+                  id: String(msg.id!),
+                  messageId: String(msg.id!),
+                  subject,
+                  body: snippet || `Email from ${from}`,
+                  from,
+                  to: toValue ? [toValue] : [],
+                  date: date.toISOString(),
+                  labels: meta.data.labelIds || [],
+                  isRead: !isUnread,
+                  metadata: { insights: { priority, hasActionItems: hasActionKeywords || hasUrgentKeywords, isUrgent: hasUrgentKeywords } },
+                });
+              }
+
+              processed++;
+              if (messages.length > 1) await new Promise((r) => setTimeout(r, 80));
+            } catch (error) {
+              console.error(`Error processing message ${msg.id}:`, error);
+            }
+          }
+
+          attempts.push({ query: pass.name, maxResults: pass.maxResults, listed: messages.length, processed });
+          if (realEmails.length >= 5) break; // good enough
+        }
+
+        console.log(`✅ Gmail progressive fetch produced ${realEmails.length} messages`, attempts);
+
+        unified = {
+          emails: realEmails,
+          incidents: [],
+          calendarEvents: [],
+          tickets: [],
+          generated_at: new Date().toISOString(),
+        };
+        
+      } catch (gmailError) {
+        console.error('❌ Failed to fetch real Gmail data:', gmailError);
+        // Fall back to empty structure if Gmail fails
+        unified = {
+          emails: [],
+          incidents: [],
+          calendarEvents: [],
+          tickets: [],
+          generated_at: new Date().toISOString(),
+        };
+      }
+      
+      console.log('✅ Using real data structure for brief generation:', {
         emails: unified.emails.length,
         incidents: unified.incidents.length,
         calendarEvents: unified.calendarEvents.length,
         tickets: unified.tickets.length,
-        totalEmails: unified.emails.length,
-        sampleEmail: unified.emails[0]?.subject,
-        source: 'fetchUnifiedData',
-        willFallback: !unified.emails.length && !unified.incidents.length && 
-                     !unified.calendarEvents.length && !unified.tickets.length
+        userEmail: user.email
       });
-      
-      // If no real data available, fall back to mock data with warning
-      if (!unified.emails.length && !unified.incidents.length && 
-          !unified.calendarEvents.length && !unified.tickets.length) {
-        unified = getScenarioData(scenario);
+
+      // If no real emails available, fall back to mock scenario with a warning (mirrors POST behavior)
+      if (!unified.emails.length) {
+        const fallbackUnified = getScenarioData('normal');
+        const fallbackBrief = generateStyledBrief(fallbackUnified, briefStyle);
         return NextResponse.json({
-          ...generateStyledBrief(unified, briefStyle),
+          ...fallbackBrief,
+          userId: user.email,
           dataSource: 'mock',
-          warning: 'Gmail connected but no recent messages found. Try again later or check your Gmail filters.'
+          warning: 'No recent actionable emails found. Using demo data instead. Check your Gmail for recent messages.',
+          scenario: 'normal',
+          timeRange: timeRange || 'week',
+          availableStyles: validStyles,
+          availableScenarios: ['normal', 'crisis', 'high_activity'],
+          availableTimeRanges: ['3days', 'week', 'month'],
+          rawAnalyticsData: fallbackUnified,
+          debug: {
+            reason: 'no_real_emails',
+            realEmailsCount: unified.emails.length,
+            filtersUsed: '-category:{promotions} -category:{social} -in:spam -in:trash -from:(noreply OR no-reply) newer_than:7d',
+            timeRange: timeRange || 'week',
+            attempts,
+            scopeVerified,
+            tokenRefreshed,
+            ...(scopeList ? { scopeList } : {}),
+          }
         });
       }
     } else {
@@ -91,6 +337,7 @@ export async function GET(req: Request) {
     
     return NextResponse.json({
       ...briefData,
+      userId: useRealData ? user?.email || briefData.userId : briefData.userId,
       dataSource: useRealData ? 'real' : 'mock',
       scenario: useRealData ? undefined : scenario,
       timeRange: timeRange || 'week',
@@ -167,31 +414,174 @@ export async function POST(req: Request) {
       }
 
       try {
-        unified = await fetchUnifiedData(user.id, {
-          startDate: timeRange?.start,
-          endDate: timeRange?.end,
-          useCase: 'brief'
+        // Fetch real Gmail data for brief generation (same as GET endpoint logic)
+        console.log('🔄 POST: Fetching real Gmail data for brief generation');
+        
+        // Get Gmail tokens
+        const { data: tokens, error: tokenError } = await supabase
+          .from('user_tokens')
+          .select('access_token, refresh_token, expires_at')
+          .eq('user_id', user.id)
+          .eq('provider', 'google')
+          .limit(1);
+        
+        if (tokenError || !tokens?.[0]) {
+          throw new Error('No Gmail tokens found - please reconnect Gmail');
+        }
+        
+        const token = tokens[0];
+        
+        // Check if token needs refresh
+        const now = Math.floor(Date.now() / 1000);
+        const expiresAtTimestamp = typeof token.expires_at === 'string' 
+          ? parseInt(token.expires_at, 10)
+          : typeof token.expires_at === 'number' 
+            ? token.expires_at 
+            : null;
+        
+        let accessToken = token.access_token;
+        
+        if (expiresAtTimestamp && expiresAtTimestamp < now) {
+          console.log('🔄 POST: Token expired, refreshing...');
+          
+          if (!token.refresh_token) {
+            throw new Error('Token expired and no refresh token available');
+          }
+          
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET
+          );
+          oauth2Client.setCredentials({
+            access_token: token.access_token,
+            refresh_token: token.refresh_token,
+          });
+          
+          const { credentials } = await oauth2Client.refreshAccessToken();
+          
+          if (credentials.access_token) {
+            await supabase
+              .from('user_tokens')
+              .update({
+                access_token: credentials.access_token,
+                expires_at: credentials.expiry_date ? Math.floor(credentials.expiry_date / 1000) : null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user.id)
+              .eq('provider', 'google');
+            
+            accessToken = credentials.access_token;
+          }
+        }
+        
+        // Fetch Gmail messages
+        const oauth2Client = new google.auth.OAuth2();
+        oauth2Client.setCredentials({ access_token: accessToken });
+        const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+        
+        const listResponse = await gmail.users.messages.list({
+          userId: 'me',
+          maxResults: 20,
+          q: '-category:{promotions} -category:{social} -in:spam -in:trash -from:(noreply OR no-reply) newer_than:7d'
         });
         
+        const realEmails = [];
+        
+        if (listResponse.data.messages) {
+          for (let i = 0; i < Math.min(10, listResponse.data.messages.length); i++) {
+            const msg = listResponse.data.messages[i];
+            
+            try {
+              const fullMessage = await gmail.users.messages.get({
+                userId: 'me',
+                id: msg.id!,
+                format: 'full'
+              });
+              
+              const headers = fullMessage.data.payload?.headers || [];
+              const getHeader = (name: string) => headers.find((h: any) => 
+                h.name.toLowerCase() === name.toLowerCase())?.value || '';
+              
+              const subject = getHeader('subject');
+              const from = getHeader('from');
+              const snippet = fullMessage.data.snippet || '';
+              const emailBody = extractEmailBody(fullMessage.data.payload) || snippet || `Email from ${from}`;
+              const toValue = getHeader('to') || user.email || '';
+              
+              // Skip promotional/automated emails
+              const isPromotional = fullMessage.data.labelIds?.includes('CATEGORY_PROMOTIONS') ||
+                                    fullMessage.data.labelIds?.includes('CATEGORY_SOCIAL') ||
+                                    from.toLowerCase().includes('noreply') ||
+                                    from.toLowerCase().includes('no-reply');
+
+              if (!isPromotional && subject) {
+                const hasUrgentKeywords = /urgent|asap|important|action.*required|deadline|due/i.test(subject + ' ' + snippet);
+                const isUnread = fullMessage.data.labelIds?.includes('UNREAD');
+                const hasActionKeywords = /meeting|schedule|review|approve|feedback|decision|follow.*up/i.test(subject + ' ' + snippet);
+                
+                const priority = hasUrgentKeywords ? 'high' : hasActionKeywords ? 'medium' : 'low';
+                
+                realEmails.push({
+                  id: String(msg.id!),
+                  messageId: String(msg.id!),
+                  subject: subject,
+                  body: emailBody,
+                  from: from,
+                  to: toValue ? [toValue] : [],
+                  date: getHeader('date') || new Date().toISOString(),
+                  labels: fullMessage.data.labelIds || [],
+                  isRead: !isUnread,
+                  metadata: {
+                    insights: {
+                      priority: priority as 'high' | 'medium' | 'low',
+                      hasActionItems: hasActionKeywords || hasUrgentKeywords,
+                      isUrgent: hasUrgentKeywords
+                    }
+                  }
+                });
+              }
+              
+              // Rate limiting
+              if (i < listResponse.data.messages.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
+            } catch (error) {
+              console.error(`POST: Error processing message ${msg.id}:`, error);
+            }
+          }
+        }
+        
+        console.log(`✅ POST: Successfully fetched ${realEmails.length} real Gmail messages for brief`);
+        
+        unified = {
+          emails: realEmails,
+          incidents: [],
+          calendarEvents: [],
+          tickets: [],
+          generated_at: new Date().toISOString(),
+        };
+        
         // If no real data available, fall back to demo data
-        if (!unified.emails.length && !unified.incidents.length && 
-            !unified.calendarEvents.length && !unified.tickets.length) {
+        if (!unified.emails.length) {
           unified = getScenarioData('normal');
           const briefData = generateStyledBrief(unified, briefStyle);
           return NextResponse.json({
             ...briefData,
+            userId: user.email,
             dataSource: 'mock',
-            warning: 'No recent data available. Using demo data instead. Connect your Gmail for personalized briefs.'
+            warning: 'No recent actionable emails found. Using demo data instead. Check your Gmail for recent messages.'
           });
         }
+        
       } catch (error) {
-        console.error('Real data fetch failed, falling back to demo:', error);
+        console.error('POST: Real Gmail data fetch failed, falling back to demo:', error);
         unified = getScenarioData('normal');
         const briefData = generateStyledBrief(unified, briefStyle);
         return NextResponse.json({
           ...briefData,
+          userId: user?.email,
           dataSource: 'mock',
-          warning: 'Unable to access your data. Using demo data instead. Please check your Gmail connection.'
+          warning: 'Unable to access your Gmail data. Using demo data instead. Please check your Gmail connection.'
         });
       }
     } else {
@@ -202,6 +592,7 @@ export async function POST(req: Request) {
     
     return NextResponse.json({
       ...briefData,
+      userId: useRealData && user ? user.email : briefData.userId,
       dataSource: customData ? 'custom' : (useRealData ? 'real' : 'mock'),
       generationParams: {
         style: briefStyle,

@@ -125,6 +125,17 @@ export async function GET(request: NextRequest) {
         cacheAge: Math.floor((now - cacheTimestamp) / 1000)
       });
     }
+    
+    // First try to get user from session for authenticated requests
+    const { createClient } = await import('@/lib/supabase/server');
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (user) {
+      console.log('🔍 Quick analytics: User authenticated, trying real data');
+    } else {
+      console.log('🔍 Quick analytics: No authenticated user, will use fallback');
+    }
 
     // Redirect real data requests to the main analytics endpoint which handles Gmail directly
     console.log('🔄 Redirecting real data request to main analytics endpoint');

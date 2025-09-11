@@ -4,6 +4,7 @@ import { getValidAccessToken } from '@/lib/gmail/oauth';
 import { getOAuthClient, refreshAccessToken } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
 import { toDatabaseTimestamp, isDatabaseTimestampExpired, toISOString } from '@/lib/utils/timestamp';
+import { analyzeEmail, isNonMarketing, getEmailSummary } from '@/lib/email-summarizer';
 
 export type FetchUnifiedOptions = {
   startDate?: string; // ISO
@@ -186,38 +187,37 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
 
   // Choose endpoint based on use case
   if (useCase === 'brief') {
-    // For briefs: Use full content endpoint
-    const fullEmailUrl = `/api/emails/get-full-messages${params.toString() ? `?${params.toString()}` : ''}`;
+    // For briefs: Use direct Gmail integration to get REAL data
+    console.log(`🔄 Using direct Gmail integration for brief generation with user: ${_userId}`);
+    
+    if (!_userId) {
+      console.log('❌ No user ID provided for brief generation');
+      return empty;
+    }
     
     try {
-      console.log(`🔄 Fetching FULL email data for brief generation: ${fullEmailUrl}`);
-      
-      const response = await fetch(`http://localhost:3000${fullEmailUrl}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const emailData = await response.json();
-        
-        if (emailData.emails && emailData.emails.length > 0) {
-          console.log(`✅ Got ${emailData.emails.length} full emails for brief generation`);
-          return convertFullEmailsToUnifiedData(emailData);
-        }
+      // Get real Gmail data directly using OAuth token
+      const realEmailData = await fetchViaDirectGmailAPI(_userId);
+      if (realEmailData && realEmailData.emails && realEmailData.emails.length > 0) {
+        console.log(`✅ Got REAL Gmail data for brief: ${realEmailData.emails.length} emails`);
+        return realEmailData;
       }
       
-      console.log('❌ Full email endpoint failed or returned no data');
+      console.log('⚠️ No real Gmail data available, falling back to empty brief');
+      return empty;
     } catch (error) {
-      console.log(`❌ Full email API failed:`, error);
+      console.log(`❌ Gmail fetch failed for brief: ${error instanceof Error ? error.message : String(error)}`);
+      return empty;
     }
   } else {
     // For analytics/dashboard: Use lightweight metadata endpoint
     try {
       console.log(`🔄 Fetching analytics metadata for ${useCase}: ${analyticsUrl}`);
       
-      const response = await fetch(`http://localhost:3000${analyticsUrl}`, {
+      const baseUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:3000' 
+        : process.env.NEXT_PUBLIC_SITE_URL || 'https://360brief.com';
+      const response = await fetch(`${baseUrl}${analyticsUrl}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -237,25 +237,30 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     }
   }
 
-  async function fetchViaDirectGmailAPI(): Promise<UnifiedData | null> {
+  async function fetchViaDirectGmailAPI(userId?: string): Promise<UnifiedData | null> {
     try {
-      console.log(`🔄 Fetching Gmail data directly (same as analytics page)`);
+      console.log(`🔄 Fetching Gmail data directly for user: ${userId}`);
       
-      // Get current user - same as analytics page
-      const supabase = await createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.log(`⚠️ Authentication required for Gmail data`);
-        return null;
+      // Use provided userId or get from session
+      let targetUserId = userId;
+      if (!targetUserId) {
+        const supabase = await createClient();
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+          console.log(`⚠️ Authentication required for Gmail data`);
+          return null;
+        }
+        targetUserId = user.id;
       }
       
       // Get Gmail access token from user_tokens table (same as analytics)
-      console.log(`🔄 Looking for tokens for user: ${user.id}`);
+      console.log(`🔄 Looking for tokens for user: ${targetUserId}`);
+      const supabase = await createClient();
       const { data: tokens, error: tokenError } = await supabase
         .from('user_tokens')
         .select('access_token, refresh_token, expires_at, user_id, provider')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .eq('provider', 'google')
         .limit(1);
 
@@ -443,15 +448,45 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
           
           // Use snippet as body content (Gmail provides useful snippet for each message)
           const body = msgData.snippet || '';
+          const subject = getHeader('subject');
+          const from = getHeader('from');
+          const to = getHeader('to');
+          const date = getHeader('date') || new Date().toISOString();
+          
           console.log(`📧 Successfully fetched message ${msg.id} - snippet: ${body.substring(0, 50)}...`);
+          
+          // Analyze email for insights
+          const emailData = { subject, body, from, to: [to], date, labels: msgData.labelIds };
+          const insights = analyzeEmail(emailData);
+          
+          // Skip marketing emails for brief generation
+          if (!isNonMarketing(emailData)) {
+            console.log(`📧 Skipping marketing email: ${subject}`);
+            continue;
+          }
           
           messages.push({
             id: msg.id,
-            subject: getHeader('subject'),
-            body: body,
-            from: getHeader('from'),
-            to: [getHeader('to')],
-            date: getHeader('date') || new Date().toISOString(),
+            subject,
+            body,
+            from,
+            to: [to],
+            date,
+            labels: msgData.labelIds || [],
+            isRead: !msgData.labelIds?.includes('UNREAD'),
+            metadata: {
+              insights: {
+                priority: insights.priority,
+                hasActionItems: insights.hasActionItems,
+                isUrgent: insights.isUrgent,
+                category: insights.category,
+                sentiment: insights.sentiment,
+                actionItems: insights.actionItems,
+                keyTopics: insights.keyTopics,
+                responseRequired: insights.responseRequired,
+                deadline: insights.deadline
+              }
+            }
           });
         } catch (error: any) {
           console.log(`⚠️ Failed to fetch message ${msg.id}:`, error);
@@ -709,7 +744,10 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
     console.log(`⚠️ No email data available from direct API, trying fallback analytics conversion`);
     // Final fallback: try to get sample data in the right format for briefs
     try {
-      const fallbackResponse = await fetch(`http://localhost:3000/api/analytics?use_real_data=true`, {
+      const baseUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:3000' 
+        : process.env.NEXT_PUBLIC_SITE_URL || 'https://360brief.com';
+      const fallbackResponse = await fetch(`${baseUrl}/api/analytics?use_real_data=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });

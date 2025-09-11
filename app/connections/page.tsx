@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { GoogleConnectButton, GoogleConnectionStatus } from '@/components/auth/GoogleConnectButton';
+import { UnifiedGoogleAuth } from '@/components/auth/UnifiedGoogleAuth';
 import { Button } from '@/components/ui/button';
 
 export default function ConnectionsPreferencesPage() {
@@ -23,7 +23,7 @@ export default function ConnectionsPreferencesPage() {
         <h1 className="text-2xl font-semibold">Connections</h1>
         <p className="mt-4 text-gray-600">You need to sign in to manage your connections.</p>
         <div className="mt-6">
-          <Link href="/login?next=/preferences/connections">
+          <Link href="/login?next=/connections">
             <Button>Sign in</Button>
           </Link>
         </div>
@@ -44,10 +44,12 @@ export default function ConnectionsPreferencesPage() {
             <h2 className="text-lg font-medium">Google</h2>
             <p className="text-sm text-gray-600">Connect your Gmail and Calendar.</p>
           </div>
-          <GoogleConnectButton variant="outline" redirectPath="/preferences/connections" />
+          <UnifiedGoogleAuth variant="outline" redirectPath="/connections" />
         </div>
         <div className="mt-4">
-          <GoogleConnectionStatus userId={user.id} />
+          <p className="text-sm text-green-600">
+            Unified Google authentication - single sign-in for Gmail access
+          </p>
         </div>
       </section>
     </div>

@@ -452,8 +452,7 @@ class GmailService:
                 msg = self.service.users().messages().get(
                     userId='me',
                     id=msg_ref['id'],
-                    format='metadata',
-                    metadataHeaders=['Subject', 'From', 'To', 'Date', 'Message-ID', 'In-Reply-To', 'References']
+                    format='full'
                 ).execute()
                 
                 email_data = self._parse_gmail_message(msg)
@@ -771,8 +770,8 @@ class GmailService:
             timestamp_ms = int(msg['internalDate'])
             timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
             
-            # With metadata format, we don't have body content, use snippet instead
-            body = msg.get('snippet', '')
+            # Extract email body content from payload (when using format='full')
+            body = self._extract_message_body(msg.get('payload', {})) or msg.get('snippet', '')
             
             # Check if this is marketing content
             is_marketing = self._is_marketing_email(headers, body, labels)
@@ -851,7 +850,7 @@ class GmailService:
         end_date: datetime,
         max_results: int = 100,
         filter_marketing: bool = True,
-        use_optimization: bool = True
+        use_optimization: bool = False  # Use legacy method to get full email content
     ) -> Dict[str, Any]:
         """Generate analytics data from Gmail messages with optimization options.
         

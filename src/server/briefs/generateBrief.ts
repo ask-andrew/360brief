@@ -257,6 +257,33 @@ function mapActionItems(unified: UnifiedData): ActionItem[] {
       });
     });
 
+  // 6. Extract action items from emails with high priority or urgent keywords
+  unified.emails
+    .filter(email => {
+      const content = (email.subject + ' ' + email.body).toLowerCase();
+      const hasActionKeywords = /action.*(item|required|needed)|follow.?up|need.*to|please.*by|deadline|due.*date|urgent|asap|critical/i.test(content);
+      const hasHighPriority = email.metadata?.insights?.priority === 'high' || email.metadata?.insights?.hasActionItems;
+      const isRecent = new Date(email.date).getTime() > now.getTime() - 7 * 24 * 60 * 60 * 1000; // Last 7 days
+      return (hasActionKeywords || hasHighPriority) && isRecent;
+    })
+    .slice(0, 5) // Top 5 emails with action items
+    .forEach((email, index) => {
+      const priority = email.metadata?.insights?.isUrgent ? 'high' : 
+                      email.metadata?.insights?.priority === 'high' ? 'high' : 'medium';
+      
+      items.push({
+        id: `EMAIL-${email.id}`,
+        title: `📧 ${email.subject}`,
+        description: `From: ${email.from} - ${email.body.substring(0, 100)}${email.body.length > 100 ? '...' : ''}`,
+        priority: priority,
+        status: 'not_started',
+        related_to: 'email',
+        due_date: email.metadata?.insights?.isUrgent ? 
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : // Due tomorrow if urgent
+          undefined
+      });
+    });
+
   // Deduplicate and limit to top 10 most important items
   const uniqueItems = items.filter((item, index, self) => 
     index === self.findIndex(i => i.id === item.id)

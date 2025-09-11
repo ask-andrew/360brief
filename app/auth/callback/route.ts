@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { toDatabaseTimestamp } from '@/lib/utils/timestamp'
 
 // Force Node.js runtime for service role operations
 export const runtime = 'nodejs';
@@ -46,41 +45,39 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${requestUrl.origin}/login?error=no_session`)
     }
 
-    // Store OAuth tokens if this is a Google OAuth with provider_token
-    if (data.session.provider_token && data.session.user) {
-      console.log('🔄 Storing Gmail OAuth tokens...')
-      
-      // Use sustainable timestamp management - debug session expires_at type
-      console.log('🔍 Debug session expires_at:', {
-        value: data.session.expires_at,
-        type: typeof data.session.expires_at
-      });
-      
-      const convertedExpiresAt = toDatabaseTimestamp(data.session.expires_at);
-      console.log('🔍 Debug converted expires_at:', {
-        value: convertedExpiresAt,
-        type: typeof convertedExpiresAt
-      });
-      
-      const tokenData = {
-        user_id: data.session.user.id,
-        provider: 'google',
-        access_token: data.session.provider_token,
-        refresh_token: data.session.provider_refresh_token,
-        expires_at: convertedExpiresAt,
-        updated_at: toDatabaseTimestamp(new Date()),
-      };
-      
-      console.log('📊 Token data to store:', {
-        user_id: tokenData.user_id,
-        provider: tokenData.provider,
-        hasAccessToken: !!tokenData.access_token,
-        hasRefreshToken: !!tokenData.refresh_token,
-        expires_at: tokenData.expires_at,
-        expires_at_type: typeof tokenData.expires_at
-      });
+    // Store Google refresh token in user_metadata if this is a Google OAuth
+    if (data.session.provider_refresh_token && data.session.user) {
+      console.log('🔄 Storing Google refresh token in user_metadata...')
       
       try {
+        // Store minimal data in user_metadata - just the refresh token
+        const currentMetadata = data.session.user.user_metadata || {};
+        const updatedMetadata = {
+          ...currentMetadata,
+          google_refresh_token: data.session.provider_refresh_token,
+          google_connected_at: new Date().toISOString()
+        };
+
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: updatedMetadata
+        });
+
+        if (metadataError) {
+          console.error('❌ Failed to store refresh token in user_metadata:', metadataError);
+        } else {
+          console.log('✅ Google refresh token stored in user_metadata successfully!');
+        }
+
+        // Also store in user_tokens table for backwards compatibility
+        const tokenData = {
+          user_id: data.session.user.id,
+          provider: 'google',
+          access_token: data.session.provider_token,
+          refresh_token: data.session.provider_refresh_token,
+          expires_at: data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : null,
+          updated_at: new Date().toISOString(),
+        };
+
         // Use service role client to bypass RLS during OAuth callback
         const { createClient: createServiceClient } = await import('@supabase/supabase-js');
         const serviceSupabase = createServiceClient(
@@ -88,39 +85,14 @@ export async function GET(request: Request) {
           process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
         
-        // First try to update existing record
-        const { data: updateResult, error: updateError } = await serviceSupabase
+        const { error: tokenError } = await serviceSupabase
           .from('user_tokens')
-          .update({
-            access_token: tokenData.access_token,
-            refresh_token: tokenData.refresh_token,
-            expires_at: tokenData.expires_at,
-            updated_at: tokenData.updated_at
-          })
-          .eq('user_id', tokenData.user_id)
-          .eq('provider', tokenData.provider)
-          .select();
+          .upsert(tokenData, { onConflict: 'user_id,provider' });
           
-        if (updateError) {
-          console.error('❌ Token update error:', updateError);
-          // Continue without storing tokens - user can still use app
+        if (tokenError) {
+          console.error('❌ Token storage error (continuing anyway):', tokenError);
         }
-        
-        if (updateResult && updateResult.length > 0) {
-          console.log('✅ Gmail OAuth tokens updated successfully!');
-        } else {
-          // No existing record, try insert
-          const { data: insertResult, error: insertError } = await serviceSupabase
-            .from('user_tokens')
-            .insert(tokenData)
-            .select();
-          
-          if (insertError) {
-            console.error('❌ Token insert error:', insertError);
-          } else {
-            console.log('✅ Gmail OAuth tokens inserted successfully!');
-          }
-        }
+
       } catch (tokenError) {
         console.error('⚠️ Failed to store tokens:', tokenError);
         // Continue anyway - user can still use the app

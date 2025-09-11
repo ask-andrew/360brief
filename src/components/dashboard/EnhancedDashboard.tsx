@@ -311,7 +311,7 @@ export function EnhancedDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">
-              Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}!
+              Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(' ')[0]}` : user?.email ? `, ${user.email.split('@')[0]}` : ''}!
             </h1>
             <p className="text-indigo-100 mt-1">
               Here's your briefing overview for today
@@ -329,6 +329,42 @@ export function EnhancedDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Account Connections Prompt - Show if no Gmail data */}
+      {(!analyticsData || analyticsData.total_count === 0) && !analyticsLoading && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 border-2">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  <h3 className="text-lg font-semibold text-blue-900">Connect Your Accounts</h3>
+                </div>
+                <p className="text-blue-700 mb-4">
+                  Connect your Gmail and other accounts to get personalized executive briefs with your real data.
+                </p>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => router.push('/connections')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    Connect Accounts
+                  </Button>
+                  <Button variant="outline" onClick={handleGenerateBrief}>
+                    Try with Demo Data
+                  </Button>
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <div className="text-blue-600">
+                  <Activity className="w-12 h-12" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

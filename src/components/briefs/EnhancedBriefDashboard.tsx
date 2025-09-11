@@ -102,6 +102,7 @@ export function EnhancedBriefDashboard() {
   const [briefData, setBriefData] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reconnectUrl, setReconnectUrl] = useState<string | null>(null);
   const [useRealData, setUseRealData] = useState(true);
   const [selectedStyle, setSelectedStyle] = useState('mission_brief');
   const [selectedScenario, setSelectedScenario] = useState('normal');
@@ -121,11 +122,30 @@ export function EnhancedBriefDashboard() {
       console.log('🎯 Requesting brief with style:', 'mission_brief', 'selectedStyle:', selectedStyle);
 
       const response = await fetch(`/api/briefs/enhanced?${params}`);
-      const data = await response.json();
 
+      // Handle auth and permission errors explicitly
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate brief');
+        let payload: any = null;
+        try { payload = await response.json(); } catch {}
+
+        // 401 -> not signed in; send to login
+        if (response.status === 401) {
+          setError('You need to sign in to load your real data. Redirecting to login...');
+          setTimeout(() => { window.location.href = '/login'; }, 800);
+          return;
+        }
+
+        // 403 -> insufficient Gmail scope, show reconnect CTA if provided
+        if (response.status === 403 && payload?.reconnect) {
+          setError('Your Gmail permissions are insufficient for briefs. Please reconnect your account.');
+          setReconnectUrl(payload.reconnect);
+          return;
+        }
+
+        throw new Error(payload?.message || payload?.error || 'Failed to generate brief');
       }
+
+      const data = await response.json();
 
       console.log('🎯 Received brief data:', data);
       console.log('🎯 Data style:', data.style);
@@ -133,6 +153,7 @@ export function EnhancedBriefDashboard() {
       console.log('🎯 Has startupVelocity?', !!data.startupVelocity);
 
       setBriefData(data);
+      setReconnectUrl(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setBriefData(null);
@@ -302,6 +323,15 @@ export function EnhancedBriefDashboard() {
           <AlertTriangle className="w-4 h-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Reconnect CTA when Gmail scope insufficient */}
+      {reconnectUrl && (
+        <div className="flex justify-end">
+          <Button asChild className="bg-blue-600 hover:bg-blue-700">
+            <a href={reconnectUrl}>Reconnect Gmail</a>
+          </Button>
+        </div>
       )}
 
       {/* Brief Content */}
