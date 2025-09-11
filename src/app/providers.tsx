@@ -3,8 +3,7 @@
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/toaster';
 import { ToastProvider } from '@/components/ui/use-toast';
-import { AuthProvider as StoreAuthProvider } from '@/providers/AuthProvider';
-import { AuthProvider as ContextAuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -27,12 +26,10 @@ export function Providers({
       disableTransitionOnChange={disableTransitionOnChange}
     >
       <ToastProvider>
-        <ContextAuthProvider>
-          <StoreAuthProvider>
-            {children}
-            <Toaster />
-          </StoreAuthProvider>
-        </ContextAuthProvider>
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </ToastProvider>
     </NextThemesProvider>
   );

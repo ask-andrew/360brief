@@ -72,23 +72,11 @@ export default function BetaSignupPage() {
           </div>
 
           {/* Signup Form */}
-          <div className="flex justify-center">
-            <div className="bg-white/80 backdrop-blur rounded-2xl p-8 shadow-xl border border-indigo-100 max-w-md">
-              <BetaWaitlist />
-              <p className="text-xs text-gray-500 mt-4 text-center">
-                Privacy-first: We store preferences, not raw sensitive data. Unsubscribe anytime.
-              </p>
-            </div>
-          </div>
-
-          {/* Social Proof */}
-          <div className="mt-16 text-center">
-            <p className="text-sm font-medium text-gray-900 mb-4">Trusted by executives at</p>
-            <div className="flex items-center justify-center gap-8 opacity-60">
-              <div className="text-2xl font-bold text-gray-400">STARTUP</div>
-              <div className="text-2xl font-bold text-gray-400">SCALEUP</div>
-              <div className="text-2xl font-bold text-gray-400">ENTERPRISE</div>
-            </div>
+          <div className="bg-white/80 backdrop-blur rounded-2xl p-8 shadow-xl border border-indigo-100 max-w-2xl w-full mx-auto">
+            <BetaWaitlist />
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              Privacy-first: We store preferences, not raw sensitive data. Unsubscribe anytime.
+            </p>
           </div>
         </div>
       </div>
