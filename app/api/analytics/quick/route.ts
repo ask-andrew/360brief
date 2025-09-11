@@ -128,13 +128,37 @@ export async function GET(request: NextRequest) {
 
     // Redirect real data requests to the main analytics endpoint which handles Gmail directly
     console.log('🔄 Redirecting real data request to main analytics endpoint');
+    console.log('🔍 Quick endpoint debug:', {
+      hasCookies: !!request.headers.get('cookie'),
+      cookiePreview: request.headers.get('cookie')?.substring(0, 50) + '...',
+      origin: request.nextUrl.origin
+    });
+    
     try {
-      const response = await fetch(`http://localhost:3000/api/analytics?use_real_data=true`, {
+      const origin = request.nextUrl.origin;
+      
+      // Forward all relevant headers to preserve authentication context
+      const forwardHeaders: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+      };
+      
+      // Forward authentication-related headers
+      if (request.headers.get('cookie')) {
+        forwardHeaders['Cookie'] = request.headers.get('cookie')!;
+      }
+      if (request.headers.get('authorization')) {
+        forwardHeaders['Authorization'] = request.headers.get('authorization')!;
+      }
+      if (request.headers.get('user-agent')) {
+        forwardHeaders['User-Agent'] = request.headers.get('user-agent')!;
+      }
+      
+      console.log('🔄 Forwarding headers:', Object.keys(forwardHeaders));
+      
+      const response = await fetch(`${origin}/api/analytics?use_real_data=true`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
+        headers: forwardHeaders,
       });
 
       if (response.ok) {
@@ -151,7 +175,12 @@ export async function GET(request: NextRequest) {
           message: `Real Gmail data: ${realData.processing_metadata?.message_count || 'N/A'} messages analyzed`
         });
       } else {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
         console.error('❌ Main analytics endpoint failed:', errorData);
         throw new Error(errorData.error || 'Main analytics endpoint failed');
       }

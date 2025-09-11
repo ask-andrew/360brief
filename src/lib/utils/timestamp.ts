@@ -165,10 +165,17 @@ export function isDatabaseTimestampExpired(expiresAt: number | string | null): b
     // Unix timestamp in seconds, convert to milliseconds
     expiryMs = expiresAt * 1000;
   } else if (typeof expiresAt === 'string') {
-    // Legacy ISO string format
-    const expiryDate = new Date(expiresAt);
-    if (isNaN(expiryDate.getTime())) return false;
-    expiryMs = expiryDate.getTime();
+    // Could be Unix timestamp as string or ISO string
+    const numValue = parseFloat(expiresAt);
+    if (!isNaN(numValue)) {
+      // It's a numeric string (Unix timestamp)
+      expiryMs = numValue * 1000;
+    } else {
+      // Try as ISO string
+      const expiryDate = new Date(expiresAt);
+      if (isNaN(expiryDate.getTime())) return false;
+      expiryMs = expiryDate.getTime();
+    }
   } else {
     return false;
   }
@@ -191,10 +198,17 @@ export function isTokenNearExpiry(expiresAt: number | string | null, bufferMinut
     // Unix timestamp in seconds, convert to milliseconds
     expiryMs = expiresAt * 1000;
   } else if (typeof expiresAt === 'string') {
-    // Legacy ISO string format
-    const expiryDate = new Date(expiresAt);
-    if (isNaN(expiryDate.getTime())) return false;
-    expiryMs = expiryDate.getTime();
+    // Could be Unix timestamp as string or ISO string
+    const numValue = parseFloat(expiresAt);
+    if (!isNaN(numValue)) {
+      // It's a numeric string (Unix timestamp)
+      expiryMs = numValue * 1000;
+    } else {
+      // Try as ISO string
+      const expiryDate = new Date(expiresAt);
+      if (isNaN(expiryDate.getTime())) return false;
+      expiryMs = expiryDate.getTime();
+    }
   } else {
     return false;
   }

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { google } from 'googleapis';
-import { toDatabaseTimestamp } from '@/lib/utils/timestamp';
-
-const ANALYTICS_API_BASE = process.env.ANALYTICS_API_BASE || 'http://localhost:8000';
 
 // Function to generate mock analytics data when no real data is available
 function generateMockAnalyticsData(): any {
@@ -108,10 +105,21 @@ function convertGmailToAnalytics(messages: any[], daysBack: number = 7): any {
 }
 
 export async function GET(request: NextRequest) {
+  console.log('🚀 Analytics API START:', new Date().toISOString());
+  
   try {
     const searchParams = request.nextUrl.searchParams;
     const useRealData = searchParams.get('use_real_data') === 'true';
     const daysBack = parseInt(searchParams.get('days_back') || '7'); // Default to 7 days
+    console.log('🔍 Analytics API params:', { useRealData, daysBack });
+    
+    // Debug: Check if we have cookies
+    console.log('🔍 Request context:', {
+      hasCookieHeader: !!request.headers.get('cookie'),
+      cookiePreview: request.headers.get('cookie')?.substring(0, 100),
+      userAgent: request.headers.get('user-agent')?.substring(0, 50)
+    });
+    
     
     // If real data NOT requested, use built-in mock data
     if (!useRealData) {
@@ -127,25 +135,85 @@ export async function GET(request: NextRequest) {
     if (useRealData) {
       try {
         console.log('🔄 Using direct Gmail integration for analytics');
+        console.log('🔄 Creating Supabase client...');
         
-        const supabase = await createClient();
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        // Add timeout to Supabase operations
+        const supabasePromise = createClient();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Supabase client creation timeout')), 5000)
+        );
         
-        if (!userError && user) {
+        const supabase = await Promise.race([supabasePromise, timeoutPromise]);
+        console.log('✅ Supabase client created successfully');
+        console.log('🔄 Getting user from Supabase...');
+        
+        // Add timeout to user query
+        const userQueryPromise = supabase.auth.getUser();
+        const userTimeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('User query timeout')), 5000)
+        );
+        
+        const { data: { user }, error: userError } = await Promise.race([userQueryPromise, userTimeoutPromise]);
+        console.log('✅ User query completed');
+        
+        console.log('🔍 Debug - User auth status:', { 
+          hasUser: !!user, 
+          userId: user?.id, 
+          userError: userError?.message || 'none' 
+        });
+        
+        if (userError || !user) {
+          console.log('❌ No authenticated user found, cannot fetch real Gmail data');
+          throw new Error('Authentication required for real Gmail data. Please ensure you are logged in.');
+        }
+        
+        if (user) {
+          
           // Get Gmail tokens (same as working brief logic)
-          const { data: tokens } = await supabase
+          const { data: tokens, error: tokenError } = await supabase
             .from('user_tokens')
             .select('access_token, refresh_token, expires_at')
             .eq('user_id', user.id)
             .eq('provider', 'google')
             .limit(1);
           
+          console.log('🔍 Debug - Token query:', { 
+            hasTokens: !!tokens, 
+            tokenCount: tokens?.length || 0,
+            tokenError: tokenError?.message || 'none',
+            expiresAt: tokens?.[0]?.expires_at 
+          });
+          
+          if (tokenError) {
+            console.log('❌ Token query failed:', tokenError);
+            throw new Error(`Token query failed: ${tokenError.message}`);
+          }
+          
           if (tokens?.[0]) {
             const token = tokens[0];
             const now = Math.floor(Date.now() / 1000);
             
-            // Check if token needs refresh
-            if (token.expires_at && token.expires_at < now) {
+            // Handle token expiry as Unix timestamp (seconds)
+            const expiresAtTimestamp = typeof token.expires_at === 'string' 
+              ? parseInt(token.expires_at, 10)
+              : typeof token.expires_at === 'number' 
+                ? token.expires_at 
+                : null;
+            
+            console.log('🔍 Debug - Token expiry check:', { 
+              tokenExpiresAt: token.expires_at,
+              expiresAtTimestamp,
+              currentTime: now,
+              tokenExpired: expiresAtTimestamp && expiresAtTimestamp < now,
+              expiresAtType: typeof token.expires_at,
+              timeUntilExpiry: expiresAtTimestamp ? expiresAtTimestamp - now : null,
+              timeUntilExpiryMin: expiresAtTimestamp ? Math.floor((expiresAtTimestamp - now) / 60) : null
+            });
+            
+            // Check if token needs refresh (expired or expires within 10 minutes)
+            const needsRefresh = expiresAtTimestamp && (expiresAtTimestamp < now || expiresAtTimestamp < (now + 600));
+            
+            if (needsRefresh) {
               console.log('🔄 Refreshing expired token for analytics');
               try {
                 const oauth2Client = new google.auth.OAuth2(
@@ -162,7 +230,8 @@ export async function GET(request: NextRequest) {
                   .from('user_tokens')
                   .update({
                     access_token: credentials.access_token,
-                    expires_at: credentials.expiry_date ? toDatabaseTimestamp(credentials.expiry_date) : null,
+                    expires_at: credentials.expiry_date ? Math.floor(credentials.expiry_date / 1000) : null, // Convert milliseconds to Unix seconds
+                    updated_at: Math.floor(Date.now() / 1000),
                   })
                   .eq('user_id', user.id)
                   .eq('provider', 'google');
@@ -173,6 +242,8 @@ export async function GET(request: NextRequest) {
                 console.error('❌ Token refresh failed:', refreshError);
                 throw new Error('Token refresh failed');
               }
+            } else {
+              console.log('✅ Token is valid, proceeding with analytics');
             }
             
             // Fetch Gmail messages
@@ -192,6 +263,12 @@ export async function GET(request: NextRequest) {
               userId: 'me',
               q: query,
               maxResults: 50, // Lighter load for analytics
+            });
+            
+            console.log('🔍 Debug - Gmail list response:', { 
+              messageCount: listResponse.data.messages?.length || 0,
+              hasMessages: !!listResponse.data.messages,
+              status: listResponse.status 
             });
             
             if (listResponse.data.messages) {
@@ -238,11 +315,21 @@ export async function GET(request: NextRequest) {
                 status: 200,
                 headers: { 'Cache-Control': 'public, max-age=300' }
               });
+            } else {
+              console.log('❌ No Gmail tokens found for user');
+              throw new Error('Gmail tokens not found - please reconnect your Gmail account');
             }
+          } else {
+            console.log('❌ User authentication failed');
+            throw new Error('User not authenticated');
           }
+        } else {
+          console.log('❌ No user found in session');
+          throw new Error('No authenticated user found');
         }
       } catch (gmailError) {
         console.error('❌ Gmail direct access failed for analytics:', gmailError);
+        console.error('❌ Gmail error stack:', gmailError instanceof Error ? gmailError.stack : 'No stack trace');
         
         // If real data was requested and Gmail failed, return error instead of fallback
         if (useRealData) {
@@ -266,26 +353,31 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
+    clearTimeout(timeoutId); // Clear timeout on error
     console.error('Analytics API Error:', error);
+    console.error('Analytics API Error Stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Analytics API Error Details:', { 
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      useRealData 
+    });
     
-    const processingStatus = {
-      total_count: 0,
-      inbound_count: 0,
-      outbound_count: 0,
-      processing: true,
-      status: 'processing',
-      message: 'Gathering your Gmail insights...',
-      progress: 'Analyzing recent messages',
-      estimated_time: '30-60 seconds',
-      error: null,
-      priority_messages: { awaiting_my_reply: [], awaiting_their_reply: [] },
-      channel_analytics: { by_time: [], by_channel: [] },
-      recent_trends: { messages: { change: 0, direction: 'up' } }
+    // Return detailed error for debugging  
+    const errorResponse = {
+      error: true,
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : 'UnknownError',
+      details: 'Analytics API failed',
+      useRealData,
+      timestamp: new Date().toISOString(),
+      endpoint: 'analytics'
     };
 
-    return NextResponse.json(processingStatus, {
-      status: 202,
+    return NextResponse.json(errorResponse, {
+      status: 500,
       headers: { 'Cache-Control': 'no-cache' }
     });
+  } finally {
+    clearTimeout(timeoutId); // Always clear timeout
   }
 }

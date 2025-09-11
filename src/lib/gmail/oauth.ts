@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { refreshAccessToken } from '@/server/google/client';
-import { toDatabaseTimestamp, isDatabaseTimestampExpired, isTokenNearExpiry } from '@/lib/utils/timestamp';
+import { isDatabaseTimestampExpired, isTokenNearExpiry } from '@/lib/utils/timestamp';
 
 // Force Node.js runtime for service role operations
 export const runtime = 'nodejs';
@@ -91,9 +91,9 @@ export async function getValidAccessToken(userId: string): Promise<string> {
   
   console.log(`✅ Found OAuth tokens for user ${userId}, expires_at:`, acct.expires_at);
 
-  // Use new database-compatible timestamp checking with proactive refresh buffer
-  const isTokenExpired = isDatabaseTimestampExpired(acct.expires_at as string);
-  const needsProactiveRefresh = isTokenNearExpiry(acct.expires_at as string, 10); // 10 minute buffer
+  // Use database-compatible timestamp checking with proactive refresh buffer
+  const isTokenExpired = isDatabaseTimestampExpired(acct.expires_at);
+  const needsProactiveRefresh = isTokenNearExpiry(acct.expires_at, 10); // 10 minute buffer
   
   if (!!acct.access_token && !isTokenExpired && !needsProactiveRefresh) {
     console.log(`✅ Using valid access token (expires: ${acct.expires_at})`);
@@ -132,18 +132,15 @@ export async function getValidAccessToken(userId: string): Promise<string> {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Persist updated tokens using sustainable timestamp format
-    const convertedExpiresAt = newExpiryMs ? toDatabaseTimestamp(newExpiryMs) : null;
-    const convertedUpdatedAt = toDatabaseTimestamp(new Date());
+    // Persist updated tokens using Unix timestamp format for database compatibility
+    const convertedExpiresAt = newExpiryMs ? Math.floor(newExpiryMs / 1000) : null; // Convert Google's milliseconds to Unix seconds
+    const convertedUpdatedAt = Math.floor(Date.now() / 1000); // Unix timestamp
     
     console.log('🔍 Debug token refresh timestamps:', {
       newExpiryMs,
       newExpiryMs_type: typeof newExpiryMs,
       convertedExpiresAt,
-      convertedExpiresAt_type: typeof convertedExpiresAt,
       convertedUpdatedAt,
-      convertedUpdatedAt_type: typeof convertedUpdatedAt,
-      isValidTimestamp: convertedExpiresAt !== null && typeof convertedExpiresAt === 'number'
     });
     
     const updateData: any = {
@@ -151,16 +148,6 @@ export async function getValidAccessToken(userId: string): Promise<string> {
       expires_at: convertedExpiresAt,
       updated_at: convertedUpdatedAt,
     };
-    
-    // Validate that we have proper numeric timestamps for database
-    if (convertedExpiresAt !== null && typeof convertedExpiresAt !== 'number') {
-      console.error('❌ Invalid expires_at format for database:', convertedExpiresAt, typeof convertedExpiresAt);
-      throw new Error(`Invalid expires_at timestamp format: expected number, got ${typeof convertedExpiresAt}`);
-    }
-    if (convertedUpdatedAt !== null && typeof convertedUpdatedAt !== 'number') {
-      console.error('❌ Invalid updated_at format for database:', convertedUpdatedAt, typeof convertedUpdatedAt);
-      throw new Error(`Invalid updated_at timestamp format: expected number, got ${typeof convertedUpdatedAt}`);
-    }
 
     // Only update refresh token if we got a new one
     if (newRefresh) {

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
-import { toUnixTimestamp, toDatabaseTimestamp } from '@/lib/utils/timestamp';
-// Note: Removed unused imports validateTokenData and logDatabaseOperation 
-// These were imported from @/lib/utils/database but never used in this route
 
 // Force Node.js runtime for service role operations
 export const runtime = 'nodejs';
@@ -12,7 +9,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
-  let redirectUrl = new URL('/dashboard', request.url);
+  const redirectUrl = new URL('/dashboard', request.url);
 
   try {
     if (error) {
@@ -74,28 +71,16 @@ export async function GET(request: NextRequest) {
       provider: 'google',
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
-      expires_at: toDatabaseTimestamp(tokens.expiry_date),
-      updated_at: toDatabaseTimestamp(new Date()),
+      expires_at: tokens.expiry_date ? Math.floor(tokens.expiry_date / 1000) : null, // Convert Google's milliseconds to Unix seconds
+      updated_at: Math.floor(Date.now() / 1000), // Store as Unix timestamp
     };
     
     console.log(`🔍 Storing token data:`, {
       user_id: tokenData.user_id,
       provider: tokenData.provider,
       expires_at: tokenData.expires_at,
-      expires_at_type: typeof tokenData.expires_at,
       expires_raw: tokens.expiry_date,
-      expires_raw_type: typeof tokens.expiry_date
     });
-    
-    // Validate that we have proper numeric timestamps for database
-    if (tokenData.expires_at !== null && typeof tokenData.expires_at !== 'number') {
-      console.error('❌ Invalid expires_at format for database:', tokenData.expires_at, typeof tokenData.expires_at);
-      throw new Error(`Invalid expires_at timestamp format: expected number, got ${typeof tokenData.expires_at}`);
-    }
-    if (tokenData.updated_at !== null && typeof tokenData.updated_at !== 'number') {
-      console.error('❌ Invalid updated_at format for database:', tokenData.updated_at, typeof tokenData.updated_at);
-      throw new Error(`Invalid updated_at timestamp format: expected number, got ${typeof tokenData.updated_at}`);
-    }
     
     const { data: insertData, error: tokenError } = await serviceSupabase
       .from('user_tokens')
@@ -118,7 +103,7 @@ export async function GET(request: NextRequest) {
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
             expires_at: tokenData.expires_at,
-            updated_at: tokenData.updated_at,
+            updated_at: Math.floor(Date.now() / 1000), // Store as Unix timestamp
           })
           .eq('user_id', user.id)
           .eq('provider', 'google');
