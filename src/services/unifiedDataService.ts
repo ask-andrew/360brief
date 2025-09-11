@@ -4,7 +4,7 @@ import { getValidAccessToken } from '@/lib/gmail/oauth';
 import { getOAuthClient, refreshAccessToken } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
 import { toDatabaseTimestamp, isDatabaseTimestampExpired, toISOString } from '@/lib/utils/timestamp';
-import { analyzeEmail, isNonMarketing, getEmailSummary } from '@/lib/email-summarizer';
+import { analyzeEmail, isNonMarketing, getEmailSummary } from '../lib/email-summarizer';
 
 export type FetchUnifiedOptions = {
   startDate?: string; // ISO
