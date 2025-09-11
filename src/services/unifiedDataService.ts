@@ -274,8 +274,8 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
         const { data: allTokens } = await supabase
           .from('user_tokens')
           .select('user_id, provider')
-          .eq('user_id', user.id);
-        console.log(`⚠️ No Gmail token found for user: ${user.id}, found tokens:`, allTokens);
+          .eq('user_id', targetUserId);
+        console.log(`⚠️ No Gmail token found for user: ${targetUserId}, found tokens:`, allTokens);
         return null;
       }
 
@@ -311,7 +311,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
                 // Update refresh token if a new one is provided
                 ...(refreshedTokens.refresh_token && { refresh_token: refreshedTokens.refresh_token })
               })
-              .eq('user_id', user.id)
+              .eq('user_id', targetUserId)
               .eq('provider', 'google');
               
             if (updateError) {
@@ -337,7 +337,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
       }
       
       // Fetch Gmail messages with time filtering
-      console.log(`🔄 Fetching Gmail messages for user ${user.id}`);
+      console.log(`🔄 Fetching Gmail messages for user ${targetUserId}`);
       
       // Build time-based query parameters
       let timeQuery = 'newer_than:7d'; // Default to 1 week
