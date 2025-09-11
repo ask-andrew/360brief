@@ -42,6 +42,13 @@ export async function GET(request: NextRequest) {
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const { data: googleUser } = await oauth2.userinfo.get();
     
+    console.log('🔍 Google user data received:', {
+      email: googleUser.email,
+      name: googleUser.name,
+      id: googleUser.id,
+      picture: googleUser.picture ? 'Present' : 'Missing',
+    });
+    
     if (!googleUser.email) {
       throw new Error('No email received from Google');
     }
@@ -57,8 +64,19 @@ export async function GET(request: NextRequest) {
     let user: any;
     
     // Try to find existing user by email
-    const { data: existingUsers } = await serviceSupabase.auth.admin.listUsers();
-    const existingUser = existingUsers.users?.find(u => u.email === googleUser.email);
+    console.log(`🔍 Looking for existing user with email: ${googleUser.email}`);
+    const { data: existingUsers, error: listError } = await serviceSupabase.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('❌ Error listing users:', {
+        code: listError.code,
+        message: listError.message,
+        details: listError.details,
+      });
+    }
+    
+    const existingUser = existingUsers?.users?.find(u => u.email === googleUser.email);
+    console.log(`🔍 Found ${existingUsers?.users?.length || 0} total users, existing user: ${existingUser ? 'YES' : 'NO'}`);
     
     if (existingUser) {
       user = existingUser;
@@ -77,8 +95,14 @@ export async function GET(request: NextRequest) {
       });
       
       if (createError) {
-        console.error('❌ Failed to create Supabase user:', createError);
-        throw new Error('Failed to create user account');
+        console.error('❌ Failed to create Supabase user:', {
+          code: createError.code,
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint,
+          email: googleUser.email,
+        });
+        throw new Error(`Failed to create user account: ${createError.message}`);
       }
       
       user = newUser.user;
