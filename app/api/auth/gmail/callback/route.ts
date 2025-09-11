@@ -125,6 +125,8 @@ export async function GET(request: NextRequest) {
       provider: tokenData.provider,
       expires_at: tokenData.expires_at,
       expires_raw: tokens.expiry_date,
+      access_token_length: tokenData.access_token?.length,
+      refresh_token_length: tokenData.refresh_token?.length,
     });
     
     const { data: insertData, error: tokenError } = await serviceSupabase
@@ -135,7 +137,12 @@ export async function GET(request: NextRequest) {
       .select();
 
     if (tokenError) {
-      console.error('❌ Token insert error:', tokenError);
+      console.error('❌ Token insert error:', {
+        code: tokenError.code,
+        message: tokenError.message,
+        details: tokenError.details,
+        hint: tokenError.hint,
+      });
       
       // More specific error handling for common issues
       if (tokenError.code === '23505') {
@@ -154,16 +161,21 @@ export async function GET(request: NextRequest) {
           .eq('provider', 'google');
           
         if (updateError) {
-          console.error('❌ Token update also failed:', updateError);
+          console.error('❌ Token update also failed:', {
+            code: updateError.code,
+            message: updateError.message,
+            details: updateError.details,
+            hint: updateError.hint,
+          });
           redirectUrl.searchParams.set('auth', 'error');
-          redirectUrl.searchParams.set('message', 'Failed to save Gmail connection');
+          redirectUrl.searchParams.set('message', `Failed to save Gmail connection: ${updateError.message}`);
           return NextResponse.redirect(redirectUrl);
         }
         
         console.log('✅ Gmail tokens updated successfully after duplicate error');
       } else {
         redirectUrl.searchParams.set('auth', 'error');
-        redirectUrl.searchParams.set('message', 'Failed to save Gmail connection');
+        redirectUrl.searchParams.set('message', `Failed to save Gmail connection: ${tokenError.message}`);
         return NextResponse.redirect(redirectUrl);
       }
     } else {
