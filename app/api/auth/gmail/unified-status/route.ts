@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getGoogleConnectionStatus } from '../../../../../src/lib/gmail/unified-oauth';
+import { getGoogleConnectionStatus } from '@/lib/gmail/unified-oauth';
 
 export const runtime = 'nodejs';
 
