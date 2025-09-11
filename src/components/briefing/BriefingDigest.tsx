@@ -62,78 +62,19 @@ export default function BriefingDigest({
 
   const fetchBriefing = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      // Default mock aligned to TechFlow outage scenario (fallback)
-      const defaultMock: BriefingData = {
-        updates: [
-          {
-            title: 'TechFlow Outage – Executive Summary',
-            summary: '6-hour outage with cascading DB failures. Renewal risk and reputational exposure. Stabilization in progress; exec engagement required.',
-            actionItems: [
-              '09:00 – Emergency response call (alignment + recovery timeline)',
-              '10:00 – Root cause analysis & prevention mapping',
-              '11:00 – Customer retention strategy package',
-            ],
-          },
-        ],
-        actionItems: [
-          {
-            title: 'Authorize crisis budget ($40K)',
-            dueDate: new Date().toISOString(),
-            description: 'Emergency Technical $15K + Customer Retention $25K to protect $2.4M ARR.',
-          },
-          {
-            title: 'Approve customer comms plan',
-            description: 'Transparent status + SLA remediation for affected accounts.',
-          },
-        ],
-        time_range: {
-          start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          end: new Date().toISOString(),
-        },
-        key_themes: [
-          { title: 'Stabilization', description: 'Contain incident blast radius and restore reliability' },
-          { title: 'Retention', description: 'Rebuild confidence with targeted actions' },
-          { title: 'Prevention', description: 'Close monitoring and infra gaps' },
-        ],
-        action_items: [
-          { id: '1', title: 'Stabilize DB cluster', description: 'Failover + capacity guardrails' },
-          { id: '2', title: 'Customer communication plan', description: 'Daily updates; credits where warranted' },
-          { id: '3', title: 'Budget authorization', description: 'Approve $40K emergency spend' },
-        ],
-        metrics: [
-          { name: 'ARR at Risk', value: '$2.4M' },
-          { name: 'Outage Duration', value: '6h' },
-          { name: 'Affected Users', value: '15,000+' },
-        ],
-        upcoming_events: [
-          { date: new Date().toISOString(), title: '09:00 Emergency Response Call', description: 'Alignment + recovery timeline' },
-          { date: new Date().toISOString(), title: '10:00 Root Cause Review', description: 'Prevention mapping' },
-          { date: new Date().toISOString(), title: '11:00 Retention Strategy', description: 'Exec package review' },
-        ],
-      };
-
-      // Try API first; fall back to defaultMock
-      let apiData: Partial<BriefingData> | null = null;
-      try {
-        const res = await fetch('/api/briefs/current', { cache: 'no-store' });
-        if (res.ok) {
-          apiData = await res.json();
-        }
-      } catch (_) {
-        // ignore network errors and use fallback
+      const res = await fetch('/api/briefs/current', { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch briefing: ${res.status} ${res.statusText}`);
       }
-
-      setBriefing({
-        ...defaultMock,
-        ...(apiData ?? {}),
-        // Ensure concise view fields exist even if API doesn't provide them
-        updates: (apiData as any)?.updates ?? defaultMock.updates,
-        actionItems: (apiData as any)?.actionItems ?? defaultMock.actionItems,
-      });
+      const apiData = await res.json();
+      setBriefing(apiData);
     } catch (err) {
-      setError('Failed to load briefing data');
-      console.error(err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load briefing data';
+      setError(errorMessage);
+      console.error('Briefing fetch error:', err);
+      setBriefing(null);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

@@ -146,7 +146,15 @@ function detectThemes(unified: UnifiedData): Theme[] {
 
   // Default theme if nothing specific detected
   if (themes.length === 0) {
-    themes.push({ title: 'Business as Usual', description: 'Regular operations with standard monitoring and execution' });
+    const emailCount = unified.emails.length;
+    if (emailCount === 0) {
+      themes.push({ 
+        title: 'Awaiting Data Connection', 
+        description: 'Connect Gmail to generate intelligent briefings from your actual communications and calendar' 
+      });
+    } else {
+      themes.push({ title: 'Business as Usual', description: 'Regular operations with standard monitoring and execution' });
+    }
   }
 
   return themes.slice(0, 3); // Limit to top 3 themes
@@ -283,6 +291,18 @@ function mapActionItems(unified: UnifiedData): ActionItem[] {
           undefined
       });
     });
+
+  // Add default action item if no data is available
+  if (items.length === 0 && unified.emails.length === 0) {
+    items.push({
+      id: 'connect-gmail',
+      title: '📧 Connect Gmail Account',
+      description: 'Link your Gmail account to start receiving intelligent briefings based on your actual communications',
+      priority: 'high',
+      status: 'not_started',
+      related_to: 'setup'
+    });
+  }
 
   // Deduplicate and limit to top 10 most important items
   const uniqueItems = items.filter((item, index, self) => 

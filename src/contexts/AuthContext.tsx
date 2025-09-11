@@ -90,33 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       setError(null)
       
-      console.log('🔐 Initiating Google OAuth...')
+      console.log('🔐 Initiating unified Google OAuth with Gmail access...')
       
-      // Always use a single consistent domain for OAuth to avoid losing the PKCE code_verifier.
-      // Prefer an explicit NEXT_PUBLIC_SITE_URL (e.g. https://360brief.com) and fall back to current origin.
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-      const redirectUrl = `${siteUrl}/auth/callback`
-      
-      console.log('🔄 Using redirect URL:', redirectUrl)
-      
-      const { data, error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.metadata https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      })
-      
-      if (signInError) {
-        console.error('❌ Google OAuth error:', signInError)
-        throw signInError
-      }
-      
-      console.log('✅ Google OAuth initiated:', data)
+      // Use the direct Gmail OAuth flow which includes Supabase auth AND stores tokens
+      // This consolidates the two separate flows into one
+      window.location.href = '/api/auth/gmail/authorize?redirect=/dashboard'
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in with Google'
@@ -126,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   const connectGmail = useCallback(async () => {
     try {
