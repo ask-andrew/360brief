@@ -414,35 +414,43 @@ function extractDeadline(text: string): string | undefined {
  * Filter out low-value emails for executive briefings
  */
 export function isNonMarketing(email: EmailData): boolean {
-  const insight = analyzeEmail(email);
-  
-  // Exclude marketing, notifications, and low business impact emails
-  if (insight.category === 'marketing' || 
-      insight.category === 'notification' ||
-      insight.businessImpact === 'low' ||
-      email.labels?.includes('CATEGORY_PROMOTIONS') ||
+  // Quick check for obvious marketing/promotional content first
+  if (email.labels?.includes('CATEGORY_PROMOTIONS') ||
       email.labels?.includes('CATEGORY_SOCIAL')) {
     return false;
   }
   
-  // Additional filters for common low-value emails
-  const lowValueIndicators = [
-    'unsubscribe', 'newsletter', 'noreply', 'no-reply', 'donotreply',
-    'automated', 'system generated', 'receipt', 'confirmation only',
-    'calendar invite accepted', 'out of office', 'vacation reply'
+  // Filter out obvious automated/system emails
+  const emailText = `${email.subject} ${email.body}`.toLowerCase();
+  const obviousLowValueIndicators = [
+    'unsubscribe', 'newsletter', 'noreply@', 'no-reply@', 'donotreply@',
+    'automated message', 'system generated', 'do not reply'
   ];
   
-  const emailText = `${email.subject} ${email.body}`.toLowerCase();
-  
-  if (lowValueIndicators.some(indicator => emailText.includes(indicator))) {
+  if (obviousLowValueIndicators.some(indicator => emailText.includes(indicator))) {
     return false;
   }
   
-  // Keep emails with medium to high business impact and executive relevance
-  return insight.businessImpact !== 'low' || 
-         insight.executiveLevel !== 'individual' ||
-         insight.hasActionItems ||
-         insight.isUrgent;
+  // Now run full analysis only if needed
+  const insight = analyzeEmail(email);
+  
+  // Exclude only clear marketing and notifications - be more permissive for business emails
+  if (insight.category === 'marketing' || 
+      insight.category === 'notification') {
+    return false;
+  }
+  
+  // For everything else, be more permissive - let most business emails through
+  // Only exclude if explicitly low business impact AND low executive level AND no actions
+  if (insight.businessImpact === 'low' && 
+      insight.executiveLevel === 'individual' && 
+      !insight.hasActionItems && 
+      !insight.isUrgent) {
+    return false;
+  }
+  
+  // Default to keeping the email if we're not sure
+  return true;
 }
 
 /**
