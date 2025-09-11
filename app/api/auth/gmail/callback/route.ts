@@ -140,8 +140,8 @@ export async function GET(request: NextRequest) {
       provider: 'google',
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
-      expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null, // Convert to ISO string for PostgreSQL
-      updated_at: new Date().toISOString(), // Store as ISO string for PostgreSQL
+      expires_at: tokens.expiry_date ? Math.floor(tokens.expiry_date / 1000) : null, // Unix timestamp as bigint expects integer
+      updated_at: Math.floor(Date.now() / 1000), // Unix timestamp as bigint expects integer
     };
     
     console.log(`🔍 Storing token data:`, {
@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
             expires_at: tokenData.expires_at,
-            updated_at: new Date().toISOString(), // Store as ISO string for PostgreSQL
+            updated_at: Math.floor(Date.now() / 1000), // Unix timestamp as bigint expects integer
           })
           .eq('user_id', user.id)
           .eq('provider', 'google');
