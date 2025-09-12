@@ -152,10 +152,63 @@ def decode_email_header(header):
 
 # --- NEW: Pass nlp_model to extract_entities ---
 def extract_entities(text, nlp_model):
-    """Extracts named entities (people, organizations) using spaCy."""
-    doc = nlp_model(text) # Use passed nlp_model
-    people = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
-    orgs = [ent.text for ent in doc.ents if ent.label_ == "ORG"]
+    """Extracts named entities (people, organizations) using spaCy with email artifact filtering."""
+    if not text:
+        return [], []
+    
+    # Clean text to remove email formatting artifacts
+    import re
+    cleaned_text = text
+    # Remove URLs
+    cleaned_text = re.sub(r'https?://[^\s]+', '', cleaned_text)
+    # Remove email addresses  
+    cleaned_text = re.sub(r'\S+@\S+', '', cleaned_text)
+    # Remove excessive line breaks and formatting characters
+    cleaned_text = re.sub(r'[\r\n>*]+', ' ', cleaned_text)
+    # Remove quoted text markers
+    cleaned_text = re.sub(r'^>.*$', '', cleaned_text, flags=re.MULTILINE)
+    # Clean up whitespace
+    cleaned_text = ' '.join(cleaned_text.split())
+    
+    doc = nlp_model(cleaned_text)
+    
+    # Filter entities to remove artifacts
+    people = []
+    orgs = []
+    
+    for ent in doc.ents:
+        entity_text = ent.text.strip()
+        
+        # Skip if contains email formatting artifacts
+        if any(char in entity_text for char in ['>', '<', '*', '\r', '\n', '@']):
+            continue
+            
+        # Skip very short entities (likely artifacts)
+        if len(entity_text) < 2:
+            continue
+            
+        # Skip entities that are mostly punctuation
+        if len(re.sub(r'[^\w\s]', '', entity_text)) < 2:
+            continue
+            
+        # Skip common email words
+        email_words = {'email', 'mail', 'message', 'sent', 'reply', 'forward', 'inbox', 'subject'}
+        if entity_text.lower() in email_words:
+            continue
+            
+        if ent.label_ == "PERSON":
+            # Additional filtering for person names
+            if len(entity_text.split()) <= 3:  # Reasonable name length
+                people.append(entity_text)
+        elif ent.label_ == "ORG":
+            # Additional filtering for organizations
+            if not entity_text.startswith('http'):  # Not a URL fragment
+                orgs.append(entity_text)
+    
+    # Deduplicate while preserving order
+    people = list(dict.fromkeys(people))
+    orgs = list(dict.fromkeys(orgs))
+    
     return people, orgs
 
 def extract_keywords_for_themes(text, nlp_model, num_keywords=10):

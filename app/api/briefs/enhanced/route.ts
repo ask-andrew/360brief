@@ -5,36 +5,66 @@ import { createClient } from '@/lib/supabase/server';
 import { crisisScenario, normalOperationsScenario, highActivityScenario } from '@/mocks/data/testScenarios';
 import { google } from 'googleapis';
 
-// Helper function to extract email body from Gmail API payload
+// Helper function to extract email body from Gmail API payload with better text cleaning
 function extractEmailBody(payload: any): string {
   if (!payload) return '';
+  
+  let bestText = '';
   
   // Handle multipart messages
   if (payload.parts) {
     for (const part of payload.parts) {
       if (part.mimeType === 'text/plain' && part.body?.data) {
-        return Buffer.from(part.body.data, 'base64url').toString('utf-8');
+        const plainText = Buffer.from(part.body.data, 'base64url').toString('utf-8');
+        if (plainText.length > bestText.length) {
+          bestText = cleanEmailText(plainText);
+        }
       } else if (part.mimeType === 'text/html' && part.body?.data) {
         const html = Buffer.from(part.body.data, 'base64url').toString('utf-8');
-        // Basic HTML to text conversion
-        return html.replace(/<[^>]*>/g, '').trim();
+        const cleanedHtml = cleanEmailText(html.replace(/<[^>]*>/g, ' ').trim());
+        if (cleanedHtml.length > bestText.length) {
+          bestText = cleanedHtml;
+        }
       } else if (part.parts) {
         // Recursive search in nested parts
         const nestedBody = extractEmailBody(part);
-        if (nestedBody) return nestedBody;
+        if (nestedBody && nestedBody.length > bestText.length) {
+          bestText = nestedBody;
+        }
       }
     }
   }
   
   // Handle single-part messages
   if (payload.mimeType === 'text/plain' && payload.body?.data) {
-    return Buffer.from(payload.body.data, 'base64url').toString('utf-8');
+    const plainText = Buffer.from(payload.body.data, 'base64url').toString('utf-8');
+    bestText = cleanEmailText(plainText);
   } else if (payload.mimeType === 'text/html' && payload.body?.data) {
     const html = Buffer.from(payload.body.data, 'base64url').toString('utf-8');
-    return html.replace(/<[^>]*>/g, '').trim();
+    bestText = cleanEmailText(html.replace(/<[^>]*>/g, ' ').trim());
   }
   
-  return '';
+  return bestText;
+}
+
+// Clean email text of common artifacts
+function cleanEmailText(text: string): string {
+  if (!text) return '';
+  
+  return text
+    // Remove excessive whitespace and line breaks
+    .replace(/\r\n/g, '\n')
+    .replace(/\n\s*\n\s*\n/g, '\n\n') // Multiple line breaks to double
+    .replace(/\s+/g, ' ') // Multiple spaces to single
+    // Remove email reply headers
+    .replace(/^>.*$/gm, '') // Remove quoted lines starting with >
+    .replace(/On .* wrote:$/gm, '') // Remove "On ... wrote:" lines
+    // Remove common email signatures
+    .replace(/--\s*$/gm, '') // Remove signature separator
+    // Clean up remaining artifacts
+    .replace(/^\s*\n+/, '') // Remove leading empty lines
+    .replace(/\n+\s*$/, '') // Remove trailing empty lines
+    .trim();
 }
 
 export async function GET(req: Request) {
@@ -206,6 +236,7 @@ export async function GET(req: Request) {
           for (let i = 0; i < Math.min(10 - realEmails.length, messages.length); i++) {
             const msg = messages[i];
             try {
+              // First get metadata
               const meta = await gmail.users.messages.get({
                 userId: 'me',
                 id: msg.id!,
@@ -227,6 +258,26 @@ export async function GET(req: Request) {
               const snippet = meta.data.snippet || '';
               const isPromoLabel = meta.data.labelIds?.includes('CATEGORY_PROMOTIONS') || meta.data.labelIds?.includes('CATEGORY_SOCIAL');
               const isNoreply = /noreply|no-reply/i.test(from);
+              
+              // Get full email body for analysis
+              let fullBody = snippet; // Fallback to snippet
+              try {
+                const fullMessage = await gmail.users.messages.get({
+                  userId: 'me',
+                  id: msg.id!,
+                  format: 'full'
+                });
+                const extractedBody = extractEmailBody(fullMessage.data.payload);
+                console.log(`📧 Email ${msg.id}: snippet=${snippet.length}chars, extracted=${extractedBody?.length || 0}chars`);
+                if (extractedBody && extractedBody.length > snippet.length) {
+                  fullBody = extractedBody;
+                  console.log(`✅ Using full body for ${msg.id}: ${extractedBody.substring(0, 100)}...`);
+                } else {
+                  console.log(`⚠️ Using snippet for ${msg.id}: ${snippet.substring(0, 100)}...`);
+                }
+              } catch (bodyError) {
+                console.log(`⚠️ Could not fetch full body for message ${msg.id}, using snippet`);
+              }
 
               // Time window filter
               if (pass.windowDays) {
@@ -241,15 +292,15 @@ export async function GET(req: Request) {
               if (pass.skipNoreply && isNoreply) continue;
 
               if (subject) {
-                const hasUrgentKeywords = /urgent|asap|important|action.*required|deadline|due/i.test(subject + ' ' + snippet);
+                const hasUrgentKeywords = /urgent|asap|important|action.*required|deadline|due/i.test(subject + ' ' + fullBody);
                 const isUnread = meta.data.labelIds?.includes('UNREAD') ?? false;
-                const hasActionKeywords = /meeting|schedule|review|approve|feedback|decision|follow.*up/i.test(subject + ' ' + snippet);
+                const hasActionKeywords = /meeting|schedule|review|approve|feedback|decision|follow.*up/i.test(subject + ' ' + fullBody);
                 const priority: 'high' | 'medium' | 'low' = hasUrgentKeywords ? 'high' : hasActionKeywords ? 'medium' : 'low';
                 realEmails.push({
                   id: String(msg.id!),
                   messageId: String(msg.id!),
                   subject,
-                  body: snippet || `Email from ${from}`,
+                  body: fullBody || `Email from ${from}`,
                   from,
                   to: toValue ? [toValue] : [],
                   date: date.toISOString(),
@@ -290,6 +341,85 @@ export async function GET(req: Request) {
           tickets: [],
           generated_at: new Date().toISOString(),
         };
+      }
+      
+      // Call Python analysis service for executive intelligence processing
+      try {
+        console.log(`🧠 GET: Calling Python analysis service with ${unified.emails.length} emails for intelligent processing...`);
+        
+        // Transform emails to the format expected by FastAPI bridge
+        const emailsForAnalysis = unified.emails.map(email => ({
+          id: email.id,
+          subject: email.subject || "",
+          body: email.body || "",
+          from_name: email.from.includes('<') ? email.from.split('<')[0].trim() : email.from,
+          from_email: email.from.includes('<') ? email.from.match(/<(.+)>/)?.[1] || email.from : email.from,
+          to_recipients: Array.isArray(email.to) ? email.to : [email.to || ""],
+          cc_recipients: [],
+          date: email.date,
+          threadId: email.messageId || email.id
+        }));
+        
+        const analysisResponse = await fetch('http://localhost:8001/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            emails: emailsForAnalysis,
+            days_back: 7,
+            user_email: user.email,
+            include_llm_digest: true
+          })
+        });
+        
+        if (analysisResponse.ok) {
+          const analysisResult = await analysisResponse.json();
+          if (analysisResult.success) {
+            console.log(`✅ GET: Python analysis completed: themes=${analysisResult.data.themes?.length}, people=${analysisResult.data.key_people?.length}`);
+            
+            // Transform Python analysis result into expected brief format
+            const briefData = {
+              executiveSummary: analysisResult.data.llm_digest,
+              keyThemes: analysisResult.data.themes.map((t: any, index: number) => ({
+                theme: typeof t === 'string' ? t : (t.keyword || `Theme ${index + 1}`),
+                frequency: typeof t === 'string' ? 1 : (t.frequency || 1),
+                description: `Key focus area identified across ${typeof t === 'string' ? '1' : (t.frequency || 1)} communications`
+              })),
+              keyPeople: analysisResult.data.key_people.map((p: any) => ({
+                name: p.name,
+                interactions: p.frequency,
+                role: 'Key Contact'
+              })),
+              keyOrganizations: analysisResult.data.key_organizations.map((o: any) => ({
+                name: o.name,
+                mentions: o.frequency,
+                context: 'Business Partner'
+              })),
+              emailsAwaitingResponse: analysisResult.data.emails_awaiting_response,
+              upcomingMeetings: analysisResult.data.upcoming_meetings,
+              metrics: analysisResult.data.executive_summary,
+              userId: user.email,
+              dataSource: 'python_analysis',
+              timestamp: new Date().toISOString()
+            };
+            
+            return NextResponse.json({
+              ...briefData,
+              generationParams: {
+                style: briefStyle,
+                scenario: undefined,
+                timeRange
+              },
+              availableTimeRanges: ['3days', 'week', 'month'],
+              pythonAnalysisData: analysisResult.data // Include full analysis for debugging
+            });
+          }
+        }
+        
+        console.log(`⚠️ GET: Python analysis failed, falling back to basic processing...`);
+      } catch (analysisError) {
+        console.error('⚠️ GET: Python analysis service error:', analysisError);
       }
       
       console.log('✅ Using real data structure for brief generation:', {
@@ -402,13 +532,15 @@ export async function POST(req: Request) {
     const briefStyle = validStyles.includes(style) ? style as any : 'mission_brief';
     
     let unified;
+    let user = null;
     
     if (customData) {
       // Use provided custom data (for testing/demos)
       unified = customData;
     } else if (useRealData) {
       const supabase = await createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+      user = authUser;
       if (userError || !user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
@@ -553,6 +685,86 @@ export async function POST(req: Request) {
         
         console.log(`✅ POST: Successfully fetched ${realEmails.length} real Gmail messages for brief`);
         
+        // Call Python analysis service for executive intelligence processing
+        try {
+          console.log(`🧠 POST: Calling Python analysis service with ${realEmails.length} emails for intelligent processing...`);
+          
+          // Transform emails to the format expected by FastAPI bridge
+          const emailsForAnalysis = realEmails.map(email => ({
+            id: email.id,
+            subject: email.subject || "",
+            body: email.body || "",
+            from_name: email.from.includes('<') ? email.from.split('<')[0].trim() : email.from,
+            from_email: email.from.includes('<') ? email.from.match(/<(.+)>/)?.[1] || email.from : email.from,
+            to_recipients: Array.isArray(email.to) ? email.to : [email.to || ""],
+            cc_recipients: [],
+            date: email.date,
+            threadId: email.messageId || email.id
+          }));
+          
+          const analysisResponse = await fetch('http://localhost:8001/analyze', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              emails: emailsForAnalysis,
+              days_back: 7,
+              user_email: user.email,
+              include_llm_digest: true
+            })
+          });
+          
+          if (analysisResponse.ok) {
+            const analysisResult = await analysisResponse.json();
+            if (analysisResult.success) {
+              console.log(`✅ Python analysis completed: themes=${analysisResult.data.themes?.length}, people=${analysisResult.data.key_people?.length}`);
+              
+              // Transform Python analysis result into expected brief format
+              const briefData = {
+                executiveSummary: analysisResult.data.llm_digest,
+                keyThemes: analysisResult.data.themes.map((t: any, index: number) => ({
+                  theme: typeof t === 'string' ? t : (t.keyword || `Theme ${index + 1}`),
+                  frequency: typeof t === 'string' ? 1 : (t.frequency || 1),
+                  description: `Key focus area identified across ${typeof t === 'string' ? '1' : (t.frequency || 1)} communications`
+                })),
+                keyPeople: analysisResult.data.key_people.map((p: any) => ({
+                  name: p.name,
+                  interactions: p.frequency,
+                  role: 'Key Contact'
+                })),
+                keyOrganizations: analysisResult.data.key_organizations.map((o: any) => ({
+                  name: o.name,
+                  mentions: o.frequency,
+                  context: 'Business Partner'
+                })),
+                emailsAwaitingResponse: analysisResult.data.emails_awaiting_response,
+                upcomingMeetings: analysisResult.data.upcoming_meetings,
+                metrics: analysisResult.data.executive_summary,
+                userId: user.email,
+                dataSource: 'python_analysis',
+                timestamp: new Date().toISOString()
+              };
+              
+              return NextResponse.json({
+                ...briefData,
+                generationParams: {
+                  style: briefStyle,
+                  timeRange,
+                  analysisEngine: 'python_nlp'
+                },
+                availableTimeRanges: ['3days', 'week', 'month'],
+                pythonAnalysisData: analysisResult.data // Include full analysis for debugging
+              });
+            }
+          }
+          
+          console.log(`⚠️ Python analysis failed, falling back to basic processing...`);
+        } catch (analysisError) {
+          console.error('⚠️ Python analysis service error:', analysisError);
+        }
+        
+        // Fallback: use existing unified data structure
         unified = {
           emails: realEmails,
           incidents: [],

@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 import networkx as nx
+import re
 
 from ..models.communication import (
     CommunicationType, Direction, EmailCommunication, SlackCommunication, 
@@ -18,12 +19,22 @@ class CommunicationProcessor:
         self.communications = []
         self.contacts = {}
         self.network_graph = nx.Graph()
+        self.structured_data = {
+            'projects': [],
+            'incidents': [],
+            'financials': [],
+            'key_people': {},
+            'action_items': [],
+            'decisions': [],
+            'achievements': []
+        }
         
     def add_communication(self, comm):
         """Add a communication record to the processor."""
         self.communications.append(comm)
         self._update_contacts(comm)
         self._update_network_graph(comm)
+        self._process_content(comm)
     
     def _update_contacts(self, comm):
         """Update internal contact information."""
@@ -315,3 +326,422 @@ class CommunicationProcessor:
             'nodes': nodes,
             'links': links
         }
+    
+    def _process_content(self, comm):
+        """Extract structured data from communication content using keyword/regex patterns."""
+        # Get text content from communication
+        content = ''
+        subject = ''
+        
+        if hasattr(comm, 'body'):
+            content = comm.body or ''
+        if hasattr(comm, 'subject'):
+            subject = comm.subject or ''
+        
+        full_text = f"{subject} {content}"
+        
+        if not full_text.strip():
+            return
+        
+        # Extract projects/initiatives
+        self._extract_projects(full_text, comm)
+        
+        # Extract blockers/incidents
+        self._extract_incidents(full_text, comm)
+        
+        # Extract financial mentions
+        self._extract_financials(full_text, comm)
+        
+        # Extract action items
+        self._extract_action_items(full_text, comm)
+        
+        # Extract decisions
+        self._extract_decisions(full_text, comm)
+        
+        # Extract achievements
+        self._extract_achievements(full_text, comm)
+        
+        # Update key people tracking
+        self._update_key_people(comm)
+    
+    def _extract_projects(self, text, comm):
+        """Extract project mentions from text."""
+        # Project keywords
+        project_keywords = [
+            'project', 'initiative', 'campaign', 'program', 'launch', 
+            'sprint', 'release', 'milestone', 'deployment', 'rollout'
+        ]
+        
+        # Regex patterns for project extraction
+        patterns = [
+            r'\b(?:project|initiative|campaign|program)\s+([A-Z][\w\s]+?)(?:[,\.]|$)',
+            r'\b(?:Project|Initiative|Campaign|Program)\s+([A-Z0-9][\w\s\-]+?)(?:[,\.]|$)',
+            r'\b([A-Z][\w]+)\s+(?:project|initiative|launch|release)\b',
+            r'\b(?:working on|developing|building)\s+([A-Z][\w\s]+?)(?:[,\.]|$)'
+        ]
+        
+        text_lower = text.lower()
+        
+        # Check for project keywords
+        for keyword in project_keywords:
+            if keyword in text_lower:
+                # Try to extract project names using patterns
+                for pattern in patterns:
+                    matches = re.findall(pattern, text, re.IGNORECASE)
+                    for match in matches:
+                        project_name = match.strip()
+                        if len(project_name) > 3 and len(project_name) < 50:
+                            self.structured_data['projects'].append({
+                                'name': project_name,
+                                'source': comm.id if hasattr(comm, 'id') else None,
+                                'timestamp': comm.timestamp,
+                                'context': text[:200]  # Store context snippet
+                            })
+    
+    def _extract_incidents(self, text, comm):
+        """Extract blockers and incidents from text."""
+        # Blocker/incident keywords
+        incident_keywords = [
+            'outage', 'bug', 'critical issue', 'failure', 'unable to',
+            'blocker', 'blocked', 'error', 'crash', 'down', 'broken',
+            'urgent', 'emergency', 'critical', 'severity', 'incident'
+        ]
+        
+        # Regex patterns for incident extraction
+        patterns = [
+            r'\b(?:outage|failure|error|bug)\s+(?:in|with|on)\s+([\w\s]+?)(?:[,\.]|$)',
+            r'\b([\w\s]+?)\s+(?:is|are)\s+(?:down|broken|failing|blocked)\b',
+            r'\b(?:critical|urgent|emergency)\s+(?:issue|problem|bug)\s*:?\s*([^,\.]+)',
+            r'\bunable to\s+([^,\.]+)'
+        ]
+        
+        text_lower = text.lower()
+        
+        # Check for incident keywords
+        for keyword in incident_keywords:
+            if keyword in text_lower:
+                # Try to extract incident details
+                for pattern in patterns:
+                    matches = re.findall(pattern, text, re.IGNORECASE)
+                    for match in matches:
+                        incident_desc = match.strip()
+                        if len(incident_desc) > 5:
+                            self.structured_data['incidents'].append({
+                                'description': incident_desc,
+                                'source': comm.id if hasattr(comm, 'id') else None,
+                                'timestamp': comm.timestamp,
+                                'severity': self._determine_severity(text_lower),
+                                'context': text[:200]
+                            })
+                            break  # One incident per pattern match
+    
+    def _extract_financials(self, text, comm):
+        """Extract financial mentions from text."""
+        # Regex patterns for financial data
+        patterns = [
+            r'\$([\d,]+(?:\.\d+)?(?:[KMB])?)',  # $100, $1.5M, $20K
+            r'([\d,]+(?:\.\d+)?)\s*(?:dollars|USD)',  # 100 dollars, 1000 USD
+            r'\b([\d,]+(?:\.\d+)?)\s*(?:million|billion|thousand)\s+(?:dollars|USD|\$)',
+            r'\b(?:budget|cost|revenue|profit|loss|expense)\s*(?:of|:)?\s*\$?([\d,]+(?:\.\d+)?[KMB]?)'
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match in matches:
+                amount = match.strip()
+                if amount:
+                    # Normalize amount format
+                    normalized = self._normalize_financial_amount(amount)
+                    if normalized:
+                        self.structured_data['financials'].append({
+                            'amount': normalized,
+                            'raw_text': amount,
+                            'source': comm.id if hasattr(comm, 'id') else None,
+                            'timestamp': comm.timestamp,
+                            'context': self._extract_financial_context(text, amount)
+                        })
+    
+    def _extract_action_items(self, text, comm):
+        """Extract action items from text."""
+        # Action item patterns
+        patterns = [
+            r'\b(?:action item|todo|to-do|task)\s*:?\s*([^,\.\n]+)',
+            r'\b(?:need to|needs to|must|should|will)\s+([^,\.\n]+)',
+            r'\b(?:please|kindly)\s+([^,\.\n]+)',
+            r'^[-*]\s+([^\n]+)$'  # Bullet points
+        ]
+        
+        text_lower = text.lower()
+        
+        # Look for action-oriented language
+        if any(keyword in text_lower for keyword in ['action', 'todo', 'task', 'need to', 'please', 'must']):
+            for pattern in patterns:
+                matches = re.findall(pattern, text, re.IGNORECASE | re.MULTILINE)
+                for match in matches:
+                    action = match.strip()
+                    if len(action) > 10 and len(action) < 200:
+                        self.structured_data['action_items'].append({
+                            'description': action,
+                            'source': comm.id if hasattr(comm, 'id') else None,
+                            'timestamp': comm.timestamp,
+                            'assigned_to': self._extract_assignee(text, action)
+                        })
+    
+    def _extract_decisions(self, text, comm):
+        """Extract decisions from text."""
+        # Decision patterns
+        decision_keywords = [
+            'decided', 'decision', 'approved', 'rejected', 'agreed',
+            'concluded', 'determined', 'resolved', 'finalized'
+        ]
+        
+        patterns = [
+            r'\b(?:decided|agreed|approved)\s+(?:to|that)\s+([^,\.]+)',
+            r'\b(?:decision|conclusion)\s*:?\s*([^,\.]+)',
+            r'\b(?:we|I|team)\s+(?:will|shall|are going to)\s+([^,\.]+)'
+        ]
+        
+        text_lower = text.lower()
+        
+        for keyword in decision_keywords:
+            if keyword in text_lower:
+                for pattern in patterns:
+                    matches = re.findall(pattern, text, re.IGNORECASE)
+                    for match in matches:
+                        decision = match.strip()
+                        if len(decision) > 10:
+                            self.structured_data['decisions'].append({
+                                'description': decision,
+                                'source': comm.id if hasattr(comm, 'id') else None,
+                                'timestamp': comm.timestamp
+                            })
+                            break
+    
+    def _extract_achievements(self, text, comm):
+        """Extract achievements and wins from text."""
+        # Achievement patterns
+        achievement_keywords = [
+            'completed', 'achieved', 'accomplished', 'succeeded',
+            'launched', 'shipped', 'delivered', 'milestone',
+            'congratulations', 'great job', 'well done', 'success'
+        ]
+        
+        patterns = [
+            r'\b(?:completed|achieved|accomplished|delivered)\s+([^,\.]+)',
+            r'\b(?:successfully)\s+([^,\.]+)',
+            r'\b(?:congratulations|kudos|great job)\s+(?:on|for)?\s*([^,\.]+)',
+            r'\b([\w\s]+?)\s+(?:is|was)\s+(?:complete|successful|launched|live)\b'
+        ]
+        
+        text_lower = text.lower()
+        
+        for keyword in achievement_keywords:
+            if keyword in text_lower:
+                for pattern in patterns:
+                    matches = re.findall(pattern, text, re.IGNORECASE)
+                    for match in matches:
+                        achievement = match.strip()
+                        if len(achievement) > 5 and len(achievement) < 200:
+                            self.structured_data['achievements'].append({
+                                'description': achievement,
+                                'source': comm.id if hasattr(comm, 'id') else None,
+                                'timestamp': comm.timestamp
+                            })
+                            break
+    
+    def _update_key_people(self, comm):
+        """Update key people tracking based on communication."""
+        if hasattr(comm, 'participants'):
+            for participant in comm.participants:
+                person_id = participant.id if hasattr(participant, 'id') else str(participant)
+                
+                if person_id not in self.structured_data['key_people']:
+                    self.structured_data['key_people'][person_id] = {
+                        'name': participant.name if hasattr(participant, 'name') else str(participant),
+                        'email': participant.email if hasattr(participant, 'email') else None,
+                        'interaction_count': 0,
+                        'last_interaction': None,
+                        'topics': [],
+                        'importance_score': 0
+                    }
+                
+                person_data = self.structured_data['key_people'][person_id]
+                person_data['interaction_count'] += 1
+                person_data['last_interaction'] = comm.timestamp
+                
+                # Track topics discussed
+                if hasattr(comm, 'subject') and comm.subject:
+                    person_data['topics'].append(comm.subject)
+                
+                # Calculate importance score
+                person_data['importance_score'] = self._calculate_person_importance(person_data)
+    
+    def _determine_severity(self, text_lower):
+        """Determine incident severity based on keywords."""
+        if any(word in text_lower for word in ['critical', 'emergency', 'urgent', 'severe']):
+            return 'high'
+        elif any(word in text_lower for word in ['important', 'moderate', 'issue']):
+            return 'medium'
+        else:
+            return 'low'
+    
+    def _normalize_financial_amount(self, amount_str):
+        """Normalize financial amount to standard format."""
+        try:
+            # Remove commas and dollar signs
+            clean = amount_str.replace(',', '').replace('$', '').strip()
+            
+            # Handle K, M, B suffixes
+            multiplier = 1
+            if clean[-1].upper() == 'K':
+                multiplier = 1000
+                clean = clean[:-1]
+            elif clean[-1].upper() == 'M':
+                multiplier = 1000000
+                clean = clean[:-1]
+            elif clean[-1].upper() == 'B':
+                multiplier = 1000000000
+                clean = clean[:-1]
+            
+            # Convert to float and apply multiplier
+            value = float(clean) * multiplier
+            
+            # Format based on size
+            if value >= 1000000000:
+                return f"${value/1000000000:.1f}B"
+            elif value >= 1000000:
+                return f"${value/1000000:.1f}M"
+            elif value >= 1000:
+                return f"${value/1000:.1f}K"
+            else:
+                return f"${value:.0f}"
+        except:
+            return None
+    
+    def _extract_financial_context(self, text, amount):
+        """Extract context around financial mention."""
+        # Find position of amount in text
+        pos = text.find(amount)
+        if pos == -1:
+            return ""
+        
+        # Extract surrounding context (50 chars before and after)
+        start = max(0, pos - 50)
+        end = min(len(text), pos + len(amount) + 50)
+        
+        context = text[start:end]
+        
+        # Clean up context
+        if start > 0:
+            context = "..." + context
+        if end < len(text):
+            context = context + "..."
+        
+        return context.strip()
+    
+    def _extract_assignee(self, text, action):
+        """Try to extract who an action is assigned to."""
+        # Look for assignment patterns
+        patterns = [
+            r'\b([A-Z][a-z]+)\s+(?:will|should|needs to|must)',
+            r'\bassigned to\s+([A-Z][a-z]+)',
+            r'\b@([\w]+)'  # Mentions
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if match:
+                return match.group(1)
+        
+        return None
+    
+    def _calculate_person_importance(self, person_data):
+        """Calculate importance score for a person."""
+        score = 0
+        
+        # Base score from interaction count
+        score += person_data['interaction_count'] * 10
+        
+        # Recency bonus
+        if person_data['last_interaction']:
+            days_ago = (datetime.now() - person_data['last_interaction']).days
+            if days_ago <= 1:
+                score += 50
+            elif days_ago <= 7:
+                score += 20
+            elif days_ago <= 30:
+                score += 10
+        
+        # Topic diversity bonus
+        unique_topics = len(set(person_data['topics'][-10:]))  # Last 10 topics
+        score += unique_topics * 5
+        
+        return score
+    
+    def get_structured_data(self):
+        """Return the extracted structured data."""
+        # Deduplicate and clean up data
+        self._deduplicate_structured_data()
+        
+        # Sort and rank items
+        self._rank_structured_data()
+        
+        return self.structured_data
+    
+    def _deduplicate_structured_data(self):
+        """Remove duplicate entries from structured data."""
+        # Deduplicate projects
+        seen_projects = set()
+        unique_projects = []
+        for project in self.structured_data['projects']:
+            key = project['name'].lower()
+            if key not in seen_projects:
+                seen_projects.add(key)
+                unique_projects.append(project)
+        self.structured_data['projects'] = unique_projects
+        
+        # Similar deduplication for other categories
+        self._deduplicate_list('incidents', 'description')
+        self._deduplicate_list('action_items', 'description')
+        self._deduplicate_list('decisions', 'description')
+        self._deduplicate_list('achievements', 'description')
+    
+    def _deduplicate_list(self, category, key_field):
+        """Generic deduplication for list categories."""
+        seen = set()
+        unique = []
+        for item in self.structured_data[category]:
+            key = item[key_field].lower() if key_field in item else str(item)
+            if key not in seen:
+                seen.add(key)
+                unique.append(item)
+        self.structured_data[category] = unique
+    
+    def _rank_structured_data(self):
+        """Rank and sort structured data by importance."""
+        # Sort projects by frequency (could be enhanced)
+        self.structured_data['projects'].sort(
+            key=lambda x: x['timestamp'] if 'timestamp' in x else datetime.min,
+            reverse=True
+        )
+        
+        # Sort incidents by severity and recency
+        severity_order = {'high': 3, 'medium': 2, 'low': 1}
+        self.structured_data['incidents'].sort(
+            key=lambda x: (severity_order.get(x.get('severity', 'low'), 0), x['timestamp']),
+            reverse=True
+        )
+        
+        # Sort action items by recency
+        self.structured_data['action_items'].sort(
+            key=lambda x: x['timestamp'],
+            reverse=True
+        )
+        
+        # Sort key people by importance score
+        sorted_people = sorted(
+            self.structured_data['key_people'].items(),
+            key=lambda x: x[1]['importance_score'],
+            reverse=True
+        )
+        self.structured_data['key_people'] = dict(sorted_people[:20])  # Keep top 20

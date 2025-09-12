@@ -287,7 +287,7 @@ class GmailService:
         # Phase 1: Get extended message list with metadata
         result = self.service.users().messages().list(
             userId='me',
-            maxResults=max_results * 2  # Get more to allow for filtering
+            maxResults=max_results * 5  # Get more to allow for filtering
         ).execute()
         
         messages = result.get('messages', [])
@@ -297,7 +297,7 @@ class GmailService:
             return []
         
         # Phase 2: Fetch metadata and score importance
-        metadata_emails = await self._fetch_metadata_batch(messages[:max_results * 2])
+        metadata_emails = await self._fetch_metadata_batch(messages[:max_results * 5])
         
         # Filter by date range early
         filtered_emails = []
@@ -419,8 +419,7 @@ class GmailService:
                     msg = self.service.users().messages().get(
                         userId='me',
                         id=msg_ref['id'],
-                        format='metadata',
-                        metadataHeaders=['Subject', 'From', 'To', 'Date', 'Message-ID', 'In-Reply-To', 'References']
+                        format='full'  # Changed to fetch full email content
                     ).execute()
                     
                     email_data = self._parse_gmail_message_metadata(msg)
@@ -465,14 +464,104 @@ class GmailService:
         
         return batch_emails
     
+    def _parse_email_body(self, payload: Dict) -> Optional[str]:
+        """Parse email body from Gmail message payload, handling multipart messages.
+        
+        Args:
+            payload: Gmail message payload containing parts or body
+            
+        Returns:
+            Extracted and decoded email body text or None
+        """
+        try:
+            body_text = ""
+            html_body = ""
+            
+            # Check if message has parts (multipart message)
+            if 'parts' in payload:
+                for part in payload['parts']:
+                    mime_type = part.get('mimeType', '')
+                    
+                    # Recursively handle nested parts
+                    if 'parts' in part:
+                        nested_body = self._parse_email_body(part)
+                        if nested_body:
+                            body_text = nested_body
+                            break
+                    
+                    # Extract text/plain content (preferred)
+                    elif mime_type == 'text/plain':
+                        data = part.get('body', {}).get('data', '')
+                        if data:
+                            try:
+                                body_text = base64.urlsafe_b64decode(data).decode('utf-8', errors='ignore')
+                                break  # Prefer plain text
+                            except Exception as e:
+                                logger.warning(f"Failed to decode text/plain part: {e}")
+                    
+                    # Extract text/html content as fallback
+                    elif mime_type == 'text/html' and not body_text:
+                        data = part.get('body', {}).get('data', '')
+                        if data:
+                            try:
+                                html_content = base64.urlsafe_b64decode(data).decode('utf-8', errors='ignore')
+                                # Basic HTML to text conversion
+                                import re
+                                # Remove style and script tags
+                                html_content = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL)
+                                html_content = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL)
+                                # Replace common HTML entities
+                                html_content = html_content.replace('&nbsp;', ' ').replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+                                # Remove HTML tags
+                                html_body = re.sub(r'<[^>]+>', ' ', html_content)
+                                # Clean up whitespace
+                                html_body = ' '.join(html_body.split())
+                            except Exception as e:
+                                logger.warning(f"Failed to decode text/html part: {e}")
+            
+            # Single part message
+            else:
+                mime_type = payload.get('mimeType', '')
+                data = payload.get('body', {}).get('data', '')
+                
+                if data:
+                    try:
+                        decoded_data = base64.urlsafe_b64decode(data).decode('utf-8', errors='ignore')
+                        
+                        if mime_type == 'text/plain':
+                            body_text = decoded_data
+                        elif mime_type == 'text/html':
+                            import re
+                            # Remove style and script tags
+                            decoded_data = re.sub(r'<style[^>]*>.*?</style>', '', decoded_data, flags=re.DOTALL)
+                            decoded_data = re.sub(r'<script[^>]*>.*?</script>', '', decoded_data, flags=re.DOTALL)
+                            # Replace common HTML entities
+                            decoded_data = decoded_data.replace('&nbsp;', ' ').replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+                            # Remove HTML tags
+                            body_text = re.sub(r'<[^>]+>', ' ', decoded_data)
+                            # Clean up whitespace
+                            body_text = ' '.join(body_text.split())
+                        else:
+                            body_text = decoded_data
+                    except Exception as e:
+                        logger.warning(f"Failed to decode message body: {e}")
+            
+            # Return text body if available, otherwise HTML body
+            final_body = body_text if body_text else html_body
+            return final_body.strip() if final_body else None
+            
+        except Exception as e:
+            logger.error(f"Error parsing email body: {e}")
+            return None
+    
     def _parse_gmail_message_metadata(self, msg: Dict) -> Optional[Dict[str, Any]]:
-        """Parse Gmail API message metadata only (faster than full parsing).
+        """Parse Gmail API message with full content (when format='full').
         
         Args:
             msg: Gmail API message object
             
         Returns:
-            Parsed email metadata or None if parsing failed
+            Parsed email with full body content or None if parsing failed
         """
         try:
             headers = {h['name']: h['value'] for h in msg['payload'].get('headers', [])}
@@ -482,8 +571,11 @@ class GmailService:
             timestamp_ms = int(msg['internalDate'])
             timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
             
-            # Use snippet for initial content assessment
-            snippet = msg.get('snippet', '')
+            # Parse full email body since we're now using format='full'
+            body = self._parse_email_body(msg.get('payload', {}))
+            if not body:
+                # Fallback to snippet if body parsing fails
+                body = msg.get('snippet', '')
             
             # Determine direction based on sender
             sender = headers.get('From', '')
@@ -496,7 +588,8 @@ class GmailService:
                 'source_id': msg['id'],
                 'message_type': MessageType.EMAIL,
                 'subject': headers.get('Subject', ''),
-                'snippet': snippet,  # Use snippet instead of full body for metadata phase
+                'body': body,  # Now contains full email body
+                'snippet': msg.get('snippet', ''),
                 'sender': sender,
                 'recipients': [headers.get('To', '')],
                 'timestamp': timestamp,
@@ -510,11 +603,11 @@ class GmailService:
                     'size': msg.get('sizeEstimate', 0),
                     'unread': 'UNREAD' in labels
                 },
-                'full_content_fetched': False  # Mark as metadata-only
+                'full_content_fetched': True  # Mark as full content
             }
             
         except Exception as e:
-            logger.error(f"Error parsing message metadata {msg.get('id', 'unknown')}: {e}")
+            logger.error(f"Error parsing message {msg.get('id', 'unknown')}: {e}")
             return None
     
     def _score_email_importance(self, emails: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
