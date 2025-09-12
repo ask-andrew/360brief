@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens, getOAuthClient } from '@/server/google/client';
 import { createClient } from '@/lib/supabase/server';
+import { normalizeToSeconds } from '@/lib/utils/timestamp';
 
 // Force Node.js runtime for service role operations
 export const runtime = 'nodejs';
@@ -135,20 +136,31 @@ export async function GET(request: NextRequest) {
 
     console.log('🔄 Storing Gmail tokens in Supabase...');
     
+    // Handle mixed schema: test individual fields
+    const expiresAtSeconds = tokens.expiry_date ? normalizeToSeconds(tokens.expiry_date) : null;
+    const updatedAtSeconds = normalizeToSeconds(Date.now());
+    
+    // First attempt: try both as bigint (Unix seconds)
     const tokenData = {
       user_id: user.id,
       provider: 'google',
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
-      expires_at: tokens.expiry_date ? Math.floor(tokens.expiry_date / 1000) : null, // Unix timestamp as bigint expects integer
-      updated_at: Math.floor(Date.now() / 1000), // Unix timestamp as bigint expects integer
+      expires_at: expiresAtSeconds,
+      updated_at: updatedAtSeconds,
     };
     
     console.log(`🔍 Storing token data:`, {
       user_id: tokenData.user_id,
       provider: tokenData.provider,
       expires_at: tokenData.expires_at,
+      expires_at_type: typeof tokenData.expires_at,
+      expires_at_seconds: expiresAtSeconds,
+      updated_at: tokenData.updated_at,
+      updated_at_type: typeof tokenData.updated_at,
+      updated_at_seconds: updatedAtSeconds,
       expires_raw: tokens.expiry_date,
+      expires_raw_type: typeof tokens.expiry_date,
       access_token_length: tokenData.access_token?.length,
       refresh_token_length: tokenData.refresh_token?.length,
     });
@@ -168,19 +180,91 @@ export async function GET(request: NextRequest) {
         hint: tokenError.hint,
       });
       
-      // More specific error handling for common issues
-      if (tokenError.code === '23505') {
+      // Handle mixed schema: try different field type combinations
+      if (tokenError.code === '22008' || tokenError.code === '22P02') {
+        console.log('🔄 First attempt failed, trying alternative field formats...');
+        
+        // Try different combinations:
+        const retryOptions = [
+          // Option 1: expires_at as timestamp, updated_at as bigint
+          {
+            name: 'expires_at=timestamp, updated_at=bigint',
+            data: {
+              ...tokenData,
+              expires_at: expiresAtSeconds ? new Date(expiresAtSeconds * 1000).toISOString() : null,
+              updated_at: updatedAtSeconds,
+            }
+          },
+          // Option 2: expires_at as bigint, updated_at as timestamp  
+          {
+            name: 'expires_at=bigint, updated_at=timestamp',
+            data: {
+              ...tokenData,
+              expires_at: expiresAtSeconds,
+              updated_at: new Date(updatedAtSeconds * 1000).toISOString(),
+            }
+          },
+          // Option 3: both as timestamp
+          {
+            name: 'both=timestamp',
+            data: {
+              ...tokenData,
+              expires_at: expiresAtSeconds ? new Date(expiresAtSeconds * 1000).toISOString() : null,
+              updated_at: new Date(updatedAtSeconds * 1000).toISOString(),
+            }
+          }
+        ];
+        
+        let retrySuccess = false;
+        
+        for (const option of retryOptions) {
+          console.log(`🔄 Trying ${option.name}...`);
+          
+          const { data: retryData, error: retryError } = await serviceSupabase
+            .from('user_tokens')
+            .upsert(option.data, {
+              onConflict: 'user_id,provider'
+            })
+            .select();
+            
+          if (!retryError) {
+            console.log(`✅ Success with ${option.name}!`, retryData?.length ? `(${retryData.length} records)` : '');
+            retrySuccess = true;
+            break;
+          } else {
+            console.log(`❌ ${option.name} failed:`, retryError.message);
+          }
+        }
+        
+        if (!retrySuccess) {
+          console.error('❌ All retry attempts failed');
+          redirectUrl.searchParams.set('auth', 'error');
+          redirectUrl.searchParams.set('message', `Failed to save Gmail connection: All timestamp format attempts failed`);
+          return NextResponse.redirect(redirectUrl);
+        }
+      }
+      // More specific error handling for common issues  
+      else if (tokenError.code === '23505') {
         console.log('🔄 Duplicate key error - attempting direct update...');
         
         // Try direct update instead of upsert
+        const updateData = {
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_at: tokenData.expires_at,
+          updated_at: normalizeToSeconds(Date.now()), // Try bigint first
+        };
+        
+        console.log('🔍 Update data types:', {
+          expires_at: updateData.expires_at,
+          expires_at_type: typeof updateData.expires_at,
+          updated_at: updateData.updated_at,
+          updated_at_type: typeof updateData.updated_at,
+        });
+
         const { error: updateError } = await serviceSupabase
           .from('user_tokens')
-          .update({
-            access_token: tokenData.access_token,
-            refresh_token: tokenData.refresh_token,
-            expires_at: tokenData.expires_at,
-            updated_at: Math.floor(Date.now() / 1000), // Unix timestamp as bigint expects integer
-          })
+          .update(updateData)
           .eq('user_id', user.id)
           .eq('provider', 'google');
           
@@ -206,14 +290,62 @@ export async function GET(request: NextRequest) {
       console.log('✅ Gmail tokens stored successfully', insertData?.length ? `(${insertData.length} records)` : '');
     }
     
-    // Create manual session by setting JWT tokens in cookies
-    // For now, let's redirect with user ID so the frontend can create the session
-    redirectUrl.searchParams.set('user_id', user.id);
+    // Create proper Supabase session using service role
+    console.log('🔐 Creating Supabase session for Gmail OAuth user...');
     
-    // Redirect to dashboard with success message
-    redirectUrl.searchParams.set('auth', 'success');
-    redirectUrl.searchParams.set('message', 'Gmail connected successfully!');
-    return NextResponse.redirect(redirectUrl);
+    try {
+      // Use service role client to create a session
+      const { createClient: createServiceClient } = await import('@supabase/supabase-js');
+      const serviceSupabase = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      
+      // Generate session for the user
+      const { data: sessionData, error: sessionError } = await serviceSupabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: user.email!,
+        options: {
+          data: {
+            gmail_connected: true,
+            connected_at: new Date().toISOString()
+          }
+        }
+      });
+      
+      if (sessionError || !sessionData.properties?.action_link) {
+        console.error('❌ Failed to generate session link:', sessionError);
+        throw new Error('Failed to create user session');
+      }
+      
+      // Extract token from the magic link and redirect through Supabase auth callback
+      const linkUrl = new URL(sessionData.properties.action_link);
+      const token = linkUrl.searchParams.get('token_hash');
+      const type = linkUrl.searchParams.get('type');
+      
+      if (token && type) {
+        // Redirect to Supabase auth callback with the session token
+        const callbackUrl = new URL('/auth/callback', request.url);
+        callbackUrl.searchParams.set('token_hash', token);
+        callbackUrl.searchParams.set('type', type);
+        callbackUrl.searchParams.set('next', '/dashboard');
+        callbackUrl.searchParams.set('connect', 'gmail'); // Signal this was a Gmail connection
+        
+        console.log('✅ Redirecting to Supabase auth callback with session token');
+        return NextResponse.redirect(callbackUrl);
+      } else {
+        throw new Error('Could not extract session token from magic link');
+      }
+      
+    } catch (sessionCreateError) {
+      console.error('❌ Session creation failed:', sessionCreateError);
+      
+      // Fallback: redirect to login with success message but require re-auth
+      redirectUrl.pathname = '/login';
+      redirectUrl.searchParams.set('auth', 'gmail_connected');
+      redirectUrl.searchParams.set('message', 'Gmail connected! Please sign in to continue.');
+      return NextResponse.redirect(redirectUrl);
+    }
     
   } catch (error) {
     console.error('❌ Gmail Callback Error:', error);
