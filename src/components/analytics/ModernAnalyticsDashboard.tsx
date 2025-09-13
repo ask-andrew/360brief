@@ -31,7 +31,6 @@ import {
   ArrowRight,
   Info,
   ExternalLink,
-  Mail as MailIcon,
   Trash2
 } from 'lucide-react';
 import { EmailSenderAnalytics } from './EmailSenderAnalytics';
@@ -149,58 +148,56 @@ interface AnalyticsMetricCardProps {
 
 function AnalyticsMetricCard({ title, value, change, icon: Icon, description, infoTooltip, linkTo }: AnalyticsMetricCardProps) {
   return (
-    <Card className="h-full">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                {title}
-              </p>
-              {infoTooltip && (
-                <div className="group relative">
-                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                    {infoTooltip}
+    <Card className="h-full flex flex-col">
+      <CardContent className="p-6 flex-1 flex flex-col">
+        <div className="flex-1">
+          <div className="flex items-center justify-between h-full">
+            <div className="space-y-2 flex-1 min-w-0">
+              <div className="flex items-center gap-1">
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide truncate">
+                  {title}
+                </p>
+                {infoTooltip && (
+                  <div className="group relative flex-shrink-0">
+                    <Info className="w-3 h-3 text-muted-foreground cursor-help flex-shrink-0" />
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      {infoTooltip}
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
+              <div className="flex items-baseline space-x-2">
+                {linkTo ? (
+                  <button 
+                    onClick={() => window.location.href = linkTo}
+                    className="text-3xl font-bold hover:text-primary transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    {typeof value === 'number' ? value.toLocaleString() : value}
+                    <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                  </button>
+                ) : (
+                  <p className="text-3xl font-bold truncate">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+                )}
+                {change && (
+                  <div className={`flex items-center space-x-1 text-sm flex-shrink-0 ${
+                    change.direction === 'up' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {change.direction === 'up' ? (
+                      <TrendingUp className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span>{Math.abs(change.value)}%</span>
+                  </div>
+                )}
+              </div>
+              {description && (
+                <p className="text-xs text-muted-foreground line-clamp-2">{description}</p>
               )}
             </div>
-            <div className="flex items-baseline space-x-2">
-              {linkTo ? (
-                <button 
-                  onClick={() => window.location.href = linkTo}
-                  className="text-3xl font-bold hover:text-primary transition-colors cursor-pointer flex items-center gap-1"
-                >
-                  {typeof value === 'number' ? value.toLocaleString() : value}
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-              ) : (
-                <p className="text-3xl font-bold">{typeof value === 'number' ? value.toLocaleString() : value}</p>
-              )}
-              {change && (
-                <div className={`flex items-center space-x-1 text-sm ${
-                  change.direction === 'up' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {change.direction === 'up' ? (
-                    <TrendingUp className="w-4 h-4" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4" />
-                  )}
-                  <span>{Math.abs(change.value)}%</span>
-                </div>
-              )}
+            <div className="p-3 bg-primary/10 rounded-lg flex-shrink-0 ml-4">
+              <Icon className="w-6 h-6 text-primary" />
             </div>
-            {description && (
-              <p className="text-xs text-muted-foreground">{description}</p>
-            )}
-          </div>
-          <div className="p-3 bg-primary/10 rounded-lg">
-            <Icon className="w-6 h-6 text-primary" />
-          </div>
-          {/* Email Sender Analytics */}
-          <div className="mt-6">
-            <EmailSenderAnalytics />
           </div>
         </div>
       </CardContent>
@@ -592,7 +589,7 @@ export function ModernAnalyticsDashboard() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <AnalyticsMetricCard
           title="Total Messages"
           value={data.total_count}
@@ -626,7 +623,7 @@ export function ModernAnalyticsDashboard() {
       </div>
 
       {/* Executive Insights Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <AnalyticsMetricCard
           title="Sentiment Score"
           value={`${data.sentiment_analysis.positive}%`}
@@ -668,7 +665,7 @@ export function ModernAnalyticsDashboard() {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Communication Breakdown */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -884,7 +881,7 @@ export function ModernAnalyticsDashboard() {
           </Card>
 
           {/* Channel and Time Analytics */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -946,7 +943,7 @@ export function ModernAnalyticsDashboard() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Action Items */}
             <Card>
               <CardHeader>

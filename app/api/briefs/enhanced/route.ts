@@ -4,6 +4,7 @@ import { fetchUnifiedData } from '@/services/unifiedDataService';
 import { createClient } from '@/lib/supabase/server';
 import { crisisScenario, normalOperationsScenario, highActivityScenario } from '@/mocks/data/testScenarios';
 import { google } from 'googleapis';
+import type { UnifiedData } from '@/types/unified';
 
 // Helper function to extract email body from Gmail API payload with better text cleaning
 function extractEmailBody(payload: any): string {
@@ -371,27 +372,48 @@ export async function GET(req: Request) {
               
               // Enrich emails with extracted intelligence
               if (extractionResult.results && extractionResult.results.length > 0) {
+                console.log(`📊 Intelligence extraction results:`, extractionResult.results.length);
+                
+                // Create map keyed by sender for easier lookup
                 const intelligenceMap = new Map(extractionResult.results.map((r: any) => [r.sender, r]));
                 
-                unified.emails = unified.emails.map(email => {
-                  const intelligence = intelligenceMap.get(email.from);
+                // Enrich email data with intelligence metadata
+                unified.emails = unified.emails.map((email, index) => {
+                  const intelligence = intelligenceMap.get(email.from) || intelligenceMap.get(email.from.split('<')[1]?.replace('>', ''));
                   if (intelligence) {
+                    console.log(`📧 Enriching email from ${email.from} with intelligence type: ${intelligence.type}`);
                     return {
                       ...email,
                       metadata: {
                         ...email.metadata,
                         intelligence: {
-                          type: intelligence.type,
-                          projects: intelligence.projects,
-                          blockers: intelligence.blockers,
-                          achievements: intelligence.achievements,
-                          key_summary: intelligence.key_summary
+                          type: intelligence.type || 'general',
+                          projects: intelligence.projects || [],
+                          blockers: intelligence.blockers || [],
+                          achievements: intelligence.achievements || [],
+                          key_summary: intelligence.key_summary || intelligence.title || email.subject
+                        }
+                      }
+                    };
+                  } else {
+                    // Provide default intelligence structure
+                    return {
+                      ...email,
+                      metadata: {
+                        ...email.metadata,
+                        intelligence: {
+                          type: 'general',
+                          projects: [],
+                          blockers: [],
+                          achievements: [],
+                          key_summary: email.body.substring(0, 100) + (email.body.length > 100 ? '...' : '')
                         }
                       }
                     };
                   }
-                  return email;
                 });
+                
+                console.log(`✅ Enhanced ${unified.emails.length} emails with intelligence data`);
               }
             }
           } catch (extractionError) {
@@ -425,7 +447,14 @@ export async function GET(req: Request) {
             console.log(`✅ GET: Analytics API completed with real data: ${analyticsData.message}`);
             
             // Use the unified data structure directly for brief generation  
-            const briefData = generateStyledBrief(unified, briefStyle);
+            const unifiedData: UnifiedData = {
+              emails: realEmails,
+              incidents: [],
+              calendarEvents: [],
+              tickets: [],
+              generated_at: new Date().toISOString(),
+            };
+            const briefData = generateStyledBrief(unifiedData, briefStyle);
             
             return NextResponse.json({
               ...briefData,
@@ -746,7 +775,14 @@ export async function POST(req: Request) {
               console.log(`✅ POST: Analytics API completed with real data: ${analyticsData.message}`);
               
               // Use the unified data structure directly for brief generation  
-              const briefData = generateStyledBrief(unified, briefStyle);
+              const unifiedData: UnifiedData = {
+                emails: realEmails,
+                incidents: [],
+                calendarEvents: [],
+                tickets: [],
+                generated_at: new Date().toISOString(),
+              };
+              const briefData = generateStyledBrief(unifiedData, briefStyle);
               
               return NextResponse.json({
                 ...briefData,

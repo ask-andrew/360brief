@@ -115,11 +115,11 @@ export function EnhancedBriefDashboard() {
     try {
       const params = new URLSearchParams({
         use_real_data: useRealData.toString(),
-        style: 'mission_brief', // Force mission brief style
+        style: selectedStyle, // Use the selected style from state
         scenario: selectedScenario
       });
       
-      console.log('🎯 Requesting brief with style:', 'mission_brief', 'selectedStyle:', selectedStyle);
+      console.log('🎯 Requesting brief with style:', selectedStyle);
 
       const response = await fetch(`/api/briefs/enhanced?${params}`);
 

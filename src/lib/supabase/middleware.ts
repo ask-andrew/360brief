@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr/dist/module'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const publicPaths = ['/login', '/signup', '/auth/callback']
+const publicPaths = ['/login', '/signup', '/auth/callback', '/help']
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
