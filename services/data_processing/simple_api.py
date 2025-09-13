@@ -32,7 +32,7 @@ app.add_middleware(
 # Pydantic models for API
 class AnalysisRequest(BaseModel):
     days_back: Optional[int] = 14
-    max_results: Optional[int] = 50
+    max_results: Optional[int] = 200
     user_email: Optional[str] = None
 
 class AnalysisResponse(BaseModel):

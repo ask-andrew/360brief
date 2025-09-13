@@ -275,7 +275,7 @@ def parse_email_date_obj(date_string):
                 return None # Indicate parsing failure
 
 # --- Fetch & Parse Emails ---
-async def fetch_recent_messages(service, days=14, max_results=50): # Changed to 14 days
+async def fetch_recent_messages(service, days=14, max_results=200): # Increased for better coverage
     date_after = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days))
     # Refined query to exclude more marketing/social emails
     query = f"after:{int(date_after.timestamp())} is:inbox -category:promotions -category:social -category:updates -category:forums -\"unsubscribe\" -\"promo\" -\"newsletter\" -\"discount\" -\"offer\" -\"sale\" -\"webinar\" -\"event\" -\"free trial\" -\"coupon\" -\"exclusive\" -from:noreply@* -from:info@* -from:marketing@* -from:updates@* -from:notifications@*"

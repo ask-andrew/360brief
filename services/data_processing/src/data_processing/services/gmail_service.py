@@ -235,7 +235,7 @@ class GmailService:
         self,
         start_date: datetime,
         end_date: datetime,
-        max_results: int = 100,
+        max_results: int = 200,
         query: str = None,
         use_optimization: bool = True
     ) -> List[Dict[str, Any]]:
@@ -272,7 +272,7 @@ class GmailService:
         self,
         start_date: datetime,
         end_date: datetime,
-        max_results: int = 100
+        max_results: int = 200
     ) -> List[Dict[str, Any]]:
         """Optimized email fetching using metadata-first approach.
         
@@ -355,7 +355,7 @@ class GmailService:
         self,
         start_date: datetime,
         end_date: datetime,
-        max_results: int = 100
+        max_results: int = 200
     ) -> List[Dict[str, Any]]:
         """Legacy email fetching approach (original implementation)."""
         logger.info("Using legacy email fetching approach")
@@ -817,15 +817,21 @@ class GmailService:
         # Marketing sender patterns
         marketing_domains = [
             'noreply', 'no-reply', 'donotreply', 'do-not-reply', 'marketing', 
-            'newsletter', 'notifications', 'alerts', 'updates', 'promo'
+            'newsletter', 'notifications', 'alerts', 'updates', 'promo',
+            'unsubscribe', 'campaign', 'email-marketing', 'mailchimp',
+            'constantcontact', 'sendgrid', 'mailgun'
         ]
         if any(domain in sender for domain in marketing_domains):
-            # Whitelist important automated systems
+            # Whitelist important automated systems and government/political
             important_patterns = [
                 'github', 'slack', 'jira', 'asana', 'trello', 'confluence',
                 'salesforce', 'hubspot', 'pipedrive', 'monday.com',
                 'calendar', 'meeting', 'zoom', 'teams', 'webex',
-                'bank', 'chase', 'wells fargo', 'american express', 'visa'
+                'bank', 'chase', 'wells fargo', 'american express', 'visa',
+                'paypal', 'stripe', 'square', 'invoice', 'billing',
+                'gov', '.mil', 'house.gov', 'senate.gov', 'congress',
+                'security', 'alert', 'fraud', 'account', 'password',
+                'library', 'university', 'edu', 'school'
             ]
             if not any(pattern in sender for pattern in important_patterns):
                 return True
@@ -925,9 +931,8 @@ class GmailService:
                     data = part['body'].get('data', '')
                     if data and not body:  # Use HTML if no plain text
                         html_content = base64.urlsafe_b64decode(data).decode('utf-8')
-                        # Basic HTML to text conversion (can be enhanced)
-                        import re
-                        body = re.sub('<[^<]+?>', '', html_content)
+                        # Enhanced HTML to text conversion
+                        body = self._clean_html_content(html_content)
         else:
             # Single part message
             if payload.get('mimeType') == 'text/plain':
@@ -937,11 +942,61 @@ class GmailService:
         
         return body.strip()
     
+    def _clean_html_content(self, html_content: str) -> str:
+        """Clean HTML content and convert to readable text.
+        
+        Args:
+            html_content: Raw HTML content
+            
+        Returns:
+            Clean text content
+        """
+        try:
+            from bs4 import BeautifulSoup
+            import re
+            
+            # Remove CSS and script content first
+            html_content = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+            html_content = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+            
+            # Parse HTML with BeautifulSoup for better text extraction
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Remove unwanted elements
+            for element in soup(['style', 'script', 'meta', 'link', 'noscript']):
+                element.decompose()
+            
+            # Get text and clean up whitespace
+            text = soup.get_text(separator=' ', strip=True)
+            
+            # Clean up excessive whitespace
+            text = re.sub(r'\s+', ' ', text)
+            text = re.sub(r'\n\s*\n', '\n\n', text)
+            
+            # Remove email artifacts and tracking pixels
+            text = re.sub(r'&nbsp;|\u00a0', ' ', text)  # Non-breaking spaces
+            text = re.sub(r'&[a-zA-Z]+;', '', text)  # HTML entities
+            text = re.sub(r'\s*\|\s*', ' | ', text)  # Clean up pipes
+            
+            # Limit length to avoid overwhelming content
+            if len(text) > 2000:
+                text = text[:2000] + '...'
+                
+            return text.strip()
+            
+        except Exception as e:
+            logger.warning(f"Failed to clean HTML content: {e}")
+            # Fallback to basic regex cleaning
+            import re
+            text = re.sub(r'<[^<]+?>', '', html_content)
+            text = re.sub(r'\s+', ' ', text)
+            return text.strip()[:1000]  # Limit fallback text
+    
     async def get_analytics_data(
         self,
         start_date: datetime,
         end_date: datetime,
-        max_results: int = 100,
+        max_results: int = 200,
         filter_marketing: bool = True,
         use_optimization: bool = False  # Use legacy method to get full email content
     ) -> Dict[str, Any]:
