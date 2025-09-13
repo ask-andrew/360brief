@@ -26,6 +26,13 @@ except ImportError as e:
     print(f"Gmail service not available: {e}")
     GMAIL_AVAILABLE = False
 
+try:
+    from email_intelligence_extractor import EmailIntelligenceExtractor
+    EXTRACTOR_AVAILABLE = True
+except ImportError as e:
+    print(f"Email intelligence extractor not available: {e}")
+    EXTRACTOR_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -667,6 +674,101 @@ def convert_emails_to_analytics(emails_data: Dict[str, Any], days_back: int, fil
             "by_sender": [{"sender": k, "count": v} for k, v in list(senders.items())[:5]]
         }
     }
+
+@app.post("/extract-intelligence")
+async def extract_email_intelligence(request: Dict[str, Any]):
+    """
+    Extract executive intelligence from raw email content
+    """
+    try:
+        if not EXTRACTOR_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Email intelligence extractor not available")
+        
+        # Initialize extractor
+        extractor = EmailIntelligenceExtractor()
+        
+        # Get email data from request
+        raw_content = request.get('content', '')
+        sender = request.get('sender', '')
+        subject = request.get('subject', '')
+        date = request.get('date', None)
+        
+        if not raw_content:
+            return []
+        
+        # Process email
+        result = extractor.process_email(
+            raw_content=raw_content,
+            sender=sender,
+            subject=subject,
+            date=date
+        )
+        
+        logger.info(f"✅ Processed email from {sender}: {'Relevant' if result else 'Filtered'}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"❌ Error extracting intelligence: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/process-email-batch")
+async def process_email_batch(request: Dict[str, Any]):
+    """
+    Process a batch of emails and extract executive intelligence
+    """
+    try:
+        if not EXTRACTOR_AVAILABLE:
+            raise HTTPException(status_code=503, detail="Email intelligence extractor not available")
+        
+        # Initialize extractor
+        extractor = EmailIntelligenceExtractor()
+        
+        # Get emails from request
+        emails = request.get('emails', [])
+        if not emails:
+            return {
+                "processed": 0,
+                "relevant": 0,
+                "filtered": 0,
+                "results": []
+            }
+        
+        # Process each email
+        all_results = []
+        relevant_count = 0
+        filtered_count = 0
+        
+        for email in emails:
+            try:
+                result = extractor.process_email(
+                    raw_content=email.get('content', email.get('body', '')),
+                    sender=email.get('sender', email.get('from', '')),
+                    subject=email.get('subject', ''),
+                    date=email.get('date', None)
+                )
+                
+                if result:
+                    all_results.extend(result)
+                    relevant_count += 1
+                else:
+                    filtered_count += 1
+                    
+            except Exception as e:
+                logger.warning(f"Failed to process email: {e}")
+                filtered_count += 1
+        
+        logger.info(f"✅ Batch processing complete: {relevant_count} relevant, {filtered_count} filtered")
+        
+        return {
+            "processed": len(emails),
+            "relevant": relevant_count,
+            "filtered": filtered_count,
+            "results": all_results
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error processing email batch: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     print("🚀 Starting 360Brief Analytics API...")

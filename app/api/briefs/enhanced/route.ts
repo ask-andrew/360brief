@@ -347,6 +347,58 @@ export async function GET(req: Request) {
       try {
         console.log(`🧠 GET: Calling Python analysis service with ${unified.emails.length} emails for intelligent processing...`);
         
+        // First, use the new email intelligence extraction for filtering and insights
+        if (unified.emails.length > 0) {
+          try {
+            console.log(`🔍 Extracting executive intelligence from ${unified.emails.length} emails...`);
+            
+            const extractionResponse = await fetch('http://localhost:8000/process-email-batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                emails: unified.emails.map(email => ({
+                  content: email.body || email.subject || '',
+                  sender: email.from,
+                  subject: email.subject,
+                  date: email.date
+                }))
+              })
+            });
+            
+            if (extractionResponse.ok) {
+              const extractionResult = await extractionResponse.json();
+              console.log(`✅ Intelligence extraction complete: ${extractionResult.relevant} relevant, ${extractionResult.filtered} filtered`);
+              
+              // Enrich emails with extracted intelligence
+              if (extractionResult.results && extractionResult.results.length > 0) {
+                const intelligenceMap = new Map(extractionResult.results.map((r: any) => [r.sender, r]));
+                
+                unified.emails = unified.emails.map(email => {
+                  const intelligence = intelligenceMap.get(email.from);
+                  if (intelligence) {
+                    return {
+                      ...email,
+                      metadata: {
+                        ...email.metadata,
+                        intelligence: {
+                          type: intelligence.type,
+                          projects: intelligence.projects,
+                          blockers: intelligence.blockers,
+                          achievements: intelligence.achievements,
+                          key_summary: intelligence.key_summary
+                        }
+                      }
+                    };
+                  }
+                  return email;
+                });
+              }
+            }
+          } catch (extractionError) {
+            console.warn('⚠️ Intelligence extraction failed, continuing with basic processing:', extractionError);
+          }
+        }
+        
         // Transform emails to the format expected by FastAPI bridge
         const emailsForAnalysis = unified.emails.map(email => ({
           id: email.id,

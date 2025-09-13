@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Poiret_One } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/app/providers';
+import { Footer } from '../components/layout/footer';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -32,9 +33,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${poiretOne.variable}`}>
-      <body className={inter.className}>
+      <body className={`${inter.className} flex flex-col min-h-screen`}>
         <Providers>
-          {children}
+          <div className="flex-grow">
+            {children}
+          </div>
+          <Footer />
         </Providers>
       </body>
     </html>
