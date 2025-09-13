@@ -54,6 +54,13 @@ export interface EmailItem {
         relatedContexts?: string[];
       };
     };
+    intelligence?: {
+      type?: string;
+      projects?: string[];
+      blockers?: string[];
+      achievements?: string[];
+      key_summary?: string;
+    };
   };
   createdAt?: string;
   updatedAt?: string;

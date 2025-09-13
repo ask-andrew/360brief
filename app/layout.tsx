@@ -32,13 +32,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poiretOne.variable}`}>
-      <body className={`${inter.className} flex flex-col min-h-screen`}>
+    <html lang="en" className={`${inter.variable} ${poiretOne.variable} h-full`}>
+      <body className={`${inter.className} flex flex-col min-h-full`}>
         <Providers>
-          <div className="flex-grow">
-            {children}
+          <div className="flex flex-col min-h-screen">
+            <div className="flex-grow">
+              {children}
+            </div>
+            <Footer />
           </div>
-          <Footer />
         </Providers>
       </body>
     </html>

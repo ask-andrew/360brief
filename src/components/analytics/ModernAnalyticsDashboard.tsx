@@ -210,12 +210,15 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
 
 // API Data fetching hook
 function useAnalyticsData(isDemo: boolean) {
+  console.log('useAnalyticsData called with isDemo:', isDemo);
   const [data, setData] = useState(mockAnalyticsData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('useEffect triggered with isDemo:', isDemo);
     if (isDemo) {
+      console.log('Using demo data');
       setData(mockAnalyticsData);
       setLoading(false);
       setError(null);
@@ -224,13 +227,24 @@ function useAnalyticsData(isDemo: boolean) {
 
     // Check Gmail authentication status first
     const checkAuthAndFetchData = async () => {
+      console.log('Starting checkAuthAndFetchData');
       setLoading(true);
       setError(null);
+      console.log('Loading state set to true');
       
       try {
+        console.log('Checking Gmail authentication status...');
         // Check if Gmail is connected
         const authResponse = await fetch('/api/auth/gmail/status');
+        console.log('Auth status response status:', authResponse.status);
+        
+        if (!authResponse.ok) {
+          console.error('Auth status check failed with status:', authResponse.status);
+          throw new Error(`Auth status check failed: ${authResponse.statusText}`);
+        }
+        
         const authStatus = await authResponse.json();
+        console.log('Auth status response:', authStatus);
         
         if (!authStatus.authenticated) {
           let errorMessage = 'Gmail not connected. Please connect your Gmail account to view real data.';

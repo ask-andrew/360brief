@@ -575,9 +575,144 @@ function generateDataAttribution(unified: UnifiedData): string {
   return `Based on ${parts.join(', ')}${timeStr}`;
 }
 
+// Extract achievements from email intelligence metadata
+function extractEmailAchievements(unified: UnifiedData): any[] {
+  const achievements: any[] = [];
+  
+  unified.emails.forEach(email => {
+    if (email.metadata?.intelligence?.achievements) {
+      email.metadata.intelligence.achievements.forEach((achievement: string) => {
+        // Extract person name from sender
+        const senderName = email.from.includes('<') ? 
+          email.from.split('<')[0].trim() : 
+          email.from.split('@')[0].replace(/[._]/g, ' ');
+          
+        // Determine achievement type
+        let type = 'achievement';
+        if (achievement.toLowerCase().includes('ahead of schedule')) {
+          type = 'ahead_of_schedule';
+        } else if (achievement.toLowerCase().includes('completed')) {
+          type = 'project_advance';
+        } else if (achievement.toLowerCase().includes('success')) {
+          type = 'innovation';
+        }
+        
+        achievements.push({
+          name: senderName,
+          achievement: achievement,
+          type: type,
+          impact: email.metadata?.intelligence?.key_summary || 'Impact details from email communication'
+        });
+      });
+    }
+  });
+  
+  return achievements.slice(0, 3); // Limit to top 3 achievements
+}
+
+// Extract action items from email intelligence metadata  
+function extractEmailActions(unified: UnifiedData): any[] {
+  const actions: any[] = [];
+  
+  unified.emails.forEach(email => {
+    if (email.metadata?.intelligence?.blockers) {
+      email.metadata.intelligence.blockers.forEach((blocker: string, index: number) => {
+        // Convert blockers to actionable items
+        let title = blocker;
+        let priority = 'medium';
+        
+        if (blocker.toLowerCase().includes('blocked:')) {
+          title = blocker.replace(/blocked:\s*/i, '').trim();
+          title = `🚧 RESOLVE: ${title}`;
+          priority = 'high';
+        } else if (blocker.toLowerCase().includes('required:')) {
+          title = blocker.replace(/required:\s*/i, '').trim();  
+          title = `📋 OBTAIN: ${title}`;
+          priority = 'high';
+        }
+        
+        actions.push({
+          id: `EMAIL-${email.id}-${index}`,
+          title: title,
+          description: `Action needed based on email from ${email.from}`,
+          priority: priority,
+          status: 'not_started',
+          related_to: 'email',
+          owner: 'TBD'
+        });
+      });
+    }
+  });
+  
+  return actions.slice(0, 3); // Limit to top 3 actions
+}
+
+// Extract trends from email intelligence patterns
+function extractEmailTrends(unified: UnifiedData): string[] {
+  const trends: string[] = [];
+  const now = new Date();
+  
+  // Analyze communication patterns
+  const totalEmails = unified.emails.length;
+  const actionRequiredEmails = unified.emails.filter(e => 
+    e.metadata?.intelligence?.type === 'action_required'
+  ).length;
+  const achievementEmails = unified.emails.filter(e => 
+    e.metadata?.intelligence?.achievements && 
+    e.metadata.intelligence.achievements.length > 0
+  ).length;
+  const blockerEmails = unified.emails.filter(e => 
+    e.metadata?.intelligence?.blockers && 
+    e.metadata.intelligence.blockers.length > 0
+  ).length;
+  
+  // Generate trends based on patterns
+  if (actionRequiredEmails > totalEmails * 0.4) {
+    trends.push("• High volume of action-required communications detected");
+  }
+  
+  if (blockerEmails > 2) {
+    trends.push("• Multiple blocking issues across different projects");
+  }
+  
+  if (achievementEmails > 1) {
+    trends.push("• Team achievements and milestone completions reported");
+  }
+  
+  if (totalEmails < 3) {
+    trends.push("• Low communication volume - may indicate focus time or potential gaps");
+  } else if (totalEmails > 10) {
+    trends.push("• High communication activity - coordination and prioritization critical");
+  }
+  
+  // Project-based trends
+  const projects = new Set<string>();
+  unified.emails.forEach(email => {
+    if (email.metadata?.intelligence?.projects) {
+      email.metadata.intelligence.projects.forEach((project: string) => {
+        projects.add(project);
+      });
+    }
+  });
+  
+  if (projects.size > 3) {
+    trends.push("• Multiple concurrent projects requiring executive attention");
+  }
+  
+  return trends.length > 0 ? trends : ["• Standard operational tempo with routine communications"];
+}
+
 function formatMissionBrief(brief: BriefingData, context: any, unified: UnifiedData): any {
   const urgentActions = brief.action_items.filter(a => a.priority === 'high').slice(0, 4);
   const resourceNeeds = calculateResourceNeeds(context, unified);
+  
+  // Extract intelligence-based achievements and actions
+  const emailAchievements = extractEmailAchievements(unified);
+  const emailActions = extractEmailActions(unified);
+  const emailTrends = extractEmailTrends(unified);
+  
+  // Combine traditional actions with email-derived actions
+  const combinedActions = [...urgentActions, ...emailActions].slice(0, 4);
   
   return {
     userId: 'user@example.com',
@@ -590,10 +725,10 @@ function formatMissionBrief(brief: BriefingData, context: any, unified: UnifiedD
       currentStatus: {
         primaryIssue: context.hasActiveIncidents ? 
           `Active incident requiring immediate executive coordination` :
-          `${context.criticalIssuesCount} critical items requiring prioritization`,
+          `${context.criticalIssuesCount + emailActions.length} critical items requiring prioritization`,
         businessImpact: generateBusinessImpact(context, unified),
       },
-      immediateActions: urgentActions.map(action => ({
+      immediateActions: combinedActions.map(action => ({
         title: action.title,
         objective: action.description,
         owner: action.owner || 'TBD',
@@ -608,7 +743,10 @@ function formatMissionBrief(brief: BriefingData, context: any, unified: UnifiedD
       windowEmphasisNote: context.urgencyLevel === 'crisis' ? 
         'First 24 hours determine recovery success; executive engagement required.' :
         'Timely execution critical for maintaining operational momentum.',
-    }
+    },
+    // Add intelligence-derived sections
+    winbox: emailAchievements,
+    trends: emailTrends
   };
 }
 

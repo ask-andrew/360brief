@@ -456,24 +456,29 @@ export async function GET(req: Request) {
         userEmail: user.email
       });
 
-      // If no real emails available, fall back to mock scenario with a warning (mirrors POST behavior)
+      // If no real emails available, return a proper "no data" response
       if (!unified.emails.length) {
-        const fallbackUnified = getScenarioData('normal');
-        const fallbackBrief = generateStyledBrief(fallbackUnified, briefStyle);
+        const emptyUnified: UnifiedData = {
+          emails: [],
+          incidents: [],
+          calendarEvents: [],
+          tickets: [],
+          generated_at: new Date().toISOString(),
+        };
+        
+        const emptyBrief = generateStyledBrief(emptyUnified, briefStyle);
         return NextResponse.json({
-          ...fallbackBrief,
+          ...emptyBrief,
           userId: user.email,
-          dataSource: 'mock',
-          warning: 'No recent actionable emails found. Using demo data instead. Check your Gmail for recent messages.',
-          scenario: 'normal',
+          dataSource: 'real_data_empty',
+          message: 'No actionable emails found in the specified time range. Check your Gmail for recent business communications.',
           timeRange: timeRange || 'week',
           availableStyles: validStyles,
-          availableScenarios: ['normal', 'crisis', 'high_activity'],
           availableTimeRanges: ['3days', 'week', 'month'],
-          rawAnalyticsData: fallbackUnified,
+          rawAnalyticsData: emptyUnified,
           debug: {
-            reason: 'no_real_emails',
-            realEmailsCount: unified.emails.length,
+            reason: 'no_actionable_emails',
+            realEmailsCount: 0,
             filtersUsed: '-category:{promotions} -category:{social} -in:spam -in:trash -from:(noreply OR no-reply) newer_than:7d',
             timeRange: timeRange || 'week',
             attempts,
