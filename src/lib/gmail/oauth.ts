@@ -134,7 +134,7 @@ export async function getValidAccessToken(userId: string): Promise<string> {
 
     // Persist updated tokens using Unix timestamp format for database compatibility
     const convertedExpiresAt = newExpiryMs ? Math.floor(newExpiryMs / 1000) : null; // Convert Google's milliseconds to Unix seconds
-    const convertedUpdatedAt = Math.floor(Date.now() / 1000); // Unix timestamp
+    const convertedUpdatedAt = new Date().toISOString(); // ISO string (timestamptz column)
     
     console.log('🔍 Debug token refresh timestamps:', {
       newExpiryMs,

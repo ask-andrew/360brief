@@ -231,7 +231,7 @@ export async function GET(request: NextRequest) {
                   .update({
                     access_token: credentials.access_token,
                     expires_at: credentials.expiry_date ? Math.floor(credentials.expiry_date / 1000) : null, // Convert milliseconds to Unix seconds
-                    updated_at: Math.floor(Date.now() / 1000),
+                    updated_at: new Date().toISOString(), // ISO string (timestamptz column)
                   })
                   .eq('user_id', user.id)
                   .eq('provider', 'google');
@@ -353,7 +353,6 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    clearTimeout(timeoutId); // Clear timeout on error
     console.error('Analytics API Error:', error);
     console.error('Analytics API Error Stack:', error instanceof Error ? error.stack : 'No stack trace');
     console.error('Analytics API Error Details:', { 
@@ -377,7 +376,5 @@ export async function GET(request: NextRequest) {
       status: 500,
       headers: { 'Cache-Control': 'no-cache' }
     });
-  } finally {
-    clearTimeout(timeoutId); // Always clear timeout
   }
 }

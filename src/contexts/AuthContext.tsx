@@ -90,11 +90,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       setError(null)
       
-      console.log('🔐 Initiating unified Google OAuth with Gmail access...')
+      console.log('🔐 Initiating Supabase Google OAuth with Gmail scopes...')
       
-      // Use the direct Gmail OAuth flow which includes Supabase auth AND stores tokens
-      // This consolidates the two separate flows into one
-      window.location.href = '/api/auth/gmail/authorize?redirect=/dashboard'
+      // Use native Supabase OAuth which handles both auth AND session creation in one flow
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+            scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly'
+          },
+        },
+      })
+
+      if (error) throw error
+      if (!data?.url) throw new Error('No OAuth URL received')
+      
+      // Redirect to Google OAuth (which will come back to /auth/callback)
+      window.location.href = data.url
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in with Google'

@@ -118,12 +118,8 @@ export function toDatabaseTimestamp(timestamp: any = new Date()): number | null 
   
   // Handle Google OAuth expiry_date (Unix milliseconds)
   if (typeof timestamp === 'number') {
-    // If timestamp is in milliseconds (> year 2100), convert to seconds
-    if (timestamp > 4102444800) {
-      return Math.floor(timestamp / 1000);
-    }
-    // Already in seconds
-    return timestamp;
+    // Normalize milliseconds to seconds if needed
+    return normalizeToSeconds(timestamp);
   }
   
   // Handle ISO strings
@@ -138,6 +134,21 @@ export function toDatabaseTimestamp(timestamp: any = new Date()): number | null 
   }
   
   return null;
+}
+
+/**
+ * Normalize timestamp from milliseconds to seconds if needed
+ * @param timestamp Unix timestamp (could be seconds or milliseconds)
+ * @returns Unix timestamp in seconds
+ */
+export function normalizeToSeconds(timestamp: number): number {
+  // If timestamp is in milliseconds (> year 2100 - 4102444800 seconds), convert to seconds
+  // This threshold safely distinguishes between seconds and milliseconds
+  if (timestamp > 4102444800) {
+    return Math.floor(timestamp / 1000);
+  }
+  // Already in seconds (or it's a very old timestamp)
+  return Math.floor(timestamp);
 }
 
 /**

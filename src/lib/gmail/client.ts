@@ -159,7 +159,7 @@ function processGmailMessage(message: GmailMessage): EmailMessage {
     date: dateHeader?.value || new Date(parseInt(message.internalDate)).toISOString(),
     labels: message.labelIds || [],
     isUnread: message.labelIds?.includes('UNREAD') || false,
-    body: body.substring(0, 1000), // Limit body length
+    body: body, // Return full body content for analysis
   };
 }
 
