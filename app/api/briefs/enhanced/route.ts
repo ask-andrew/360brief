@@ -360,59 +360,33 @@ export async function GET(req: Request) {
           threadId: email.messageId || email.id
         }));
         
-        const analysisResponse = await fetch('http://localhost:8001/analyze', {
-          method: 'POST',
+        const analysisResponse = await fetch(`http://localhost:8000/analytics?use_real_data=true&user_id=${user.id}&days_back=7&filter_marketing=true`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            emails: emailsForAnalysis,
-            days_back: 7,
-            user_email: user.email,
-            include_llm_digest: true
-          })
+          }
         });
         
         if (analysisResponse.ok) {
-          const analysisResult = await analysisResponse.json();
-          if (analysisResult.success) {
-            console.log(`✅ GET: Python analysis completed: themes=${analysisResult.data.themes?.length}, people=${analysisResult.data.key_people?.length}`);
+          const analyticsData = await analysisResponse.json();
+          if (analyticsData.dataSource === 'real_data_direct') {
+            console.log(`✅ GET: Analytics API completed with real data: ${analyticsData.message}`);
             
-            // Transform Python analysis result into expected brief format
-            const briefData = {
-              executiveSummary: analysisResult.data.llm_digest,
-              keyThemes: analysisResult.data.themes.map((t: any, index: number) => ({
-                theme: typeof t === 'string' ? t : (t.keyword || `Theme ${index + 1}`),
-                frequency: typeof t === 'string' ? 1 : (t.frequency || 1),
-                description: `Key focus area identified across ${typeof t === 'string' ? '1' : (t.frequency || 1)} communications`
-              })),
-              keyPeople: analysisResult.data.key_people.map((p: any) => ({
-                name: p.name,
-                interactions: p.frequency,
-                role: 'Key Contact'
-              })),
-              keyOrganizations: analysisResult.data.key_organizations.map((o: any) => ({
-                name: o.name,
-                mentions: o.frequency,
-                context: 'Business Partner'
-              })),
-              emailsAwaitingResponse: analysisResult.data.emails_awaiting_response,
-              upcomingMeetings: analysisResult.data.upcoming_meetings,
-              metrics: analysisResult.data.executive_summary,
-              userId: user.email,
-              dataSource: 'python_analysis',
-              timestamp: new Date().toISOString()
-            };
+            // Use the unified data structure directly for brief generation  
+            const briefData = generateStyledBrief(unified, briefStyle);
             
             return NextResponse.json({
               ...briefData,
+              userId: user.email,
+              dataSource: 'real_email_analysis',
+              message: analyticsData.message,
               generationParams: {
                 style: briefStyle,
                 scenario: undefined,
                 timeRange
               },
               availableTimeRanges: ['3days', 'week', 'month'],
-              pythonAnalysisData: analysisResult.data // Include full analysis for debugging
+              analyticsData: analyticsData // Include analytics for debugging
             });
           }
         }
@@ -702,59 +676,33 @@ export async function POST(req: Request) {
             threadId: email.messageId || email.id
           }));
           
-          const analysisResponse = await fetch('http://localhost:8001/analyze', {
-            method: 'POST',
+          const analysisResponse = await fetch(`http://localhost:8000/analytics?use_real_data=true&user_id=${user.id}&days_back=7&filter_marketing=true`, {
+            method: 'GET',
             headers: {
               'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              emails: emailsForAnalysis,
-              days_back: 7,
-              user_email: user.email,
-              include_llm_digest: true
-            })
+            }
           });
           
           if (analysisResponse.ok) {
-            const analysisResult = await analysisResponse.json();
-            if (analysisResult.success) {
-              console.log(`✅ Python analysis completed: themes=${analysisResult.data.themes?.length}, people=${analysisResult.data.key_people?.length}`);
+            const analyticsData = await analysisResponse.json();
+            if (analyticsData.dataSource === 'real_data_direct') {
+              console.log(`✅ POST: Analytics API completed with real data: ${analyticsData.message}`);
               
-              // Transform Python analysis result into expected brief format
-              const briefData = {
-                executiveSummary: analysisResult.data.llm_digest,
-                keyThemes: analysisResult.data.themes.map((t: any, index: number) => ({
-                  theme: typeof t === 'string' ? t : (t.keyword || `Theme ${index + 1}`),
-                  frequency: typeof t === 'string' ? 1 : (t.frequency || 1),
-                  description: `Key focus area identified across ${typeof t === 'string' ? '1' : (t.frequency || 1)} communications`
-                })),
-                keyPeople: analysisResult.data.key_people.map((p: any) => ({
-                  name: p.name,
-                  interactions: p.frequency,
-                  role: 'Key Contact'
-                })),
-                keyOrganizations: analysisResult.data.key_organizations.map((o: any) => ({
-                  name: o.name,
-                  mentions: o.frequency,
-                  context: 'Business Partner'
-                })),
-                emailsAwaitingResponse: analysisResult.data.emails_awaiting_response,
-                upcomingMeetings: analysisResult.data.upcoming_meetings,
-                metrics: analysisResult.data.executive_summary,
-                userId: user.email,
-                dataSource: 'python_analysis',
-                timestamp: new Date().toISOString()
-              };
+              // Use the unified data structure directly for brief generation  
+              const briefData = generateStyledBrief(unified, briefStyle);
               
               return NextResponse.json({
                 ...briefData,
+                userId: user.email,
+                dataSource: 'real_email_analysis',
+                message: analyticsData.message,
                 generationParams: {
                   style: briefStyle,
                   timeRange,
-                  analysisEngine: 'python_nlp'
+                  analysisEngine: 'real_data'
                 },
                 availableTimeRanges: ['3days', 'week', 'month'],
-                pythonAnalysisData: analysisResult.data // Include full analysis for debugging
+                analyticsData: analyticsData // Include analytics for debugging
               });
             }
           }

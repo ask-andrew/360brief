@@ -11,6 +11,8 @@ from typing import Optional, List, Dict, Any
 import uvicorn
 import logging
 import asyncio
+import base64
+import re
 
 # Add path for local imports
 import sys
@@ -43,6 +45,123 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Email processing helper functions
+def extract_email_body(payload: Dict) -> str:
+    """Extract and clean email body content from Gmail payload"""
+    try:
+        body = ""
+        
+        if 'parts' in payload:
+            for part in payload['parts']:
+                if part['mimeType'] == 'text/plain':
+                    data = part['body'].get('data', '')
+                    if data:
+                        body = base64.urlsafe_b64decode(data).decode('utf-8')
+                        break
+                elif part['mimeType'] == 'text/html':
+                    data = part['body'].get('data', '')
+                    if data and not body:  # Use HTML if no plain text
+                        html_content = base64.urlsafe_b64decode(data).decode('utf-8')
+                        body = clean_html_content(html_content)
+        else:
+            # Single part message
+            if payload.get('mimeType') == 'text/plain':
+                data = payload['body'].get('data', '')
+                if data:
+                    body = base64.urlsafe_b64decode(data).decode('utf-8')
+            elif payload.get('mimeType') == 'text/html':
+                data = payload['body'].get('data', '')
+                if data:
+                    html_content = base64.urlsafe_b64decode(data).decode('utf-8')
+                    body = clean_html_content(html_content)
+        
+        return body.strip()
+        
+    except Exception as e:
+        logging.warning(f"Failed to extract email body: {e}")
+        return ""
+
+def clean_html_content(html_content: str) -> str:
+    """Clean HTML content and convert to readable text"""
+    try:
+        # Remove CSS and script content first
+        html_content = re.sub(r'<style[^>]*>.*?</style>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+        html_content = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Remove HTML tags with basic regex (fallback approach)
+        text = re.sub(r'<[^<]+?>', '', html_content)
+        
+        # Clean up excessive whitespace
+        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r'\n\s*\n', '\n\n', text)
+        
+        # Remove email artifacts and tracking pixels
+        text = re.sub(r'&nbsp;|\u00a0', ' ', text)  # Non-breaking spaces
+        text = re.sub(r'&[a-zA-Z]+;', '', text)  # HTML entities
+        text = re.sub(r'\s*\|\s*', ' | ', text)  # Clean up pipes
+        
+        # Limit length to avoid overwhelming content
+        if len(text) > 2000:
+            text = text[:2000] + '...'
+            
+        return text.strip()
+        
+    except Exception as e:
+        logging.warning(f"Failed to clean HTML content: {e}")
+        # Fallback to basic regex cleaning
+        text = re.sub(r'<[^<]+?>', '', html_content)
+        text = re.sub(r'\s+', ' ', text)
+        return text.strip()[:1000]  # Limit fallback text
+
+def categorize_email_priority(subject: str, sender: str, body: str) -> str:
+    """Categorize email priority based on content"""
+    subject_lower = subject.lower()
+    sender_lower = sender.lower()
+    body_lower = body.lower()
+    
+    # High priority indicators
+    urgent_keywords = ['urgent', 'asap', 'immediate', 'emergency', 'critical', 'important', 'deadline']
+    business_keywords = ['meeting', 'conference', 'project', 'contract', 'invoice', 'proposal', 'quote']
+    government_keywords = ['congress', 'senator', 'representative', 'gov', '.mil']
+    
+    # Check for high priority
+    if (any(kw in subject_lower for kw in urgent_keywords) or 
+        any(kw in sender_lower for kw in government_keywords) or
+        'follow up' in subject_lower or
+        'reply' in subject_lower.replace('re:', '')):
+        return 'high'
+    
+    # Check for medium priority
+    if (any(kw in subject_lower for kw in business_keywords) or
+        any(kw in body_lower for kw in business_keywords) or
+        '@' in body_lower and len(body) > 200):  # Substantial business emails
+        return 'medium'
+    
+    return 'low'
+
+def has_action_items(subject: str, body: str) -> bool:
+    """Detect if email contains action items"""
+    content = (subject + ' ' + body).lower()
+    
+    action_patterns = [
+        'need', 'require', 'please', 'can you', 'could you', 'would you',
+        'deadline', 'due by', 'respond by', 'reply by', 'follow up',
+        'schedule', 'meeting', 'call me', 'review', 'approve', 'confirm'
+    ]
+    
+    return any(pattern in content for pattern in action_patterns)
+
+def is_urgent(subject: str, body: str) -> bool:
+    """Detect if email is urgent"""
+    content = (subject + ' ' + body).lower()
+    
+    urgent_patterns = [
+        'urgent', 'asap', 'immediate', 'emergency', 'critical',
+        'today', 'tonight', 'this morning', 'by end of day', 'eod'
+    ]
+    
+    return any(pattern in content for pattern in urgent_patterns)
 
 # Sample analytics data matching our dashboard structure
 def get_sample_analytics():
@@ -458,14 +577,29 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
                             subject_header = next((h['value'] for h in headers if h['name'] == 'Subject'), '(no subject)')
                             date_header = next((h['value'] for h in headers if h['name'] == 'Date'), '')
                             
+                            # Extract full email body content
+                            body_content = extract_email_body(full_message.get('payload', {}))
+                            
                             processed_messages.append({
                                 'id': full_message['id'],
+                                'messageId': full_message['id'],
                                 'snippet': full_message.get('snippet', ''),
+                                'body': body_content,  # Full cleaned body content
                                 'from': from_header,
                                 'subject': subject_header,
                                 'date': date_header,
+                                'to': [from_header],  # Simplified for now
+                                'labels': full_message.get('labelIds', []),
+                                'isRead': 'UNREAD' not in full_message.get('labelIds', []),
                                 'internalDate': full_message.get('internalDate', ''),
-                                'labelIds': full_message.get('labelIds', [])
+                                'labelIds': full_message.get('labelIds', []),
+                                'metadata': {
+                                    'insights': {
+                                        'priority': categorize_email_priority(subject_header, from_header, body_content),
+                                        'hasActionItems': has_action_items(subject_header, body_content),
+                                        'isUrgent': is_urgent(subject_header, body_content)
+                                    }
+                                }
                             })
                             
                         except Exception as msg_error:

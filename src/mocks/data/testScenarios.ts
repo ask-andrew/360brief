@@ -6,39 +6,75 @@ export const crisisScenario: UnifiedData = {
   emails: [
     {
       id: 'email-1',
+      messageId: 'email-1',
       subject: 'URGENT: TechFlow Corp Service Down - CEO Escalation',
       body: 'Service outage affecting all users. CEO David Kim demanding immediate response. Revenue at risk.',
       date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
       from: 'support@techflow.com',
       to: ['ops@company.com'],
       labels: ['crisis', 'escalation'],
+      isRead: false,
+      metadata: {
+        insights: {
+          priority: 'high' as 'high' | 'medium' | 'low',
+          hasActionItems: true,
+          isUrgent: true
+        }
+      }
     },
     {
-      id: 'email-2', 
+      id: 'email-2',
+      messageId: 'email-2', 
       subject: 'Customer Complaints Flooding In - TechFlow Outage',
       body: 'Multiple customers threatening to cancel contracts due to ongoing service disruption.',
       date: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
       from: 'cs@company.com',
       to: ['leadership@company.com'],
       labels: ['churn-risk'],
+      isRead: false,
+      metadata: {
+        insights: {
+          priority: 'high' as 'high' | 'medium' | 'low',
+          hasActionItems: true,
+          isUrgent: true
+        }
+      }
     },
     {
       id: 'email-3',
+      messageId: 'email-3',
       subject: 'Re: TechFlow Crisis Response - Infrastructure Team Update',
       body: 'Database cluster partially restored. Estimated 2 hours to full recovery. Preparing detailed post-mortem.',
       date: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
       from: 'infrastructure@company.com',
       to: ['leadership@company.com', 'ops@company.com'],
       labels: ['incident-update'],
+      isRead: false,
+      metadata: {
+        insights: {
+          priority: 'high' as 'high' | 'medium' | 'low',
+          hasActionItems: true,
+          isUrgent: false
+        }
+      }
     },
     {
       id: 'email-4',
+      messageId: 'email-4',
       subject: 'URGENT: Legal Review Needed - TechFlow Service Credits',
       body: 'Need immediate legal approval for $240K in service credits to retain TechFlow account.',
       date: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
       from: 'legal@company.com',
       to: ['ceo@company.com', 'cfo@company.com'],
       labels: ['legal', 'financial-impact'],
+      isRead: false,
+      metadata: {
+        insights: {
+          priority: 'high' as 'high' | 'medium' | 'low',
+          hasActionItems: true,
+          isUrgent: true
+        }
+      }
     }
   ],
   incidents: [
@@ -116,21 +152,39 @@ export const normalOperationsScenario: UnifiedData = {
   emails: [
     {
       id: 'email-1',
+      messageId: 'email-1',
       subject: 'Re: Q4 Marketing Campaign - Budget Approval Needed',
       body: 'Hi Sarah, thanks for the detailed proposal. The $15K budget looks reasonable for the digital campaign. Can you schedule a call with finance this week to finalize? Let me know your availability. Best, Mike',
       date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
       from: 'mike.chen@acmecorp.com',
       to: ['sarah.martinez@yourcompany.com'],
       labels: ['action-required', 'budget'],
+      isRead: false,
+      metadata: {
+        insights: {
+          priority: 'medium' as 'high' | 'medium' | 'low',
+          hasActionItems: true,
+          isUrgent: false
+        }
+      }
     },
     {
       id: 'email-2',
+      messageId: 'email-2',
       subject: 'Client Check-in: Zenith Solutions Implementation',
       body: 'Good morning! Quick update on the Zenith Solutions project. Phase 1 completed successfully - they\'re very happy with the integration. Phase 2 kickoff meeting scheduled for next Tuesday at 2 PM. They mentioned interest in expanding scope. Will send pre-meeting agenda by Friday.',
       date: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
       from: 'alex.rodriguez@yourcompany.com',
       to: ['sarah.martinez@yourcompany.com', 'team@yourcompany.com'],
       labels: ['client-success', 'project-update'],
+      isRead: false,
+      metadata: {
+        insights: {
+          priority: 'low' as 'high' | 'medium' | 'low',
+          hasActionItems: false,
+          isUrgent: false
+        }
+      }
     },
     {
       id: 'email-3',
@@ -152,12 +206,21 @@ export const normalOperationsScenario: UnifiedData = {
     },
     {
       id: 'email-5',
+      messageId: 'email-5',
       subject: 'Vendor Invoice Approval - CloudHost Services',
       body: 'Hi Sarah, attached is the monthly invoice from CloudHost for $2,847. Usage was higher due to the product launch traffic spike. Everything looks accurate. Please approve when convenient. Thanks, David',
       date: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
       from: 'david.kim@yourcompany.com',
       to: ['sarah.martinez@yourcompany.com'],
       labels: ['approval-needed', 'finance'],
+      isRead: false,
+      metadata: {
+        insights: {
+          priority: 'medium' as 'high' | 'medium' | 'low',
+          hasActionItems: true,
+          isUrgent: false
+        }
+      }
     },
     {
       id: 'email-6',
