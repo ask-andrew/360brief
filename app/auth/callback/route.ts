@@ -74,7 +74,7 @@ export async function GET(request: Request) {
           provider: 'google',
           access_token: data.session.provider_token,
           refresh_token: data.session.provider_refresh_token,
-          expires_at: data.session.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : null,
+          expires_at: data.session.expires_at || null,
           updated_at: new Date().toISOString(),
         };
 

@@ -212,11 +212,12 @@ export async function GET(req: Request) {
         const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
         attempts = [];
+        // Optimized progressive filtering for executive intelligence
         const passes = [
-          { name: 'strict_7d', maxResults: 50, skipPromotions: true, skipNoreply: true, windowDays: 7 },
-          { name: 'relaxed_14d', maxResults: 75, skipPromotions: true, skipNoreply: false, windowDays: 14 },
-          { name: 'open_30d', maxResults: 100, skipPromotions: false, skipNoreply: false, windowDays: 30 },
-          { name: 'no_filter', maxResults: 100, skipPromotions: false, skipNoreply: false, windowDays: undefined as number | undefined },
+          { name: 'executive_priority', maxResults: 30, skipPromotions: true, skipNoreply: true, windowDays: 7, priorityOnly: true },
+          { name: 'business_critical', maxResults: 50, skipPromotions: true, skipNoreply: true, windowDays: 7, priorityOnly: false },
+          { name: 'extended_scope', maxResults: 75, skipPromotions: true, skipNoreply: false, windowDays: 14, priorityOnly: false },
+          { name: 'comprehensive', maxResults: 100, skipPromotions: false, skipNoreply: false, windowDays: 30, priorityOnly: false },
         ];
 
         const realEmails: Array<{ id: string; messageId: string; subject: string; body: string; from: string; to: string[]; date: string; labels: string[]; isRead: boolean; metadata: { insights: { priority: 'high' | 'medium' | 'low'; hasActionItems: boolean; isUrgent: boolean } } }> = [];
@@ -225,7 +226,18 @@ export async function GET(req: Request) {
           if (realEmails.length >= 10) break;
           let messages: Array<{ id?: string | null }> = [];
           try {
-            const listResp = await gmail.users.messages.list({ userId: 'me', maxResults: pass.maxResults });
+            // Build Gmail query for better filtering
+            let query = '-in:spam -in:trash';
+            if (pass.skipPromotions) query += ' -category:promotions -category:social';
+            if (pass.skipNoreply) query += ' -from:(noreply OR no-reply)';
+            if (pass.windowDays) query += ` newer_than:${pass.windowDays}d`;
+            if (pass.priorityOnly) query += ' (is:important OR from:(ceo OR board OR client OR customer))';
+
+            const listResp = await gmail.users.messages.list({
+              userId: 'me',
+              maxResults: pass.maxResults,
+              q: query
+            });
             messages = (listResp.data.messages || []) as Array<{ id?: string | null }>;
           } catch (err: any) {
             const msg = err?.message ? String(err.message) : 'list_failed';
@@ -288,15 +300,23 @@ export async function GET(req: Request) {
                 }
               }
 
-              // Strict filters
+              // Enhanced filtering for executive intelligence
               if (pass.skipPromotions && (isPromoLabel)) continue;
               if (pass.skipNoreply && isNoreply) continue;
 
               if (subject) {
-                const hasUrgentKeywords = /urgent|asap|important|action.*required|deadline|due/i.test(subject + ' ' + fullBody);
+                const hasUrgentKeywords = /urgent|asap|important|action.*required|deadline|due|critical|escalation/i.test(subject + ' ' + fullBody);
                 const isUnread = meta.data.labelIds?.includes('UNREAD') ?? false;
-                const hasActionKeywords = /meeting|schedule|review|approve|feedback|decision|follow.*up/i.test(subject + ' ' + fullBody);
-                const priority: 'high' | 'medium' | 'low' = hasUrgentKeywords ? 'high' : hasActionKeywords ? 'medium' : 'low';
+                const hasActionKeywords = /meeting|schedule|review|approve|feedback|decision|follow.*up|question|request|confirm/i.test(subject + ' ' + fullBody);
+                const hasExecutiveKeywords = /ceo|board|investor|client|customer|partnership|budget|revenue|strategy/i.test(subject + ' ' + fullBody);
+
+                // Enhanced priority classification for executives
+                const priority: 'high' | 'medium' | 'low' =
+                  hasUrgentKeywords || hasExecutiveKeywords ? 'high' :
+                  hasActionKeywords || isUnread ? 'medium' : 'low';
+
+                // Priority-only pass filters to high priority items
+                if (pass.priorityOnly && priority !== 'high') continue;
                 realEmails.push({
                   id: String(msg.id!),
                   messageId: String(msg.id!),
@@ -307,7 +327,16 @@ export async function GET(req: Request) {
                   date: date.toISOString(),
                   labels: meta.data.labelIds || [],
                   isRead: !isUnread,
-                  metadata: { insights: { priority, hasActionItems: hasActionKeywords || hasUrgentKeywords, isUrgent: hasUrgentKeywords } },
+                  metadata: {
+                    insights: {
+                      priority,
+                      hasActionItems: hasActionKeywords || hasUrgentKeywords,
+                      isUrgent: hasUrgentKeywords,
+                      isExecutive: hasExecutiveKeywords,
+                      needsResponse: hasActionKeywords && !isUnread,
+                      estimatedResponseTime: hasUrgentKeywords ? 60 : hasActionKeywords ? 240 : 1440 // minutes
+                    }
+                  },
                 });
               }
 
@@ -671,10 +700,11 @@ export async function POST(req: Request) {
         oauth2Client.setCredentials({ access_token: accessToken });
         const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
         
+        // Use optimized Gmail query for executive priorities
         const listResponse = await gmail.users.messages.list({
           userId: 'me',
-          maxResults: 20,
-          q: '-category:{promotions} -category:{social} -in:spam -in:trash -from:(noreply OR no-reply) newer_than:7d'
+          maxResults: 30,
+          q: '-category:{promotions} -category:{social} -in:spam -in:trash -from:(noreply OR no-reply) newer_than:7d (is:important OR from:(ceo OR board OR client OR customer) OR has:attachment)'
         });
         
         const realEmails = [];

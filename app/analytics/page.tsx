@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { ModernAnalyticsDashboard } from '@/components/analytics/ModernAnalyticsDashboard';
+import ModernAnalyticsDashboard from '@/components/analytics/ModernAnalyticsDashboard';
 
 function AnalyticsLoading() {
   return (

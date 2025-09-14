@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-type Sender = {
+export interface EmailSender {
   id: string;
   name: string;
   email: string;
@@ -22,64 +22,24 @@ type Sender = {
   readCount: number;
   deletedCount: number;
   lastContact: string;
-};
+}
 
-export function EmailSenderAnalytics() {
-  // Mock data - replace with real data from your API
-  const senders: Sender[] = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@example.com',
-      totalMessages: 124,
-      readCount: 45,
-      deletedCount: 79,
-      lastContact: '2 days ago',
-    },
-    {
-      id: '2',
-      name: 'Marketing Team',
-      email: 'marketing@company.com',
-      totalMessages: 89,
-      readCount: 15,
-      deletedCount: 74,
-      lastContact: '1 day ago',
-    },
-    {
-      id: '3',
-      name: 'David Chen',
-      email: 'david.chen@example.com',
-      totalMessages: 67,
-      readCount: 52,
-      deletedCount: 15,
-      lastContact: '5 hours ago',
-    },
-    {
-      id: '4',
-      name: 'Notifications',
-      email: 'notifications@service.com',
-      totalMessages: 210,
-      readCount: 23,
-      deletedCount: 187,
-      lastContact: '3 hours ago',
-    },
-    {
-      id: '5',
-      name: 'Alex Morgan',
-      email: 'alex.morgan@example.com',
-      totalMessages: 42,
-      readCount: 38,
-      deletedCount: 4,
-      lastContact: '1 hour ago',
-    },
-  ];
+interface EmailSenderAnalyticsProps {
+  senders?: EmailSender[];
+  isLoading?: boolean;
+  error?: string | null;
+}
 
-  const calculateReadPercentage = (sender: Sender) => {
-    return Math.round((sender.readCount / sender.totalMessages) * 100);
+export function EmailSenderAnalytics({ senders = [], isLoading = false, error = null }: EmailSenderAnalyticsProps) {
+  // Default to empty array if no senders provided
+  const displaySenders = senders || [];
+  
+  const calculateReadPercentage = (sender: EmailSender) => {
+    return Math.round((sender.readCount / sender.totalMessages) * 100) || 0;
   };
 
-  const calculateDeletedPercentage = (sender: Sender) => {
-    return Math.round((sender.deletedCount / sender.totalMessages) * 100);
+  const calculateDeletedPercentage = (sender: EmailSender) => {
+    return Math.round((sender.deletedCount / sender.totalMessages) * 100) || 0;
   };
 
   const getEngagementLevel = (readPercentage: number) => {
@@ -87,6 +47,51 @@ export function EmailSenderAnalytics() {
     if (readPercentage > 30) return 'medium';
     return 'low';
   };
+  
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Analytics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-40 text-red-500">
+            <p>Error loading email data: {error}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Analytics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-40">
+            <p>Loading email analytics...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (!displaySenders.length) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Analytics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-40">
+            <p>No email data available. Connect your email to see analytics.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -123,7 +128,7 @@ export function EmailSenderAnalytics() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {senders.map((sender) => {
+            {displaySenders.map((sender) => {
               const readPct = calculateReadPercentage(sender);
               const deletedPct = calculateDeletedPercentage(sender);
               const engagement = getEngagementLevel(readPct);
