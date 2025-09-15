@@ -21,6 +21,7 @@ import { BriefGenerationCard } from './BriefGenerationCard';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { GmailConnectionStatus } from '@/components/GmailConnectionStatus';
+import { GmailDebugPanel } from '@/components/GmailDebugPanel';
 
 interface DashboardStats {
   unreadEmails: number;
@@ -478,10 +479,13 @@ export function EnhancedDashboard() {
               onRefresh={handleRefreshCalendar}
             />
             
-            <ServiceConnectionCard 
+            <ServiceConnectionCard
               service="slack"
               status={{ connected: false }}
             />
+
+            {/* Debug Panel for Gmail Token Status */}
+            <GmailDebugPanel />
           </div>
         </div>
       </div>
