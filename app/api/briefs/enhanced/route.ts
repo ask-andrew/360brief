@@ -75,6 +75,7 @@ export async function GET(req: Request) {
     let endDate = searchParams.get('end');
     const timeRange = searchParams.get('time_range'); // week, month, custom
     const useRealData = searchParams.get('use_real_data') === 'true';
+    const useStreaming = searchParams.get('streaming') !== 'false'; // Default to true for enhanced processing
     const style = searchParams.get('style') || 'mission_brief';
     const scenario = searchParams.get('scenario') || 'normal'; // crisis, normal, high_activity
     
@@ -117,6 +118,49 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
       user = authUser;
+
+      // Try enhanced streaming API first if enabled
+      if (useStreaming) {
+        console.log('🚀 Enhanced: Trying enhanced streaming API for brief generation');
+        try {
+          const enhancedData = await fetchUnifiedData(user.id, {
+            startDate,
+            endDate,
+            useCase: 'brief' // This will trigger the enhanced streaming API
+          });
+
+          if (enhancedData && enhancedData.emails && enhancedData.emails.length > 0) {
+            console.log(`✅ Enhanced: Got data from streaming API: ${enhancedData.emails.length} emails`);
+
+            const briefData = generateStyledBrief(enhancedData, briefStyle);
+
+            return NextResponse.json({
+              ...briefData,
+              userId: user.email,
+              dataSource: 'enhanced_streaming',
+              processing_metadata: {
+                enhanced_processing: true,
+                streaming_enabled: true,
+                total_processed: (enhancedData as any)?.enhanced_insights?.total_processed || enhancedData.emails.length,
+                processing_method: (enhancedData as any)?.enhanced_insights?.processing_method || 'streaming',
+                themes_analyzed: (enhancedData as any)?.enhanced_insights?.themes?.length || 0,
+                recommendations_generated: (enhancedData as any)?.enhanced_insights?.recommendations?.length || 0
+              },
+              generationParams: {
+                style: briefStyle,
+                scenario: undefined,
+                timeRange,
+                useStreaming: true
+              },
+              availableTimeRanges: ['3days', 'week', 'month']
+            });
+          } else {
+            console.log('⚠️ Enhanced: Streaming API returned no data, falling back to direct Gmail');
+          }
+        } catch (streamingError) {
+          console.log('❌ Enhanced: Streaming API failed, falling back to direct Gmail:', streamingError);
+        }
+      }
 
       // Fetch real Gmail data for brief generation
       console.log('🔄 Fetching real Gmail data for brief generation');
@@ -450,55 +494,47 @@ export async function GET(req: Request) {
           }
         }
         
-        // Transform emails to the format expected by FastAPI bridge
+        // Transform emails to the format expected by real intelligence processor
         const emailsForAnalysis = unified.emails.map(email => ({
           id: email.id,
           subject: email.subject || "",
           body: email.body || "",
-          from_name: email.from.includes('<') ? email.from.split('<')[0].trim() : email.from,
-          from_email: email.from.includes('<') ? email.from.match(/<(.+)>/)?.[1] || email.from : email.from,
-          to_recipients: Array.isArray(email.to) ? email.to : [email.to || ""],
-          cc_recipients: [],
+          from: {
+            name: email.from.includes('<') ? email.from.split('<')[0].trim() : email.from,
+            email: email.from.includes('<') ? email.from.match(/<(.+)>/)?.[1] || email.from : email.from
+          },
+          to: Array.isArray(email.to) ? email.to : [email.to || ""],
           date: email.date,
-          threadId: email.messageId || email.id
+          threadId: email.messageId || email.id,
+          snippet: email.body?.substring(0, 150) || ""
         }));
-        
-        const analysisResponse = await fetch(`http://localhost:8000/analytics?use_real_data=true&user_id=${user.id}&days_back=7&filter_marketing=true`, {
-          method: 'GET',
+
+        console.log(`🧠 Calling real intelligence processor with ${emailsForAnalysis.length} emails`);
+
+        const realAnalysisResponse = await fetch(`http://localhost:8000/analyze/real`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
+          body: JSON.stringify(emailsForAnalysis)
         });
-        
-        if (analysisResponse.ok) {
-          const analyticsData = await analysisResponse.json();
-          if (analyticsData.dataSource === 'real_data_direct') {
-            console.log(`✅ GET: Analytics API completed with real data: ${analyticsData.message}`);
-            
-            // Use the unified data structure directly for brief generation  
-            const unifiedData: UnifiedData = {
-              emails: realEmails,
-              incidents: [],
-              calendarEvents: [],
-              tickets: [],
-              generated_at: new Date().toISOString(),
-            };
-            const briefData = generateStyledBrief(unifiedData, briefStyle);
-            
-            return NextResponse.json({
-              ...briefData,
-              userId: user.email,
-              dataSource: 'real_email_analysis',
-              message: analyticsData.message,
-              generationParams: {
-                style: briefStyle,
-                scenario: undefined,
-                timeRange
-              },
-              availableTimeRanges: ['3days', 'week', 'month'],
-              analyticsData: analyticsData // Include analytics for debugging
-            });
-          }
+
+        if (realAnalysisResponse.ok) {
+          const realIntelligence = await realAnalysisResponse.json();
+          console.log(`✅ GET: Real intelligence processing completed:`, realIntelligence.processing_metadata);
+
+          // Return the real intelligence brief directly (no more mock data fallbacks)
+          return NextResponse.json({
+            ...realIntelligence,
+            userId: user.email,
+            dataSource: 'real_intelligence_processing',
+            generationParams: {
+              style: briefStyle,
+              scenario: undefined,
+              timeRange
+            },
+            availableTimeRanges: ['3days', 'week', 'month']
+          });
         }
         
         console.log(`⚠️ GET: Python analysis failed, falling back to basic processing...`);
@@ -779,55 +815,47 @@ export async function POST(req: Request) {
         try {
           console.log(`🧠 POST: Calling Python analysis service with ${realEmails.length} emails for intelligent processing...`);
           
-          // Transform emails to the format expected by FastAPI bridge
+          // Transform emails to the format expected by real intelligence processor
           const emailsForAnalysis = realEmails.map(email => ({
             id: email.id,
             subject: email.subject || "",
             body: email.body || "",
-            from_name: email.from.includes('<') ? email.from.split('<')[0].trim() : email.from,
-            from_email: email.from.includes('<') ? email.from.match(/<(.+)>/)?.[1] || email.from : email.from,
-            to_recipients: Array.isArray(email.to) ? email.to : [email.to || ""],
-            cc_recipients: [],
+            from: {
+              name: email.from.includes('<') ? email.from.split('<')[0].trim() : email.from,
+              email: email.from.includes('<') ? email.from.match(/<(.+)>/)?.[1] || email.from : email.from
+            },
+            to: Array.isArray(email.to) ? email.to : [email.to || ""],
             date: email.date,
-            threadId: email.messageId || email.id
+            threadId: email.messageId || email.id,
+            snippet: email.body?.substring(0, 150) || ""
           }));
-          
-          const analysisResponse = await fetch(`http://localhost:8000/analytics?use_real_data=true&user_id=${user.id}&days_back=7&filter_marketing=true`, {
-            method: 'GET',
+
+          console.log(`🧠 POST: Calling real intelligence processor with ${emailsForAnalysis.length} emails`);
+
+          const realAnalysisResponse = await fetch(`http://localhost:8000/analyze/real`, {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-            }
+            },
+            body: JSON.stringify(emailsForAnalysis)
           });
-          
-          if (analysisResponse.ok) {
-            const analyticsData = await analysisResponse.json();
-            if (analyticsData.dataSource === 'real_data_direct') {
-              console.log(`✅ POST: Analytics API completed with real data: ${analyticsData.message}`);
-              
-              // Use the unified data structure directly for brief generation  
-              const unifiedData: UnifiedData = {
-                emails: realEmails,
-                incidents: [],
-                calendarEvents: [],
-                tickets: [],
-                generated_at: new Date().toISOString(),
-              };
-              const briefData = generateStyledBrief(unifiedData, briefStyle);
-              
-              return NextResponse.json({
-                ...briefData,
-                userId: user.email,
-                dataSource: 'real_email_analysis',
-                message: analyticsData.message,
-                generationParams: {
-                  style: briefStyle,
-                  timeRange,
-                  analysisEngine: 'real_data'
-                },
-                availableTimeRanges: ['3days', 'week', 'month'],
-                analyticsData: analyticsData // Include analytics for debugging
-              });
-            }
+
+          if (realAnalysisResponse.ok) {
+            const realIntelligence = await realAnalysisResponse.json();
+            console.log(`✅ POST: Real intelligence processing completed:`, realIntelligence.processing_metadata);
+
+            // Return the real intelligence brief directly (no more mock data fallbacks)
+            return NextResponse.json({
+              ...realIntelligence,
+              userId: user.email,
+              dataSource: 'real_intelligence_processing',
+              generationParams: {
+                style: briefStyle,
+                timeRange,
+                analysisEngine: 'real_intelligence'
+              },
+              availableTimeRanges: ['3days', 'week', 'month']
+            });
           }
           
           console.log(`⚠️ Python analysis failed, falling back to basic processing...`);
