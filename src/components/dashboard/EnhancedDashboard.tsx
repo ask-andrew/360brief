@@ -20,6 +20,7 @@ import { ServiceConnectionCard } from './ServiceConnectionCard';
 import { BriefGenerationCard } from './BriefGenerationCard';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
+import { GmailConnectionStatus } from '@/components/GmailConnectionStatus';
 
 interface DashboardStats {
   unreadEmails: number;
@@ -465,11 +466,9 @@ export function EnhancedDashboard() {
           </h2>
           
           <div className="space-y-4">
-            <ServiceConnectionCard 
-              service="gmail"
-              status={gmailStatus}
-              onConnect={handleConnectGmail}
-              onRefresh={handleRefreshGmail}
+            <GmailConnectionStatus
+              compact={true}
+              showRefreshButton={true}
             />
             
             <ServiceConnectionCard 

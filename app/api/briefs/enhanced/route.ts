@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { crisisScenario, normalOperationsScenario, highActivityScenario } from '@/mocks/data/testScenarios';
 import { google } from 'googleapis';
 import type { UnifiedData } from '@/types/unified';
+import { getTokenManager } from '@/lib/gmail/token-manager';
 
 // Helper function to extract email body from Gmail API payload with better text cleaning
 function extractEmailBody(payload: any): string {
@@ -172,63 +173,16 @@ export async function GET(req: Request) {
       let tokenRefreshed = false;
       
       try {
-        // Get Gmail tokens with same logic as debug endpoint
-        const { data: tokens, error: tokenError } = await supabase
-          .from('user_tokens')
-          .select('access_token, refresh_token, expires_at')
-          .eq('user_id', user.id)
-          .eq('provider', 'google')
-          .limit(1);
-        
-        if (tokenError || !tokens?.[0]) {
+        // Use TokenManager for clean token handling
+        const tokenManager = getTokenManager();
+        const tokens = await tokenManager.getTokens(user.id, 'google');
+
+        if (!tokens || !tokens.access_token) {
           throw new Error('No Gmail tokens found - please reconnect Gmail');
         }
 
-        const token = tokens[0];
-        
-        // Check if token needs refresh (same logic as debug endpoint)
-        const now = Math.floor(Date.now() / 1000);
-        const expiresAtTimestamp = typeof token.expires_at === 'string' 
-          ? parseInt(token.expires_at, 10)
-          : typeof token.expires_at === 'number' 
-            ? token.expires_at 
-            : null;
-        
-        let accessToken = token.access_token;
-        
-        if (expiresAtTimestamp && expiresAtTimestamp < now) {
-          console.log('🔄 Token expired, refreshing...');
-          
-          if (!token.refresh_token) {
-            throw new Error('Token expired and no refresh token available');
-          }
-          
-          const oauth2Client = new google.auth.OAuth2(
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET
-          );
-          oauth2Client.setCredentials({
-            access_token: token.access_token,
-            refresh_token: token.refresh_token,
-          });
-          
-          const { credentials } = await oauth2Client.refreshAccessToken();
-          
-          if (credentials.access_token) {
-            await supabase
-              .from('user_tokens')
-              .update({
-                access_token: credentials.access_token,
-                expires_at: credentials.expiry_date ? Math.floor(credentials.expiry_date / 1000) : null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', user.id)
-              .eq('provider', 'google');
-            
-            accessToken = credentials.access_token;
-            tokenRefreshed = true;
-          }
-        }
+        const accessToken = tokens.access_token;
+        tokenRefreshed = tokens.expires_at !== null; // Token was potentially refreshed if it had an expiry
         
         // Ensure token has full gmail.readonly scope (briefs require content access) AFTER accessToken is finalized
         try {
@@ -679,62 +633,15 @@ export async function POST(req: Request) {
         // Fetch real Gmail data for brief generation (same as GET endpoint logic)
         console.log('🔄 POST: Fetching real Gmail data for brief generation');
         
-        // Get Gmail tokens
-        const { data: tokens, error: tokenError } = await supabase
-          .from('user_tokens')
-          .select('access_token, refresh_token, expires_at')
-          .eq('user_id', user.id)
-          .eq('provider', 'google')
-          .limit(1);
-        
-        if (tokenError || !tokens?.[0]) {
+        // Use TokenManager for clean token handling
+        const tokenManager = getTokenManager();
+        const tokens = await tokenManager.getTokens(user.id, 'google');
+
+        if (!tokens || !tokens.access_token) {
           throw new Error('No Gmail tokens found - please reconnect Gmail');
         }
-        
-        const token = tokens[0];
-        
-        // Check if token needs refresh
-        const now = Math.floor(Date.now() / 1000);
-        const expiresAtTimestamp = typeof token.expires_at === 'string' 
-          ? parseInt(token.expires_at, 10)
-          : typeof token.expires_at === 'number' 
-            ? token.expires_at 
-            : null;
-        
-        let accessToken = token.access_token;
-        
-        if (expiresAtTimestamp && expiresAtTimestamp < now) {
-          console.log('🔄 POST: Token expired, refreshing...');
-          
-          if (!token.refresh_token) {
-            throw new Error('Token expired and no refresh token available');
-          }
-          
-          const oauth2Client = new google.auth.OAuth2(
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET
-          );
-          oauth2Client.setCredentials({
-            access_token: token.access_token,
-            refresh_token: token.refresh_token,
-          });
-          
-          const { credentials } = await oauth2Client.refreshAccessToken();
-          
-          if (credentials.access_token) {
-            await supabase
-              .from('user_tokens')
-              .update({
-                access_token: credentials.access_token,
-                expires_at: credentials.expiry_date ? Math.floor(credentials.expiry_date / 1000) : null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', user.id)
-              .eq('provider', 'google');
-            
-            accessToken = credentials.access_token;
-          }
-        }
+
+        const accessToken = tokens.access_token;
         
         // Fetch Gmail messages
         const oauth2Client = new google.auth.OAuth2();
