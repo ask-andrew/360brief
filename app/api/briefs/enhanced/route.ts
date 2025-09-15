@@ -426,7 +426,7 @@ export async function GET(req: Request) {
           try {
             console.log(`🔍 Extracting executive intelligence from ${unified.emails.length} emails...`);
             
-            const extractionResponse = await fetch('http://localhost:8000/process-email-batch', {
+            const extractionResponse = await fetch('http://localhost:8001/process-email-batch', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -509,14 +509,19 @@ export async function GET(req: Request) {
           snippet: email.body?.substring(0, 150) || ""
         }));
 
-        console.log(`🧠 Calling real intelligence processor with ${emailsForAnalysis.length} emails`);
+        console.log(`🧠 Calling Python intelligence service with ${emailsForAnalysis.length} emails`);
 
-        const realAnalysisResponse = await fetch(`http://localhost:8000/analyze/real`, {
+        const realAnalysisResponse = await fetch(`http://localhost:8001/generate-brief`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(emailsForAnalysis)
+          body: JSON.stringify({
+            user_id: user.id,
+            emails: emailsForAnalysis,
+            days_back: 7,
+            filter_marketing: true
+          })
         });
 
         if (realAnalysisResponse.ok) {
@@ -527,7 +532,7 @@ export async function GET(req: Request) {
           return NextResponse.json({
             ...realIntelligence,
             userId: user.email,
-            dataSource: 'real_intelligence_processing',
+            dataSource: 'python_intelligence_service',
             generationParams: {
               style: briefStyle,
               scenario: undefined,
@@ -830,14 +835,19 @@ export async function POST(req: Request) {
             snippet: email.body?.substring(0, 150) || ""
           }));
 
-          console.log(`🧠 POST: Calling real intelligence processor with ${emailsForAnalysis.length} emails`);
+          console.log(`🧠 POST: Calling Python intelligence service with ${emailsForAnalysis.length} emails`);
 
-          const realAnalysisResponse = await fetch(`http://localhost:8000/analyze/real`, {
+          const realAnalysisResponse = await fetch(`http://localhost:8001/generate-brief`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(emailsForAnalysis)
+            body: JSON.stringify({
+              user_id: user.id,
+              emails: emailsForAnalysis,
+              days_back: 7,
+              filter_marketing: true
+            })
           });
 
           if (realAnalysisResponse.ok) {
@@ -848,7 +858,7 @@ export async function POST(req: Request) {
             return NextResponse.json({
               ...realIntelligence,
               userId: user.email,
-              dataSource: 'real_intelligence_processing',
+              dataSource: 'python_intelligence_service',
               generationParams: {
                 style: briefStyle,
                 timeRange,

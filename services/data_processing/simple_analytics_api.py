@@ -33,6 +33,14 @@ except ImportError as e:
     print(f"Email intelligence extractor not available: {e}")
     EXTRACTOR_AVAILABLE = False
 
+try:
+    from data_processing.tiered_intelligence_engine import generate_sophisticated_free_intelligence, PowerfulNonAIIntelligenceEngine
+    INTELLIGENCE_ENGINE_AVAILABLE = True
+    print("✅ Sophisticated intelligence engine available")
+except ImportError as e:
+    print(f"Intelligence engine not available: {e}")
+    INTELLIGENCE_ENGINE_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -529,43 +537,79 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
                         logger.error(f"❌ Token refresh failed: {refresh_error}")
                         return get_sample_analytics()
                 
-                # Now fetch Gmail data using the access token
-                gmail = build('gmail', 'v1', credentials=Credentials(token=access_token))
+                # Create complete credentials for Gmail API (including refresh capability)
+                credentials = Credentials(
+                    token=access_token,
+                    refresh_token=refresh_token,
+                    token_uri='https://oauth2.googleapis.com/token',
+                    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+                    client_secret=os.getenv('GOOGLE_CLIENT_SECRET')
+                )
+
+                # Build Gmail API client with complete credentials
+                gmail = build('gmail', 'v1', credentials=credentials)
                 
                 # Calculate date range
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=days_back)
-                
-                # Build search query
-                query = f"after:{int(start_date.timestamp())}"
+
+                # Build search query using Gmail's date format
+                query_parts = []
+
+                # Use Gmail's date format (YYYY/MM/DD)
+                start_date_str = start_date.strftime('%Y/%m/%d')
+                query_parts.append(f"after:{start_date_str}")
+
+                # Filter marketing if requested
                 if filter_marketing:
-                    query += " -category:promotions -category:social"
+                    query_parts.extend(["-category:promotions", "-category:social", "-from:noreply", "-from:donotreply"])
+
+                # Add more content to get substantial emails
+                query_parts.extend(["has:attachment OR longer:50"])
+
+                query = " ".join(query_parts)
                 
                 logger.info(f"📧 Gmail search query: {query}")
                 
-                # Get message list
-                list_response = gmail.users().messages().list(
-                    userId='me',
-                    q=query,
-                    maxResults=200
-                ).execute()
-                
-                messages = list_response.get('messages', [])
-                
+                # Get message list with pagination to get more emails
+                all_messages = []
+                page_token = None
+                max_total = 300  # Increased limit
+
+                while len(all_messages) < max_total:
+                    list_request = gmail.users().messages().list(
+                        userId='me',
+                        q=query,
+                        maxResults=min(100, max_total - len(all_messages)),
+                        pageToken=page_token
+                    )
+
+                    list_response = list_request.execute()
+
+                    batch_messages = list_response.get('messages', [])
+                    all_messages.extend(batch_messages)
+
+                    page_token = list_response.get('nextPageToken')
+                    if not page_token or not batch_messages:
+                        break
+
+                messages = all_messages
+
                 if not messages:
                     logger.info("📭 No messages found")
                     analytics_data = get_sample_analytics()
                     analytics_data['dataSource'] = 'real_data_empty'
                     analytics_data['total_count'] = 0
                     return analytics_data
-                
+
                 logger.info(f"📊 Found {len(messages)} message IDs")
-                
-                # Process messages in batches to avoid timeouts
+
+                # Process messages in larger batches for better performance
                 processed_messages = []
-                batch_size = 10
-                
-                for i in range(0, min(len(messages), 50), batch_size):  # Limit to 50 messages for performance
+                batch_size = 20
+                max_process = min(len(messages), 100)  # Process up to 100 emails for intelligence
+
+                for i in range(0, max_process, batch_size):
                     batch = messages[i:i+batch_size]
                     
                     for msg in batch:
@@ -620,7 +664,8 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
                 analytics_data = convert_emails_to_analytics(emails_data, days_back, filter_marketing)
                 analytics_data['dataSource'] = 'real_data_direct'
                 analytics_data['message'] = f'Real Gmail data: {len(processed_messages)} messages analyzed'
-                
+                analytics_data['processed_messages'] = processed_messages  # Include for intelligence processing
+
                 return analytics_data
                     
     except Exception as e:
@@ -719,10 +764,10 @@ async def process_email_batch(request: Dict[str, Any]):
     try:
         if not EXTRACTOR_AVAILABLE:
             raise HTTPException(status_code=503, detail="Email intelligence extractor not available")
-        
+
         # Initialize extractor
         extractor = EmailIntelligenceExtractor()
-        
+
         # Get emails from request
         emails = request.get('emails', [])
         if not emails:
@@ -732,12 +777,12 @@ async def process_email_batch(request: Dict[str, Any]):
                 "filtered": 0,
                 "results": []
             }
-        
+
         # Process each email
         all_results = []
         relevant_count = 0
         filtered_count = 0
-        
+
         for email in emails:
             try:
                 result = extractor.process_email(
@@ -746,34 +791,186 @@ async def process_email_batch(request: Dict[str, Any]):
                     subject=email.get('subject', ''),
                     date=email.get('date', None)
                 )
-                
+
                 if result:
                     all_results.extend(result)
                     relevant_count += 1
                 else:
                     filtered_count += 1
-                    
+
             except Exception as e:
                 logger.warning(f"Failed to process email: {e}")
                 filtered_count += 1
-        
+
         logger.info(f"✅ Batch processing complete: {relevant_count} relevant, {filtered_count} filtered")
-        
+
         return {
             "processed": len(emails),
             "relevant": relevant_count,
             "filtered": filtered_count,
             "results": all_results
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Error processing email batch: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/generate-brief")
+async def generate_executive_brief(request: Dict[str, Any]):
+    """
+    Generate sophisticated executive brief using the intelligence engine
+    """
+    try:
+        if not INTELLIGENCE_ENGINE_AVAILABLE:
+            logger.warning("🔧 Intelligence engine not available, falling back to basic analytics")
+            return get_sample_analytics()
+
+        # Get request parameters
+        user_id = request.get('user_id')
+        days_back = request.get('days_back', 7)
+        filter_marketing = request.get('filter_marketing', True)
+        emails_from_frontend = request.get('emails', [])
+
+        logger.info(f"🧠 Generating sophisticated executive brief for user: {user_id}")
+
+        # Check if emails were passed directly from frontend
+        if emails_from_frontend and len(emails_from_frontend) > 0:
+            logger.info(f"📧 Using {len(emails_from_frontend)} emails passed from frontend")
+
+            # Convert frontend email format to intelligence engine format
+            emails_for_processing = []
+            for email in emails_from_frontend:
+                emails_for_processing.append({
+                    'id': email.get('id', ''),
+                    'subject': email.get('subject', ''),
+                    'body': email.get('body', ''),
+                    'from': {
+                        'name': email.get('from', {}).get('name', '') if isinstance(email.get('from'), dict) else email.get('from', '').split('<')[0].strip(),
+                        'email': email.get('from', {}).get('email', '') if isinstance(email.get('from'), dict) else email.get('from', '')
+                    },
+                    'to': email.get('to', []),
+                    'date': email.get('date', ''),
+                    'threadId': email.get('threadId', email.get('id', '')),
+                    'snippet': email.get('snippet', '')
+                })
+
+            logger.info(f"🔍 Processing {len(emails_for_processing)} emails with intelligence engine")
+
+            # Generate sophisticated intelligence
+            intelligence_result = await generate_sophisticated_free_intelligence(emails_for_processing, user_id=user_id)
+
+            logger.info(f"✅ Generated sophisticated brief with {intelligence_result.get('processing_metadata', {}).get('intelligence_signals_detected', 0)} signals")
+
+            return intelligence_result
+
+        else:
+            # Fall back to fetching Gmail data directly
+            logger.info("📧 No emails provided from frontend, fetching from Gmail directly")
+
+            # First, fetch real Gmail data
+            email_data = await get_real_analytics(days_back, filter_marketing, user_id)
+
+            if email_data.get('dataSource') != 'real_data_direct':
+                logger.warning("⚠️ Using sample data for brief generation")
+                return email_data
+
+            # Extract emails from the analytics data
+            processed_messages = email_data.get('processed_messages', [])
+
+            if not processed_messages:
+                logger.warning("📭 No messages found for intelligence processing")
+                return email_data
+
+            # Convert to format expected by intelligence engine
+            emails_for_processing = []
+            for msg in processed_messages:
+                emails_for_processing.append({
+                    'id': msg.get('id', ''),
+                    'subject': msg.get('subject', ''),
+                    'body': msg.get('body', ''),
+                    'from': {'name': msg.get('from', '').split('<')[0].strip(), 'email': msg.get('from', '')},
+                    'date': msg.get('date', ''),
+                    'labels': msg.get('labels', []),
+                    'threadId': msg.get('id', ''),  # Simplified
+                    'snippet': msg.get('snippet', '')
+                })
+
+            logger.info(f"🔍 Processing {len(emails_for_processing)} emails with intelligence engine")
+
+            # Generate sophisticated intelligence
+            intelligence_result = await generate_sophisticated_free_intelligence(emails_for_processing, user_id=user_id)
+
+            logger.info(f"✅ Generated sophisticated brief with {intelligence_result.get('processing_metadata', {}).get('intelligence_signals_detected', 0)} signals")
+
+            return intelligence_result
+
+    except Exception as e:
+        logger.error(f"❌ Error generating executive brief: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+        # Fallback to basic analytics with real data if available
+        logger.info("🔄 Falling back to basic analytics due to error")
+
+        # Try to use real email data if we have it
+        try:
+            if 'emails_for_processing' in locals() and emails_for_processing:
+                logger.info(f"🔄 Creating basic brief from {len(emails_for_processing)} real emails")
+                return {
+                    'userId': user_id,
+                    'generatedAt': datetime.utcnow().isoformat(),
+                    'style': 'basic_real_data',
+                    'version': '1.0_fallback',
+                    'dataSource': 'real_gmail_basic',
+                    'executiveSummary': f'Successfully processed {len(emails_for_processing)} emails from Gmail. Advanced intelligence engine encountered an error, showing basic summary.',
+                    'keyInsights': [
+                        f"Found {len(emails_for_processing)} relevant emails in the past {days_back} days",
+                        f"Most recent email: {emails_for_processing[0]['subject'][:50]}..." if emails_for_processing else "No emails found",
+                        "Advanced analysis temporarily unavailable - basic email data extracted successfully"
+                    ],
+                    'processing_metadata': {
+                        'emails_processed': len(emails_for_processing),
+                        'data_source': 'real_gmail',
+                        'intelligence_engine': 'basic_fallback',
+                        'gmail_query_successful': True
+                    }
+                }
+        except:
+            pass
+
+        return get_sample_analytics()
+
+@app.get("/brief")
+async def get_executive_brief(
+    user_id: str = Query(..., description="User ID to generate brief for"),
+    days_back: int = Query(7, description="Number of days to analyze"),
+    filter_marketing: bool = Query(True, description="Filter out marketing emails"),
+    use_intelligence: bool = Query(True, description="Use sophisticated intelligence engine")
+):
+    """
+    GET endpoint for generating executive brief
+    """
+    try:
+        if use_intelligence and INTELLIGENCE_ENGINE_AVAILABLE:
+            # Use the POST endpoint logic
+            request_data = {
+                'user_id': user_id,
+                'days_back': days_back,
+                'filter_marketing': filter_marketing
+            }
+            return await generate_executive_brief(request_data)
+        else:
+            # Fall back to regular analytics
+            return await get_real_analytics(days_back, filter_marketing, user_id)
+
+    except Exception as e:
+        logger.error(f"❌ Error in brief endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     print("🚀 Starting 360Brief Analytics API...")
-    print("📊 API will be available at http://localhost:8000")
-    print("📝 API docs at http://localhost:8000/docs")
+    print("📊 API will be available at http://localhost:8001")
+    print("📝 API docs at http://localhost:8001/docs")
     if GMAIL_AVAILABLE:
         print("✅ Gmail API integration enabled")
     else:
@@ -781,8 +978,8 @@ if __name__ == "__main__":
     
     uvicorn.run(
         "simple_analytics_api:app",
-        host="0.0.0.0", 
-        port=8000,
+        host="0.0.0.0",
+        port=8001,
         reload=True,
         log_level="info"
     )
