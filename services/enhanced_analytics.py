@@ -1,0 +1,367 @@
+#!/usr/bin/env python3
+"""
+Enhanced Analytics Service for 360Brief
+Provides real email processing and executive intelligence generation
+"""
+
+import logging
+import json
+from flask import Flask, request, jsonify, Response
+from datetime import datetime, timedelta
+import re
+from typing import List, Dict, Any
+import os
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+
+def extract_key_insights(emails: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Extract key insights from emails for executive briefing"""
+
+    # Initialize counters and collections
+    action_items = []
+    decisions_needed = []
+    project_updates = []
+    blockers = []
+    achievements = []
+    key_contacts = {}
+    urgent_items = []
+
+    # Keywords for classification
+    action_keywords = ['action', 'todo', 'task', 'need', 'require', 'must', 'should', 'please', 'asap', 'urgent']
+    decision_keywords = ['decide', 'decision', 'approve', 'approval', 'confirm', 'review', 'feedback']
+    blocker_keywords = ['blocked', 'blocker', 'stuck', 'issue', 'problem', 'delay', 'risk', 'concern']
+    achievement_keywords = ['completed', 'achieved', 'success', 'launched', 'delivered', 'won', 'milestone']
+    project_keywords = ['project', 'initiative', 'program', 'sprint', 'release', 'phase']
+
+    for email in emails:
+        subject = email.get('subject', '').lower()
+        body = email.get('body', '').lower()
+        from_email = email.get('from', '')
+        date = email.get('date', '')
+
+        # Skip marketing/promotional emails
+        if any(word in subject for word in ['unsubscribe', 'newsletter', 'deal', 'sale', 'offer']):
+            continue
+
+        # Track key contacts
+        if from_email:
+            if from_email not in key_contacts:
+                key_contacts[from_email] = 0
+            key_contacts[from_email] += 1
+
+        # Extract action items
+        if any(keyword in body for keyword in action_keywords):
+            sentences = re.split('[.!?]', body)
+            for sentence in sentences:
+                if any(keyword in sentence for keyword in action_keywords) and len(sentence) > 20:
+                    action_items.append({
+                        'item': sentence.strip()[:200],
+                        'from': from_email,
+                        'subject': email.get('subject', 'No subject'),
+                        'date': date
+                    })
+                    break
+
+        # Extract decisions needed
+        if any(keyword in body for keyword in decision_keywords):
+            decisions_needed.append({
+                'topic': email.get('subject', 'No subject'),
+                'from': from_email,
+                'date': date,
+                'snippet': body[:150]
+            })
+
+        # Extract blockers
+        if any(keyword in body for keyword in blocker_keywords):
+            blockers.append({
+                'issue': email.get('subject', 'No subject'),
+                'from': from_email,
+                'date': date,
+                'context': body[:200]
+            })
+
+        # Extract achievements
+        if any(keyword in body for keyword in achievement_keywords):
+            achievements.append({
+                'achievement': email.get('subject', 'No subject'),
+                'from': from_email,
+                'date': date,
+                'details': body[:200]
+            })
+
+        # Extract project updates
+        if any(keyword in body for keyword in project_keywords):
+            project_updates.append({
+                'project': email.get('subject', 'No subject'),
+                'from': from_email,
+                'date': date,
+                'update': body[:200]
+            })
+
+        # Check for urgent items
+        if 'urgent' in subject or 'asap' in subject or 'urgent' in body[:200]:
+            urgent_items.append({
+                'item': email.get('subject', 'No subject'),
+                'from': from_email,
+                'date': date
+            })
+
+    # Get top contacts
+    top_contacts = sorted(key_contacts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    return {
+        'total_emails': len(emails),
+        'action_items': action_items[:10],  # Top 10
+        'decisions_needed': decisions_needed[:5],
+        'project_updates': project_updates[:10],
+        'blockers': blockers[:5],
+        'achievements': achievements[:5],
+        'urgent_items': urgent_items[:5],
+        'top_contacts': [{'email': c[0], 'count': c[1]} for c in top_contacts],
+        'stats': {
+            'total_action_items': len(action_items),
+            'total_decisions': len(decisions_needed),
+            'total_blockers': len(blockers),
+            'total_achievements': len(achievements)
+        }
+    }
+
+def generate_executive_brief(insights: Dict[str, Any]) -> Dict[str, Any]:
+    """Generate an executive brief in mission brief format"""
+
+    # Generate TLDR
+    critical_count = len(insights['urgent_items']) + len(insights['blockers'])
+    total_actions = insights['stats']['total_action_items']
+
+    tldr = f"{total_actions} total actions, {critical_count} critical. "
+    if critical_count > 2:
+        tldr += "High operational tempo."
+    elif critical_count > 0:
+        tldr += "Elevated operational tempo."
+    else:
+        tldr += "Standard operational tempo."
+
+    # Generate immediate actions from action items and urgent items
+    immediate_actions = []
+
+    # Add urgent items first
+    for item in insights['urgent_items'][:5]:
+        immediate_actions.append({
+            'title': f"🔥 {item['item'][:50]}...",
+            'objective': f"URGENT: {item['item']} (from {item['from']})",
+            'owner': 'TBD',
+            'dueDate': (datetime.now() + timedelta(hours=24)).isoformat()
+        })
+
+    # Add high-priority action items
+    for action in insights['action_items'][:8]:
+        if len(immediate_actions) >= 8:
+            break
+        immediate_actions.append({
+            'title': f"📧 {action['subject'][:50]}",
+            'objective': f"{action['item'][:150]} (from {action['from']})",
+            'owner': 'TBD',
+            'dueDate': (datetime.now() + timedelta(days=1)).isoformat()
+        })
+
+    # Generate business impact
+    business_impact = []
+    if insights['stats']['total_blockers'] > 0:
+        business_impact.append(f"{insights['stats']['total_blockers']} blockers requiring resolution")
+    if insights['stats']['total_decisions'] > 0:
+        business_impact.append(f"{insights['stats']['total_decisions']} decisions pending approval")
+    if insights['stats']['total_achievements'] > 0:
+        business_impact.append(f"{insights['stats']['total_achievements']} recent achievements to celebrate")
+
+    if not business_impact:
+        business_impact = ["Standard operational status"]
+
+    # Generate winbox (achievements)
+    winbox = []
+    for achievement in insights['achievements'][:3]:
+        winbox.append({
+            'title': achievement['achievement'],
+            'description': achievement['details'][:100] + '...' if len(achievement['details']) > 100 else achievement['details'],
+            'date': achievement['date']
+        })
+
+    # Generate trends
+    trends = []
+    if insights['stats']['total_action_items'] > 5:
+        trends.append("• High volume of action items requiring attention")
+    if insights['stats']['total_blockers'] > 0:
+        trends.append(f"• {insights['stats']['total_blockers']} active blockers impacting progress")
+    if insights['stats']['total_achievements'] > 0:
+        trends.append(f"• {insights['stats']['total_achievements']} positive outcomes this period")
+
+    if not trends:
+        trends = ["• Standard operational tempo with routine communications"]
+
+    return {
+        'userId': 'generated',
+        'generatedAt': datetime.now().isoformat(),
+        'style': 'mission_brief',
+        'version': '2.0',
+        'subject': '📊 Executive Intelligence Brief - Priority Actions & Status Update',
+        'tldr': tldr,
+        'missionBrief': {
+            'currentStatus': {
+                'primaryIssue': f"{critical_count} critical items requiring prioritization" if critical_count > 0 else "0 critical items requiring prioritization",
+                'businessImpact': business_impact
+            },
+            'immediateActions': immediate_actions,
+            'resourceAuthorization': {
+                'total': 5000,
+                'items': [
+                    {
+                        'category': 'Technical Resources',
+                        'amount': 3000,
+                        'bullets': [
+                            'Engineering support',
+                            'Infrastructure scaling',
+                            'Monitoring enhancement'
+                        ]
+                    },
+                    {
+                        'category': 'Operations Support',
+                        'amount': 2000,
+                        'bullets': [
+                            'Project coordination',
+                            'Communication management',
+                            'Process optimization'
+                        ]
+                    }
+                ]
+            },
+            'escalationContacts': [
+                {'name': contact['email'], 'count': contact['count']}
+                for contact in insights['top_contacts'][:3]
+            ],
+            'windowEmphasisNote': 'Timely execution critical for maintaining operational momentum.' if critical_count > 0 else 'Standard execution timeframes apply.'
+        },
+        'winbox': winbox,
+        'trends': trends,
+        'processing_metadata': {
+            'total_emails_processed': insights['total_emails'],
+            'processing_method': 'enhanced_intelligence',
+            'insights_extracted': {
+                'action_items': insights['stats']['total_action_items'],
+                'decisions': insights['stats']['total_decisions'],
+                'blockers': insights['stats']['total_blockers'],
+                'achievements': insights['stats']['total_achievements']
+            },
+            'version': '2.0'
+        }
+    }
+
+@app.route('/analytics/stream', methods=['GET'])
+def analytics_stream():
+    """Stream analytics endpoint - returns data for dashboard"""
+    user_id = request.args.get('user_id')
+    data_sources = request.args.get('data_sources', 'gmail')
+    days_back = int(request.args.get('days_back', '7'))
+
+    logger.info(f"Analytics stream requested for user: {user_id}")
+
+    # For now, return a structure that the frontend expects
+    # In production, this would fetch real data from database
+    return jsonify({
+        'status': 'success',
+        'user_id': user_id,
+        'emails': [],  # Will be populated by the frontend's own Gmail fetching
+        'insights': {
+            'total_processed': 0,
+            'processing_method': 'streaming',
+            'themes': [],
+            'recommendations': []
+        },
+        'generated_at': datetime.now().isoformat()
+    })
+
+@app.route('/generate-brief', methods=['POST'])
+def generate_brief():
+    """Generate an executive brief from email data"""
+    try:
+        data = request.get_json()
+        emails = data.get('emails', [])
+        user_id = data.get('user_id')
+
+        logger.info(f"Generating brief for user {user_id} with {len(emails)} emails")
+
+        if not emails:
+            return jsonify({
+                'error': 'No emails provided',
+                'sections': [],
+                'insights': {}
+            }), 400
+
+        # Extract insights
+        insights = extract_key_insights(emails)
+
+        # Generate executive brief
+        brief = generate_executive_brief(insights)
+
+        logger.info(f"Brief generated successfully with {len(brief['sections'])} sections")
+
+        return jsonify(brief)
+
+    except Exception as e:
+        logger.error(f"Error generating brief: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/summarize', methods=['POST'])
+def summarize():
+    """Legacy summarization endpoint for compatibility"""
+    try:
+        data = request.get_json()
+        emails = data.get('emails', [])
+
+        logger.info(f"Summarizing {len(emails)} emails")
+
+        summaries = []
+        for email in emails:
+            email_id = email.get('id')
+            content = email.get('content', '')
+
+            # Simple extractive summary (first 150 chars)
+            summary = content[:150] + '...' if len(content) > 150 else content
+
+            # Extract key points (simple heuristic)
+            sentences = re.split('[.!?]', content)
+            key_points = [s.strip() for s in sentences[:3] if len(s.strip()) > 20]
+
+            # Extract actions (look for action keywords)
+            action_keywords = ['please', 'need', 'require', 'must', 'should', 'action']
+            actions = []
+            for sentence in sentences:
+                if any(keyword in sentence.lower() for keyword in action_keywords):
+                    actions.append(sentence.strip())
+                    if len(actions) >= 2:
+                        break
+
+            summaries.append({
+                'id': email_id,
+                'summary': summary,
+                'key_points': key_points or ['Email content summarized'],
+                'actions': actions or ['No specific actions identified']
+            })
+
+        return jsonify({'summaries': summaries})
+
+    except Exception as e:
+        logger.error(f"Error in summarization: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({'status': 'healthy', 'service': 'enhanced_analytics', 'version': '2.0'})
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 8001))
+    logger.info(f"Starting Enhanced Analytics Service on port {port}")
+    app.run(host='0.0.0.0', port=port, debug=False)

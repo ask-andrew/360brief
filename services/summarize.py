@@ -1,99 +1,74 @@
 #!/usr/bin/env python3
 """
-Project Summary Generation Service
+Project Summary Generation Service (Flask API)
 
-This service generates concise, actionable summaries of project communications
-using a pre-trained language model for efficient processing.
+This service provides an API endpoint to generate concise, actionable summaries
+of project communications using a pre-trained language model.
 """
 
-import json
-import argparse
-from typing import List, Dict, Any
+import logging
+from flask import Flask, request, jsonify
 from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
 import torch
-import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Constants
-MODEL_NAME = "facebook/bart-large-cnn"  # Efficient summarization model
-MAX_INPUT_LENGTH = 1024
-MAX_SUMMARY_LENGTH = 150
-MIN_SUMMARY_LENGTH = 30
-
-class ProjectSummarizer:
+# --- Model Loading ---
+# Placed in a class to manage initialization
+class SummarizationModel:
     def __init__(self):
-        """Initialize the summarization pipeline with a pre-trained model."""
-        self.device = 0 if torch.cuda.is_available() else -1  # Use GPU if available
-        logger.info(f"Using device: {'CUDA' if self.device == 0 else 'CPU'}")
+        self.device = 0 if torch.cuda.is_available() else -1
+        logger.info(f"Initializing model on device: {'CUDA' if self.device == 0 else 'CPU'}")
         
-        # Load model and tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
-        self.summarizer = pipeline(
-            "summarization",
-            model=self.model,
-            tokenizer=self.tokenizer,
-            device=self.device
-        )
+        model_name = "facebook/bart-large-cnn"
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+            self.summarizer = pipeline(
+                "summarization",
+                model=model,
+                tokenizer=tokenizer,
+                device=self.device
+            )
+            logger.info("Summarization model loaded successfully.")
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            self.summarizer = None
 
-    def preprocess_messages(self, messages: List[Dict[str, Any]]) -> str:
-        """Combine and preprocess messages for summarization."""
-        # Sort messages by timestamp
-        sorted_messages = sorted(
-            messages,
-            key=lambda x: x.get('timestamp', ''),
-            reverse=True  # Most recent first
-        )
-        
-        # Combine messages with sender and content
-        combined = "\n\n".join(
-            f"{msg.get('sender', 'Someone')}: {msg.get('content', '')}"
-            for msg in sorted_messages
-            if msg.get('content')
-        )
-        
-        # Truncate to model's max length
-        return combined[:MAX_INPUT_LENGTH]
-
-    def generate_summary(self, text: str) -> Dict[str, Any]:
-        """Generate a concise summary of the provided text."""
-        if not text.strip():
+    def summarize(self, text: str) -> dict:
+        """Generates a summary and extracts key points and actions."""
+        if not self.summarizer or not text.strip():
             return {
-                'summary': 'No content to summarize.',
+                'summary': 'No content provided or model not available.',
                 'key_points': [],
                 'actions': []
             }
-        
+
         try:
-            # Generate summary using the model
-            summary = self.summarizer(
+            summary_text = self.summarizer(
                 text,
-                max_length=MAX_SUMMARY_LENGTH,
-                min_length=MIN_SUMMARY_LENGTH,
+                max_length=150,
+                min_length=30,
                 do_sample=False,
                 truncation=True
             )[0]['summary_text']
+
+            # Simple extraction for key points and actions
+            sentences = [s.strip() for s in summary_text.split('.') if s.strip()]
+            action_keywords = ['review', 'approve', 'send', 'schedule', 'confirm', 'provide', 'let me know']
             
-            # Extract key points (first 3 sentences)
-            key_points = [s.strip() for s in summary.split('.') if s.strip()][:3]
-            
-            # Simple action extraction (this could be enhanced with NER or other NLP techniques)
-            actions = [
-                point for point in key_points 
-                if any(word in point.lower() for word in ['need', 'should', 'must', 'action', 'follow up'])
-            ]
-            
+            actions = [s for s in sentences if any(keyword in s.lower() for keyword in action_keywords)]
+            key_points = [s for s in sentences if s not in actions]
+
             return {
-                'summary': summary,
-                'key_points': key_points,
+                'summary': summary_text,
+                'key_points': key_points if key_points else ['No key information identified.'],
                 'actions': actions if actions else ['No specific actions identified.']
             }
-            
         except Exception as e:
-            logger.error(f"Error generating summary: {str(e)}")
+            logger.error(f"Error during summarization: {e}")
             return {
                 'summary': 'Failed to generate summary.',
                 'key_points': [],
@@ -101,43 +76,63 @@ class ProjectSummarizer:
                 'error': str(e)
             }
 
-def main():
-    """Main entry point for the summarization service."""
-    parser = argparse.ArgumentParser(description='Generate project summaries from messages')
-    parser.add_argument('--messages', type=str, required=True, help='JSON string of messages')
-    parser.add_argument('--project-id', type=str, required=True, help='Project identifier')
-    args = parser.parse_args()
-    
-    try:
-        # Parse messages
-        messages = json.loads(args.messages)
-        
-        # Initialize summarizer
-        summarizer = ProjectSummarizer()
-        
-        # Generate summary
-        processed_text = summarizer.preprocess_messages(messages)
-        result = summarizer.generate_summary(processed_text)
-        
-        # Add project context
-        result['project_id'] = args.project_id
-        result['status'] = 'success'
-        
-        # Output as JSON
-        print(json.dumps(result))
-        
-    except json.JSONDecodeError:
-        print(json.dumps({
-            'status': 'error',
-            'error': 'Invalid JSON input',
-            'project_id': args.project_id
-        }))
-    except Exception as e:
-        print(json.dumps({
-            'status': 'error',
-            'error': str(e),
-            'project_id': args.project_id
-        }))
+# --- Flask App ---
+app = Flask(__name__)
+summarization_model = SummarizationModel() # Global instance
+
+@app.route('/summarize', methods=['POST'])
+def handle_summarize():
+    """
+    API endpoint to summarize email content.
+    Expects JSON: { "emails": [{ "id": "...", "content": "..." }] }
+    Returns JSON: { "summaries": [{ "id": "...", "summary": "...", ... }] }
+    """
+    if not summarization_model.summarizer:
+        return jsonify({"error": "Summarization model is not available."}), 503
+
+    data = request.get_json()
+    if not data or 'emails' not in data or not isinstance(data['emails'], list):
+        return jsonify({"error": "Invalid input. Expected a JSON object with an 'emails' list."}), 400
+
+    results = []
+    for email in data['emails']:
+        email_id = email.get('id')
+        content = email.get('content')
+
+        if not email_id or not content:
+            continue
+
+        summary_data = summarization_model.summarize(content)
+        summary_data['id'] = email_id
+        results.append(summary_data)
+
+    return jsonify({"summaries": results})
+
+@app.route('/analytics/stream', methods=['GET'])
+def handle_analytics_stream():
+    """
+    API endpoint for streaming analytics data.
+    This is a placeholder that returns mock data for now.
+    Query params: user_id, data_sources, days_back, chunk_size, memory_limit_mb
+    """
+    # For now, return a simple response indicating the service is available
+    # In production, this would fetch real data from Gmail/other sources
+    user_id = request.args.get('user_id')
+    data_sources = request.args.get('data_sources', 'gmail')
+    days_back = request.args.get('days_back', '7')
+
+    logger.info(f"Analytics stream requested for user: {user_id}, sources: {data_sources}, days: {days_back}")
+
+    # Return mock data for development
+    return jsonify({
+        "status": "success",
+        "user_id": user_id,
+        "data_sources": data_sources.split(',') if data_sources else ['gmail'],
+        "days_back": int(days_back) if days_back.isdigit() else 7,
+        "emails": [],  # Empty for now, will be populated with real data
+        "message": "Analytics stream endpoint is available but not yet implemented"
+    })
 
 if __name__ == '__main__':
-    main()
+    # Use Gunicorn for production, Flask's server for development
+    app.run(host='0.0.0.0', port=8000, debug=False)

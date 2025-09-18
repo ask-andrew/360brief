@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Poiret_One } from 'next/font/google';
 import './globals.css';
-import { Providers } from '@/app/providers';
-import { Footer } from '../components/layout/footer';
+import { ClientLayoutWrapper } from '@/components/layout/ClientLayoutWrapper';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -32,16 +31,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poiretOne.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} ${poiretOne.variable} h-full`} suppressHydrationWarning>
       <body className={`${inter.className} flex flex-col min-h-full`}>
-        <Providers>
-          <div className="flex flex-col min-h-screen">
-            <div className="flex-grow">
-              {children}
-            </div>
-            <Footer />
-          </div>
-        </Providers>
+        <ClientLayoutWrapper>
+          {children}
+        </ClientLayoutWrapper>
       </body>
     </html>
   );

@@ -120,48 +120,8 @@ export async function GET(req: Request) {
       }
       user = authUser;
 
-      // Try enhanced streaming API first if enabled
-      if (useStreaming) {
-        console.log('🚀 Enhanced: Trying enhanced streaming API for brief generation');
-        try {
-          const enhancedData = await fetchUnifiedData(user.id, {
-            startDate,
-            endDate,
-            useCase: 'brief' // This will trigger the enhanced streaming API
-          });
-
-          if (enhancedData && enhancedData.emails && enhancedData.emails.length > 0) {
-            console.log(`✅ Enhanced: Got data from streaming API: ${enhancedData.emails.length} emails`);
-
-            const briefData = generateStyledBrief(enhancedData, briefStyle);
-
-            return NextResponse.json({
-              ...briefData,
-              userId: user.email,
-              dataSource: 'enhanced_streaming',
-              processing_metadata: {
-                enhanced_processing: true,
-                streaming_enabled: true,
-                total_processed: (enhancedData as any)?.enhanced_insights?.total_processed || enhancedData.emails.length,
-                processing_method: (enhancedData as any)?.enhanced_insights?.processing_method || 'streaming',
-                themes_analyzed: (enhancedData as any)?.enhanced_insights?.themes?.length || 0,
-                recommendations_generated: (enhancedData as any)?.enhanced_insights?.recommendations?.length || 0
-              },
-              generationParams: {
-                style: briefStyle,
-                scenario: undefined,
-                timeRange,
-                useStreaming: true
-              },
-              availableTimeRanges: ['3days', 'week', 'month']
-            });
-          } else {
-            console.log('⚠️ Enhanced: Streaming API returned no data, falling back to direct Gmail');
-          }
-        } catch (streamingError) {
-          console.log('❌ Enhanced: Streaming API failed, falling back to direct Gmail:', streamingError);
-        }
-      }
+      // Skip streaming for now - use direct Gmail + enhanced analytics
+      console.log('🧠 Enhanced: Using direct Gmail fetch + Python analytics service');
 
       // Fetch real Gmail data for brief generation
       console.log('🔄 Fetching real Gmail data for brief generation');
@@ -212,16 +172,16 @@ export async function GET(req: Request) {
         attempts = [];
         // Optimized progressive filtering for executive intelligence
         const passes = [
-          { name: 'executive_priority', maxResults: 30, skipPromotions: true, skipNoreply: true, windowDays: 7, priorityOnly: true },
-          { name: 'business_critical', maxResults: 50, skipPromotions: true, skipNoreply: true, windowDays: 7, priorityOnly: false },
-          { name: 'extended_scope', maxResults: 75, skipPromotions: true, skipNoreply: false, windowDays: 14, priorityOnly: false },
-          { name: 'comprehensive', maxResults: 100, skipPromotions: false, skipNoreply: false, windowDays: 30, priorityOnly: false },
+          { name: 'executive_priority', maxResults: 100, skipPromotions: false, skipNoreply: false, windowDays: 7, priorityOnly: false },
+          { name: 'business_critical', maxResults: 200, skipPromotions: false, skipNoreply: false, windowDays: 14, priorityOnly: false },
+          { name: 'extended_scope', maxResults: 300, skipPromotions: false, skipNoreply: false, windowDays: 21, priorityOnly: false },
+          { name: 'comprehensive', maxResults: 500, skipPromotions: false, skipNoreply: false, windowDays: 30, priorityOnly: false },
         ];
 
         const realEmails: Array<{ id: string; messageId: string; subject: string; body: string; from: string; to: string[]; date: string; labels: string[]; isRead: boolean; metadata: { insights: { priority: 'high' | 'medium' | 'low'; hasActionItems: boolean; isUrgent: boolean } } }> = [];
 
         for (const pass of passes) {
-          if (realEmails.length >= 10) break;
+          if (realEmails.length >= 50) break;
           let messages: Array<{ id?: string | null }> = [];
           try {
             // Build Gmail query for better filtering
@@ -244,7 +204,7 @@ export async function GET(req: Request) {
           }
           let processed = 0;
 
-          for (let i = 0; i < Math.min(10 - realEmails.length, messages.length); i++) {
+          for (let i = 0; i < Math.min(100 - realEmails.length, messages.length); i++) {
             const msg = messages[i];
             try {
               // First get metadata
@@ -346,7 +306,7 @@ export async function GET(req: Request) {
           }
 
           attempts.push({ query: pass.name, maxResults: pass.maxResults, listed: messages.length, processed });
-          if (realEmails.length >= 5) break; // good enough
+          if (realEmails.length >= 50) break; // Get more emails for better insights
         }
 
         console.log(`✅ Gmail progressive fetch produced ${realEmails.length} messages`, attempts);
@@ -380,7 +340,7 @@ export async function GET(req: Request) {
           try {
             console.log(`🔍 Extracting executive intelligence from ${unified.emails.length} emails...`);
             
-            const extractionResponse = await fetch('http://localhost:8001/process-email-batch', {
+            const extractionResponse = await fetch('http://localhost:8000/process-email-batch', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -465,7 +425,7 @@ export async function GET(req: Request) {
 
         console.log(`🧠 Calling Python intelligence service with ${emailsForAnalysis.length} emails`);
 
-        const realAnalysisResponse = await fetch(`http://localhost:8001/generate-brief`, {
+        const realAnalysisResponse = await fetch(`http://localhost:8000/generate-brief`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -481,6 +441,23 @@ export async function GET(req: Request) {
         if (realAnalysisResponse.ok) {
           const realIntelligence = await realAnalysisResponse.json();
           console.log(`✅ GET: Real intelligence processing completed:`, realIntelligence.processing_metadata);
+
+          // Create a map of email IDs to dates
+          const emailDateMap = new Map(unified.emails.map(email => [email.id, email.date]));
+
+          // Inject original timestamps back into immediateActions
+          if (realIntelligence.missionBrief && realIntelligence.missionBrief.immediateActions) {
+            realIntelligence.missionBrief.immediateActions.forEach((action: any) => {
+              if (action.messageId) {
+                const originalDate = emailDateMap.get(action.messageId);
+                if (originalDate) {
+                  const d = new Date(originalDate);
+                  action.date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  action.time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                }
+              }
+            });
+          }
 
           // Return the real intelligence brief directly (no more mock data fallbacks)
           return NextResponse.json({
@@ -744,7 +721,7 @@ export async function POST(req: Request) {
 
           console.log(`🧠 POST: Calling Python intelligence service with ${emailsForAnalysis.length} emails`);
 
-          const realAnalysisResponse = await fetch(`http://localhost:8001/generate-brief`, {
+          const realAnalysisResponse = await fetch(`http://localhost:8000/generate-brief`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

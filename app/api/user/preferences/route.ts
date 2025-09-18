@@ -48,149 +48,229 @@ type Frequency = 'daily' | 'weekly' | 'weekdays' | 'custom';
 type DeliveryMode = 'email' | 'slack' | 'audio';
 
 export async function GET() {
-  const supabase = await createClient()
+  console.log('🔍 GET /api/user/preferences');
   
   try {
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const supabase = await createClient();
     
-    if (userError || !user) {
+    // Get user session
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('❌ Auth error:', authError);
       return NextResponse.json(
-        { error: 'User not authenticated' },
+        { error: 'Authentication error', details: authError.message },
         { status: 401 }
-      )
+      );
+    }
+    
+    if (!user) {
+      console.warn('⚠️ Unauthorized: No user session');
+      return NextResponse.json(
+        { error: 'Unauthorized: Please sign in' },
+        { status: 401 }
+      );
     }
 
+    console.log(`🔑 Fetching preferences for user: ${user.id}`);
+    
     // Fetch user preferences
-    const { data: preferences, error } = await supabase
+    const { data, error } = await supabase
       .from('user_preferences')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle();
 
     if (error) {
-      // If no preferences exist, return default values
-      if (error.code === 'PGRST116') {
-        // Insert default preferences
-        const { data: newPrefs, error: insertError } = await supabase
-          .from('user_preferences')
-          .insert([{
-            user_id: user.id,
-            ...DEFAULT_PREFERENCES
-          }])
-          .select()
-          .single()
-
-        if (insertError) {
-          console.error('Error creating default preferences:', insertError)
-          throw insertError
-        }
-
-        // Return the inserted preferences
-        const { id, user_id, created_at, updated_at, ...prefs } = newPrefs
-        return NextResponse.json(prefs)
-      }
-      
-      console.error('Error fetching preferences:', error)
-      throw error
+      console.error('❌ Database error fetching preferences:', error);
+      throw error;
     }
 
-    // Remove internal fields before returning
-    const { id, user_id, created_at, updated_at, ...prefs } = preferences
-    return NextResponse.json(prefs)
-  } catch (error) {
-    console.error('Error in GET /api/user/preferences:', error)
+    // If no preferences exist, initialize with defaults
+    if (!data) {
+      console.log('ℹ️ No preferences found, initializing with defaults');
+      const { data: newPrefs, error: insertError } = await supabase
+        .from('user_preferences')
+        .insert([{ 
+          user_id: user.id, 
+          preferences: DEFAULT_PREFERENCES,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select('preferences')
+        .single();
+
+      if (insertError) {
+        console.error('❌ Failed to initialize preferences:', insertError);
+        throw insertError;
+      }
+
+      console.log('✅ Initialized default preferences');
+      return NextResponse.json({ 
+        preferences: newPrefs.preferences,
+        isDefault: true
+      });
+    }
+
+    console.log('✅ Retrieved user preferences');
+    return NextResponse.json({ 
+      preferences: data.preferences,
+      isDefault: false
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Server error in preferences endpoint:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch user preferences' },
+      { 
+        error: 'Failed to process preferences request',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+      },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const updates = await request.json()
+  console.log('📝 POST /api/user/preferences');
   
   try {
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const supabase = await createClient();
+    const updates = await request.json();
     
-    if (userError || !user) {
+    console.log('📦 Received preference updates:', JSON.stringify(updates, null, 2));
+    
+    // Get the current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('❌ Auth error:', authError);
       return NextResponse.json(
-        { error: 'User not authenticated' },
+        { error: 'Authentication error', details: authError.message },
         { status: 401 }
-      )
+      );
+    }
+    
+    if (!user) {
+      console.warn('⚠️ Unauthorized: No user session');
+      return NextResponse.json(
+        { error: 'Unauthorized: Please sign in' },
+        { status: 401 }
+      );
     }
 
     // Validate the updates object
-    if (!updates || typeof updates !== 'object') {
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+      console.error('❌ Invalid preferences data:', updates);
       return NextResponse.json(
-        { error: 'Invalid preferences data' },
+        { 
+          error: 'Invalid preferences data',
+          details: 'Expected an object with preference values'
+        },
         { status: 400 }
-      )
+      );
     }
 
     // Get current preferences to merge with updates
+    console.log(`🔍 Fetching current preferences for user: ${user.id}`);
     const { data: currentPrefs, error: fetchError } = await supabase
       .from('user_preferences')
-      .select('*')
+      .select('preferences')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle();
 
-    // If no existing prefs, use defaults
-    const currentPreferences = fetchError?.code === 'PGRST116' 
-      ? { ...DEFAULT_PREFERENCES }
-      : currentPrefs || { ...DEFAULT_PREFERENCES }
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = not found
+      console.error('❌ Error fetching current preferences:', fetchError);
+      throw fetchError;
+    }
 
-    // Normalize style input to DB-safe value if provided
-    const normalizedStyle = normalizeStyle(updates.digest_style);
+    // Use existing preferences or defaults
+    const currentPreferences = currentPrefs?.preferences || { ...DEFAULT_PREFERENCES };
+    console.log('🔄 Current preferences:', JSON.stringify(currentPreferences, null, 2));
 
+    // Validate and normalize updates
+    const normalizedUpdates = { ...updates };
+    
+    // Normalize style if provided
+    if (updates.digest_style) {
+      const normalizedStyle = normalizeStyle(updates.digest_style);
+      if (normalizedStyle) {
+        normalizedUpdates.digest_style = normalizedStyle;
+      } else {
+        console.warn(`⚠️ Invalid digest style: ${updates.digest_style}, using current value`);
+        delete normalizedUpdates.digest_style;
+      }
+    }
+    
+    // Ensure arrays are properly set
+    const arrayFields = ['priority_keywords', 'key_contacts'];
+    arrayFields.forEach(field => {
+      if (field in normalizedUpdates && !Array.isArray(normalizedUpdates[field])) {
+        console.warn(`⚠️ ${field} must be an array, using current value`);
+        delete normalizedUpdates[field];
+      }
+    });
+    
     // Merge updates with current preferences
     const updatedPreferences = {
       ...currentPreferences,
-      ...updates,
-      ...(normalizedStyle ? { digest_style: normalizedStyle } : {}),
-      // Ensure arrays are properly set
-      priority_keywords: Array.isArray(updates.priority_keywords) 
-        ? updates.priority_keywords 
-        : currentPreferences.priority_keywords || [],
-      key_contacts: Array.isArray(updates.key_contacts) 
-        ? updates.key_contacts 
-        : currentPreferences.key_contacts || []
-    }
+      ...normalizedUpdates,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('🔄 Updated preferences:', JSON.stringify(updatedPreferences, null, 2));
 
-    // Remove internal fields
-    delete updatedPreferences.id
-    delete updatedPreferences.user_id
-    delete updatedPreferences.created_at
-    delete updatedPreferences.updated_at
+    // Remove internal fields that shouldn't be in preferences
+    const { id, user_id, created_at, updated_at, ...cleanPreferences } = updatedPreferences;
 
     // Update or insert the preferences
-    const { data, error } = await supabase
-      .from('user_preferences')
-      .upsert({
-        user_id: user.id,
-        ...updatedPreferences,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      })
-      .select()
-      .single()
+    console.log('💾 Saving preferences to database...');
+    
+    // Prepare the data to upsert
+    const upsertData = {
+      user_id: user.id,
+      preferences: cleanPreferences,
+      updated_at: new Date().toISOString(),
+      ...(currentPrefs ? {} : { created_at: new Date().toISOString() })
+    };
+    
+    // For updates, we need to use a transaction to ensure consistency
+    const { data, error } = await (async () => {
+      if (currentPrefs) {
+        // Update existing
+        return await supabase
+          .from('user_preferences')
+          .update(upsertData)
+          .eq('user_id', user.id)
+          .select('preferences')
+          .single();
+      } else {
+        // Insert new
+        return await supabase
+          .from('user_preferences')
+          .insert(upsertData)
+          .select('preferences')
+          .single();
+      }
+    })();
 
     if (error) {
-      console.error('Error saving preferences:', error)
-      throw error
+      console.error('❌ Error saving preferences:', error);
+      throw error;
     }
 
-    // Remove internal fields before returning
-    const { id, user_id: uid, created_at, updated_at, ...prefs } = data
-    return NextResponse.json(prefs)
-  } catch (error) {
-    console.error('Error in POST /api/user/preferences:', error)
+    console.log('✅ Preferences saved successfully');
+    return NextResponse.json({ 
+      success: true, 
+      preferences: data.preferences 
+    })
+  } catch (error: any) {
+    console.error('❌ Server error in preferences POST endpoint:', error);
     return NextResponse.json(
-      { error: 'Failed to save user preferences' },
+      { 
+        error: 'Failed to update preferences',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+      },
       { status: 500 }
-    )
+    );
   }
 }

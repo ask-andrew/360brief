@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,8 @@ import {
   Timer,
   ArrowRight,
   Info,
-  ExternalLink
+  ExternalLink,
+  ServerCrash
 } from 'lucide-react';
 
 // Mock data - same structure as your existing analytics but simplified
@@ -204,7 +205,34 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
 export function ModernAnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDemo, setIsDemo] = useState(true);
-  const data = mockAnalyticsData;
+  const [analyticsData, setAnalyticsData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isDemo) {
+      const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+        setAnalyticsData(null);
+        try {
+          const response = await fetch('/api/analytics');
+          if (!response.ok) {
+            throw new Error('Failed to fetch analytics data. Please try again later.');
+          }
+          const data = await response.json();
+          setAnalyticsData(data);
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }
+  }, [isDemo]);
+
+  const data = isDemo ? mockAnalyticsData : analyticsData;
 
   const formatResponseTime = (minutes: number) => {
     if (minutes >= 60) {
@@ -214,110 +242,134 @@ export function ModernAnalyticsDashboard() {
     return `${minutes}m`;
   };
 
-  // Show empty state when My Data is selected
-  if (!isDemo) {
-    return (
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-              <p className="text-blue-100 mt-2">
-                Your personal communication insights
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="data-toggle" className="text-white text-sm">
-                    My Data
-                  </Label>
-                  <Switch
-                    id="data-toggle"
-                    checked={isDemo}
-                    onCheckedChange={setIsDemo}
-                    className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
-                  />
-                  <Label htmlFor="data-toggle" className="text-white text-sm">
-                    Demo Data
-                  </Label>
-                </div>
-              </div>
-              <Badge 
-                variant="secondary" 
-                className="bg-blue-500/20 text-blue-100 hover:bg-white/30"
-              >
-                My Data
-              </Badge>
-            </div>
-          </div>
+  const renderHeader = () => (
+    <div className={`bg-gradient-to-r ${isDemo ? 'from-indigo-600 to-purple-600' : 'from-blue-600 to-indigo-600'} rounded-xl p-6 text-white`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+          <p className={`${isDemo ? 'text-indigo-100' : 'text-blue-100'} mt-2`}>
+            {isDemo ? 'Track and optimize your communication patterns' : 'Your personal communication insights'}
+          </p>
         </div>
-
-        {/* Data Syncing State */}
-        <div className="text-center py-16">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-              <BarChart3 className="w-8 h-8 text-blue-600" />
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="data-toggle" className={`text-white text-sm ${isDemo ? 'font-bold' : ''}`}>
+                Demo Data
+              </Label>
+              <Switch
+                id="data-toggle"
+                checked={!isDemo}
+                onCheckedChange={(checked) => setIsDemo(!checked)}
+                className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
+              />
+              <Label htmlFor="data-toggle" className={`text-white text-sm ${!isDemo ? 'font-bold' : ''}`}>
+                My Data
+              </Label>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting up your analytics</h2>
-            <p className="text-gray-600 mb-6">
-              We're currently syncing your communication data to generate personalized insights. This usually takes a few minutes.
-            </p>
-            <div className="flex items-center justify-center space-x-2 mb-6">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-            </div>
-            <Button 
-              onClick={() => setIsDemo(true)}
-              variant="outline"
-            >
-              View Demo Data Instead
-            </Button>
           </div>
+          <Badge 
+            variant="secondary" 
+            className={`${isDemo ? 'bg-green-500/20 text-green-100' : 'bg-blue-500/20 text-blue-100'} hover:bg-white/30`}
+          >
+            {isDemo ? 'Demo Data' : 'My Data'}
+          </Badge>
         </div>
       </div>
-    );
+    </div>
+  );
+
+  if (!isDemo) {
+    if (loading || !data) {
+      return (
+        <div className="space-y-8">
+          {renderHeader()}
+          <div className="text-center py-16">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-8 h-8 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting up your analytics</h2>
+              <p className="text-gray-600 mb-6">
+                We're currently syncing your communication data to generate personalized insights. This usually takes a few minutes.
+              </p>
+              <div className="flex items-center justify-center space-x-2 mb-6">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+              </div>
+              <Button 
+                onClick={() => setIsDemo(true)}
+                variant="outline"
+              >
+                View Demo Data Instead
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="space-y-8">
+          {renderHeader()}
+          <div className="text-center py-16">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <ServerCrash className="w-8 h-8 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Data</h2>
+              <p className="text-gray-600 mb-6">
+                {error}
+              </p>
+              <div className="flex items-center justify-center space-x-4">
+                <Button 
+                  onClick={() => {
+                    const fetchData = async () => {
+                      setLoading(true);
+                      setError(null);
+                      try {
+                        const response = await fetch('/api/analytics');
+                        if (!response.ok) {
+                          throw new Error('Failed to fetch analytics data. Please try again later.');
+                        }
+                        const data = await response.json();
+                        setAnalyticsData(data);
+                      } catch (err: any) {
+                        setError(err.message);
+                      } finally {
+                        setLoading(false);
+                      }
+                    };
+                    fetchData();
+                  }}
+                >
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                  Retry
+                </Button>
+                <Button 
+                  onClick={() => setIsDemo(true)}
+                  variant="outline"
+                >
+                  View Demo Data
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  if (!data) {
+    // Should not happen in demo mode, but as a fallback
+    return <div className="space-y-8">{renderHeader()}</div>;
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-            <p className="text-indigo-100 mt-2">
-              Track and optimize your communication patterns
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="data-toggle" className="text-white text-sm">
-                  My Data
-                </Label>
-                <Switch
-                  id="data-toggle"
-                  checked={isDemo}
-                  onCheckedChange={setIsDemo}
-                  className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
-                />
-                <Label htmlFor="data-toggle" className="text-white text-sm">
-                  Demo Data
-                </Label>
-              </div>
-            </div>
-            <Badge 
-              variant="secondary" 
-              className={`${isDemo ? 'bg-green-500/20 text-green-100' : 'bg-blue-500/20 text-blue-100'} hover:bg-white/30`}
-            >
-              {isDemo ? 'Demo Data' : 'My Data'}
-            </Badge>
-          </div>
-        </div>
-      </div>
+      {renderHeader()}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

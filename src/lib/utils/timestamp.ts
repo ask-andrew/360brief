@@ -113,24 +113,24 @@ export function isExpired(expiresAt: number | string | null): boolean {
  * @param timestamp Any timestamp format
  * @returns Unix timestamp in seconds or null
  */
-export function toDatabaseTimestamp(timestamp: any = new Date()): number | null {
+export function toDatabaseTimestamp(timestamp: any = new Date()): string | null {
   if (!timestamp) return null;
   
-  // Handle Google OAuth expiry_date (Unix milliseconds)
+  // If it's already a valid ISO string, return it
+  if (typeof timestamp === 'string' && !isNaN(Date.parse(timestamp))) {
+    return new Date(timestamp).toISOString();
+  }
+  
+  // If it's a number (Unix timestamp in seconds or milliseconds)
   if (typeof timestamp === 'number') {
-    // Normalize milliseconds to seconds if needed
-    return normalizeToSeconds(timestamp);
+    // Normalize milliseconds to seconds if needed, then convert to Date and ISO string
+    const date = new Date(normalizeToSeconds(timestamp) * 1000);
+    return !isNaN(date.getTime()) ? date.toISOString() : null;
   }
   
-  // Handle ISO strings
-  if (typeof timestamp === 'string') {
-    const date = new Date(timestamp);
-    return !isNaN(date.getTime()) ? Math.floor(date.getTime() / 1000) : null;
-  }
-  
-  // Handle Date objects
+  // If it's a Date object
   if (timestamp instanceof Date) {
-    return !isNaN(timestamp.getTime()) ? Math.floor(timestamp.getTime() / 1000) : null;
+    return !isNaN(timestamp.getTime()) ? timestamp.toISOString() : null;
   }
   
   return null;

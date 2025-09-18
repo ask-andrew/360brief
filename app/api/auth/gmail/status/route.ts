@@ -65,16 +65,8 @@ export async function GET(request: NextRequest) {
       user_id: user.id,
       email: user.email,
       expires_at: tokens.expires_at,
-      scopes: [
-        'https://www.googleapis.com/auth/gmail.readonly',
-        'https://www.googleapis.com/auth/gmail.metadata', 
-        'https://www.googleapis.com/auth/gmail.modify',
-        'https://www.googleapis.com/auth/calendar.readonly',
-        'https://www.googleapis.com/auth/calendar.events.readonly',
-        'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/userinfo.profile',
-        'openid'
-      ]
+      scopes: tokens.scope ? tokens.scope.split(' ') : [],
+      has_refresh_token: !!tokens.refresh_token
     }, {
       status: 200,
       headers: {

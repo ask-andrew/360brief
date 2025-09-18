@@ -3,14 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
 import os
-from dotenv import load_dotenv
-import openai
+from dotenv import load_dotenv, find_dotenv
+import google.generativeai as genai
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+import traceback
+from config import GEMINI_API_KEY
+import httpx
+from urllib.parse import urljoin
 
 # Load environment variables
-load_dotenv()
+load_dotenv(find_dotenv())
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,125 +38,223 @@ app.add_middleware(
 
 # Models
 class BriefInput(BaseModel):
-    data: Dict = Field(..., description="Raw data from microservices")
-    style: str = Field(
-        default="mission_brief",
-        description="Communication style for the brief",
-        regex="^(mission_brief|management_consulting|startup_velocity|newsletter)$"
-    )
-    llm_provider: str = Field(
-        default="openai",
-        description="LLM provider to use",
-        regex="^(openai|gemini|anthropic)$"
-    )
+    user_id: str
+    emails: List[Dict]
+    days_back: int
+    filter_marketing: bool
+
+class UserSubscription(BaseModel):
+    subscription_tier: str = 'free'
 
 class BriefOutput(BaseModel):
-    content: Dict
-    metadata: Dict
+    missionBrief: Dict
+    processing_metadata: Dict
+
+class EmailBatchInput(BaseModel):
+    emails: List[Dict]
 
 # Prompt templates
 PROMPT_TEMPLATES = {
-    "mission_brief": """
-    # MISSION BRIEF
-    ## EXECUTIVE SUMMARY
-    {executive_summary}
+    "mission_brief_start": """
+    Analyze the following email threads and generate a mission brief.
+    Group emails by subject and provide a summary for each thread.
+    Extract key action items, blockers, and kudos.
 
-    ## KEY THEMES
-    {key_themes}
-
-    ## ACTION ITEMS
-    {action_items}
-
-    ## BLOCKERS
-    {blockers}
-
-    ## KUDOS
-    {kudos}
+    Email threads:
     """,
-    # Add other style templates here
+    "mission_brief_end": """
+    Respond with a JSON object with the following structure:
+    {
+        "missionBrief": {
+            "currentStatus": {
+                "primaryIssue": "..."
+            },
+            "immediateActions": [
+                {
+                    "title": "...",
+                    "objective": "...",
+                    "priority": "...",
+                    "messageId": "..."
+                }
+            ],
+            "requiredActions": ["..."],
+            "trends": ["..."]
+        },
+        "winbox": [
+            {
+                "name": "...",
+                "achievement": "..."
+            }
+        ]
+    }
+    """
 }
 
-def generate_prompt(data: Dict, style: str) -> str:
+def generate_prompt(emails: List[Dict]) -> str:
     """Generate prompt by combining template with data."""
-    template = PROMPT_TEMPLATES.get(style, PROMPT_TEMPLATES["mission_brief"])
+    template_start = PROMPT_TEMPLATES["mission_brief_start"]
+    template_end = PROMPT_TEMPLATES["mission_brief_end"]
     
-    # Extract relevant data for each section
-    # This is a simplified example - you'll want to customize this based on your actual data structure
-    executive_summary = ""  # Generate from data
-    key_themes = ""  # Generate from data
-    action_items = ""  # Generate from data
-    blockers = ""  # Generate from data
-    kudos = ""  # Generate from data
+    # Group emails by subject
+    grouped_emails = {}
+    for email in emails:
+        subject = email.get("subject", "No Subject").replace("Re: ", "").strip()
+        if subject not in grouped_emails:
+            grouped_emails[subject] = []
+        grouped_emails[subject].append(email)
+        
+    # Generate summaries for each group
+    email_threads = []
+    for subject, email_group in grouped_emails.items():
+        thread = f"Subject: {subject}\n"
+        for email in email_group:
+            thread += f"From: {email.get('from', {}).get('email', 'Unknown')}\n"
+            thread += f"Date: {email.get('date')}\n"
+            thread += f"Body: {email.get('body', '')}\n---\n"
+        email_threads.append(thread)
+        
+    email_threads_str = "\n".join(email_threads)
     
-    # Format the prompt with the extracted data
-    prompt = template.format(
-        executive_summary=executive_summary,
-        key_themes=key_themes,
-        action_items=action_items,
-        blockers=blockers,
-        kudos=kudos
-    )
+    prompt = template_start + email_threads_str + template_end
     
     return prompt
 
-async def call_llm(prompt: str, provider: str = "openai") -> str:
-    """Call the appropriate LLM provider with the generated prompt."""
+async def get_user_subscription(user_id: str) -> UserSubscription:
+    """
+    Get user subscription tier from Supabase.
+    """
+    supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+    service_role_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+
+    if not supabase_url or not service_role_key:
+        logger.warning("Supabase credentials not found, defaulting to free tier")
+        return UserSubscription(subscription_tier='free')
+
     try:
-        if provider == "openai":
-            client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            response = await client.chat.completions.create(
-                model="gpt-4-turbo-preview",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                max_tokens=2000
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{supabase_url}/rest/v1/profiles",
+                headers={
+                    "apikey": service_role_key,
+                    "Authorization": f"Bearer {service_role_key}",
+                    "Content-Type": "application/json"
+                },
+                params={"select": "subscription_tier", "id": f"eq.{user_id}"}
             )
-            return response.choices[0].message.content
-        # Add support for other providers (Gemini, Anthropic) here
-        else:
-            raise ValueError(f"Unsupported LLM provider: {provider}")
+
+            if response.status_code == 200:
+                data = response.json()
+                if data and len(data) > 0:
+                    return UserSubscription(subscription_tier=data[0].get('subscription_tier', 'free'))
+
+            logger.warning(f"Could not fetch user subscription for {user_id}, defaulting to free")
+            return UserSubscription(subscription_tier='free')
+
     except Exception as e:
-        logger.error(f"Error calling LLM provider {provider}: {str(e)}")
+        logger.error(f"Error fetching user subscription: {str(e)}")
+        return UserSubscription(subscription_tier='free')
+
+def generate_non_llm_brief(data: List[Dict]) -> dict:
+    """
+    Generates a simplified brief from email data without using an LLM.
+    Suitable for free tier users.
+    """
+    immediate_actions = []
+    for email in data:
+        immediate_actions.append({
+            "title": email.get("subject", "No Subject"),
+            "objective": f"Review email from {email.get('from', {}).get('email', 'Unknown')}",
+            "priority": "medium",
+            "messageId": email.get("id")
+        })
+
+    return {
+        "missionBrief": {
+            "currentStatus": {
+                "primaryIssue": "Free tier: Manual review required"
+            },
+            "immediateActions": immediate_actions[:10],  # Limit free tier to 10 actions
+            "requiredActions": ["Upgrade to Premium for AI-powered analysis"],
+            "trends": ["Consider upgrading for trend analysis"]
+        },
+        "winbox": [{
+            "name": "Free Tier User",
+            "achievement": "Basic email organization completed"
+        }]
+    }
+
+async def call_gemini(prompt: str) -> str:
+    """Call the Gemini API with the generated prompt."""
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-pro')
+        response = await model.generate_content_async(prompt)
+        return response.text
+    except Exception as e:
+        logger.error(f"Error calling Gemini API: {str(e)}")
         raise
 
-@app.post("/api/v1/generate-brief", response_model=BriefOutput)
+@app.post("/generate-brief", response_model=BriefOutput)
 async def generate_brief(brief_input: BriefInput):
     """
-    Generate an executive brief based on the provided data and style.
+    Generate an executive brief based on the provided data and user subscription tier.
+    Premium users get AI-powered analysis, free users get basic organization.
     """
     try:
-        logger.info(f"Generating {brief_input.style} brief...")
-        
-        # Generate prompt from template and input data
-        prompt = generate_prompt(brief_input.data, brief_input.style)
-        
-        # Call LLM to generate the brief
-        llm_response = await call_llm(prompt, brief_input.llm_provider)
-        
-        # Parse the LLM response (assuming it returns valid JSON)
-        try:
-            content = json.loads(llm_response)
-        except json.JSONDecodeError:
-            # If not valid JSON, wrap it in a content field
-            content = {"content": llm_response}
-        
-        # Prepare response
-        return {
-            "content": content,
-            "metadata": {
-                "generated_at": datetime.utcnow().isoformat(),
-                "model": brief_input.llm_provider,
-                "style": brief_input.style
+        logger.info(f"Generating brief for user {brief_input.user_id}...")
+
+        # Get user subscription tier
+        user_subscription = await get_user_subscription(brief_input.user_id)
+        logger.info(f"User {brief_input.user_id} has {user_subscription.subscription_tier} subscription")
+
+        # Use LLM for premium/enterprise users with API key, otherwise use non-LLM
+        use_llm = (user_subscription.subscription_tier in ['premium', 'enterprise'] and GEMINI_API_KEY)
+
+        if use_llm:
+            logger.info("Using Gemini LLM for premium user")
+            prompt = generate_prompt(brief_input.emails)
+            llm_response = await call_gemini(prompt)
+            model_name = "gemini-premium"
+            try:
+                # Gemini may return markdown, so we need to strip it
+                cleaned_response = llm_response.strip().replace('`json', '').replace('`', '')
+                content = json.loads(cleaned_response)
+                logger.info(f"Parsed premium content from Gemini")
+            except json.JSONDecodeError:
+                logger.error(f"Failed to decode Gemini response as JSON: {llm_response}")
+                raise HTTPException(status_code=500, detail="Failed to generate a valid brief from LLM.")
+        else:
+            reason = "free tier user" if user_subscription.subscription_tier == 'free' else "GEMINI_API_KEY not found"
+            logger.info(f"Using non-LLM brief generation: {reason}")
+            content = generate_non_llm_brief(brief_input.emails)
+            model_name = f"non-llm-{user_subscription.subscription_tier}"
+
+        response_data = {
+            "missionBrief": content.get("missionBrief", {}),
+            "processing_metadata": {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "model": model_name,
+                "style": "mission_brief",
+                "subscription_tier": user_subscription.subscription_tier,
+                "llm_enabled": use_llm
             }
         }
+        logger.info(f"Returning response: {response_data}")
+        return response_data
         
     except Exception as e:
         logger.error(f"Error generating brief: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/process-email-batch")
+async def process_email_batch(email_batch: EmailBatchInput):
+    return {"relevant": 0, "filtered": 0, "results": []}
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 if __name__ == "__main__":
     import uvicorn

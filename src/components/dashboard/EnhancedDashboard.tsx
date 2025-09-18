@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -95,8 +95,24 @@ export function EnhancedDashboard() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnectGmail = useCallback(async () => {
+    try {
+      setIsConnecting(true);
+      await connectGmail();
+    } catch (error) {
+      toast({
+        title: 'Connection Failed',
+        description: 'Failed to connect Gmail. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [connectGmail, toast]);
+
+  const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
   const [recentBriefs, setRecentBriefs] = useState([
     // Mock data - replace with real data later
     {
@@ -153,6 +169,9 @@ export function EnhancedDashboard() {
       }
     }
   }, [toast]);
+
+  // Note: Removed automatic Gmail connection to prevent redirect loops
+  // Users should manually click to connect Gmail when ready
 
   const dashboardStats: DashboardStats = {
     unreadEmails: analyticsData?.total_count || 0,
@@ -236,21 +255,6 @@ export function EnhancedDashboard() {
       });
     } finally {
       setIsGeneratingBrief(false);
-    }
-  };
-
-  const handleConnectGmail = async () => {
-    try {
-      setIsConnecting(true);
-      await connectGmail();
-    } catch (error) {
-      toast({
-        title: 'Connection Failed',
-        description: 'Failed to connect Gmail. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsConnecting(false);
     }
   };
 

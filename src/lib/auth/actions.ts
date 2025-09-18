@@ -119,6 +119,7 @@ export async function signInWithOAuth(provider: 'google' | 'github' = 'google') 
       provider,
       options: {
         redirectTo: `${siteUrl}/auth/callback`,
+        scopes: 'email profile https://www.googleapis.com/auth/gmail.readonly',
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

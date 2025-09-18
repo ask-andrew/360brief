@@ -477,7 +477,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
       // const encodedQuery = encodeURIComponent(query);
       
       // Simple request first to debug 403 issues
-      const gmailResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20`, {
+      const gmailResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/json'
