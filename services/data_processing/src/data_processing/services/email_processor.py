@@ -5,6 +5,8 @@ Email processing service for fetching and processing emails from various provide
 import asyncio
 import email
 import logging
+import os
+import re
 from datetime import datetime, timezone
 from email.header import decode_header
 from email.utils import parsedate_to_datetime
@@ -175,11 +177,11 @@ class EmailProcessor:
         return processed_messages
     
     def _process_single_email(self, email_message) -> Optional[ProcessedMessage]:
-        """Process a single email message into a structured format.
-        
+        """Process a single email message using enhanced processing.
+
         Args:
             email_message: Email message object from the email package
-            
+
         Returns:
             ProcessedMessage if successful, None if message should be skipped
         """
@@ -190,27 +192,57 @@ class EmailProcessor:
             to = email_message.get('To', '')
             date_str = email_message.get('Date')
             message_id = email_message.get('Message-ID', '')
-            
+
             # Parse date
             date = self._parse_email_date(date_str)
-            
+
             # Extract email content
             body_text, body_html = self._extract_email_content(email_message)
-            
-            # Create processed message with required fields
+            body = body_text if body_text else self._strip_html(body_html) if body_html else ""
+
+            # NEW: Use enhanced processing instead of basic approach
+            from ..enhanced_email_processor import IntegratedEmailProcessor, ProcessingMode
+            import os
+
+            # Determine processing mode
+            use_ai_mode = os.getenv('EMAIL_PROCESSING_MODE', 'free').lower() == 'ai'
+            processing_mode = ProcessingMode.AI if use_ai_mode else ProcessingMode.FREE
+            enhanced_processor = IntegratedEmailProcessor(processing_mode)
+
+            import asyncio
+            enhanced_summary = asyncio.run(
+                enhanced_processor.process_email_enhanced(subject, body, from_)
+            )
+
+            if enhanced_summary is None:  # Filtered as marketing/noise
+                return None
+
+            # Create ProcessedMessage with REAL data instead of empty fields
             return ProcessedMessage(
                 message_id=message_id,
                 message_type=MessageType.EMAIL,
-                summary=subject[:200] if subject else "No subject",  # Truncate summary if needed
-                key_points=[],  # Would be populated by summarization
-                entities={},  # Would be populated by NER
-                action_items=[],  # Would be extracted from email content
-                sentiment=0.0,  # Would be calculated by sentiment analysis
-                priority=0,  # Would be calculated based on importance
-                related_messages=[],  # Would be linked to related emails
+                # BEFORE: summary=subject[:200] if subject else "No subject"
+                summary=enhanced_summary.summary,  # REAL SUMMARY!
+
+                # BEFORE: key_points=[]
+                key_points=enhanced_summary.key_points,  # REAL KEY POINTS!
+
+                # BEFORE: entities={}
+                entities={},  # Could enhance this too with your service
+
+                # BEFORE: action_items=[]
+                action_items=enhanced_summary.action_items,  # REAL ACTION ITEMS!
+
+                # BEFORE: sentiment=0.0
+                sentiment=0.0,  # Could enhance with sentiment analysis
+
+                # BEFORE: priority=0
+                priority=int(enhanced_summary.priority_score * 10),  # REAL PRIORITY!
+
+                related_messages=[],
                 processed_at=datetime.utcnow()
             )
-            
+
         except Exception as e:
             logger.error(f"Error processing email: {e}")
             return None
@@ -316,3 +348,22 @@ class EmailProcessor:
         except (ValueError, TypeError) as e:
             logger.warning(f"Error parsing date '{date_str}': {e}")
             return datetime.now(timezone.utc)
+
+    def _strip_html(self, html_content: str) -> str:
+        """Strip HTML tags from content.
+
+        Args:
+            html_content: HTML content to clean
+
+        Returns:
+            Plain text content
+        """
+        if not html_content:
+            return ""
+        try:
+            # Use BeautifulSoup for better HTML parsing
+            soup = BeautifulSoup(html_content, 'html.parser')
+            return soup.get_text().strip()
+        except Exception:
+            # Fallback to regex if BeautifulSoup fails
+            return re.sub(r'<[^>]+>', '', html_content).strip()

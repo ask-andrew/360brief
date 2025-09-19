@@ -107,6 +107,7 @@ export function EnhancedBriefDashboard() {
   const [selectedStyle, setSelectedStyle] = useState('mission_brief');
   const [selectedScenario, setSelectedScenario] = useState('normal');
   const [showJsonOutput, setShowJsonOutput] = useState(false);
+  const [useLLM, setUseLLM] = useState(true);
 
   const fetchBrief = async () => {
     setLoading(true);
@@ -116,7 +117,8 @@ export function EnhancedBriefDashboard() {
       const params = new URLSearchParams({
         use_real_data: useRealData.toString(),
         style: selectedStyle, // Use the selected style from state
-        scenario: selectedScenario
+        scenario: selectedScenario,
+        use_llm: useLLM.toString()
       });
       
       console.log('🎯 Requesting brief with style:', selectedStyle);
@@ -180,7 +182,7 @@ export function EnhancedBriefDashboard() {
     }
     
     fetchBrief();
-  }, [useRealData, selectedStyle, selectedScenario]);
+  }, [useRealData, selectedStyle, selectedScenario, useLLM]);
 
   const renderBriefContent = () => {
     if (!briefData) return null;
@@ -265,6 +267,22 @@ export function EnhancedBriefDashboard() {
                 </SelectContent>
               </Select>
             )}
+
+            {/* LLM Toggle */}
+            <div className="flex items-center space-x-3 bg-white/10 rounded-lg p-3">
+              <Label htmlFor="llm-toggle" className="text-sm text-white/70">
+                Basic
+              </Label>
+              <Switch
+                id="llm-toggle"
+                checked={useLLM}
+                onCheckedChange={setUseLLM}
+                className="data-[state=checked]:bg-purple-500"
+              />
+              <Label htmlFor="llm-toggle" className="text-sm text-white">
+                AI Enhanced {useLLM && '🧠'}
+              </Label>
+            </div>
 
             <Button 
               onClick={fetchBrief} 

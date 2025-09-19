@@ -79,6 +79,7 @@ export async function GET(req: Request) {
     const useStreaming = searchParams.get('streaming') !== 'false'; // Default to true for enhanced processing
     const style = searchParams.get('style') || 'mission_brief';
     const scenario = searchParams.get('scenario') || 'normal'; // crisis, normal, high_activity
+    const useLLM = searchParams.get('use_llm') !== 'false'; // Default to true
     
     // Handle convenient time range presets
     if (timeRange && !startDate && !endDate) {
@@ -434,7 +435,8 @@ export async function GET(req: Request) {
             user_id: user.id,
             emails: emailsForAnalysis,
             days_back: 7,
-            filter_marketing: true
+            filter_marketing: true,
+            use_llm_override: useLLM
           })
         });
 
@@ -462,8 +464,10 @@ export async function GET(req: Request) {
           // Return the real intelligence brief directly (no more mock data fallbacks)
           return NextResponse.json({
             ...realIntelligence,
+            style: 'mission_brief', // Ensure frontend knows it's a mission brief
             userId: user.email,
-            dataSource: 'python_intelligence_service',
+            dataSource: 'real',
+            generatedAt: realIntelligence.processing_metadata?.generated_at || new Date().toISOString(),
             generationParams: {
               style: briefStyle,
               scenario: undefined,
@@ -730,7 +734,8 @@ export async function POST(req: Request) {
               user_id: user.id,
               emails: emailsForAnalysis,
               days_back: 7,
-              filter_marketing: true
+              filter_marketing: true,
+              use_llm_override: useLLM
             })
           });
 
@@ -741,8 +746,10 @@ export async function POST(req: Request) {
             // Return the real intelligence brief directly (no more mock data fallbacks)
             return NextResponse.json({
               ...realIntelligence,
+              style: 'mission_brief', // Ensure frontend knows it's a mission brief
               userId: user.email,
-              dataSource: 'python_intelligence_service',
+              dataSource: 'real',
+              generatedAt: realIntelligence.processing_metadata?.generated_at || new Date().toISOString(),
               generationParams: {
                 style: briefStyle,
                 timeRange,

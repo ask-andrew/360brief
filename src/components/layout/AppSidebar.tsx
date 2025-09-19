@@ -62,6 +62,12 @@ export function AppSidebar() {
       icon: BarChart3,
       current: pathname?.startsWith('/analytics')
     },
+    {
+      name: 'Radar',
+      href: '/dashboard/radar',
+      icon: Sliders,
+      current: pathname?.startsWith('/dashboard/radar')
+    },
     { 
       name: 'Briefs', 
       icon: BookOpen, 

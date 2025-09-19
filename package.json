@@ -21,7 +21,19 @@
     "test:ci": "playwright test --workers=4 --retries=2",
     "test:update-snapshots": "playwright test --update-snapshots",
     "test:debug": "playwright test --debug",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "dev:services": "concurrently \"npm:start:services-*\"",
+    "dev:all": "concurrently \"npm:dev\" \"npm:dev:services\"",
+    "start:services-achievement-extractor": "scripts/services/start-achievement-extractor.sh",
+    "start:services-enhanced-analytics": "scripts/services/start-enhanced-analytics.sh",
+    "start:services-summarize": "scripts/services/start-summarize.sh",
+    "start:services-unified-analytics": "scripts/services/start-unified-analytics.sh",
+    "dev:services": "concurrently \"npm:start:services-*\"",
+    "dev:all": "concurrently \"npm:dev\" \"npm:dev:services\"",
+    "start:services-achievement-extractor": "scripts/services/start-achievement-extractor.sh",
+    "start:services-enhanced-analytics": "scripts/services/start-enhanced-analytics.sh",
+    "start:services-summarize": "scripts/services/start-summarize.sh",
+    "start:services-unified-analytics": "scripts/services/start-unified-analytics.sh"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
@@ -93,6 +105,7 @@
     "@types/react-dom": "^19.1.7",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
+    "concurrently": "^9.2.1",
     "dotenv": "^17.2.1",
     "eslint": "^9.32.0",
     "eslint-config-next": "15.4.5",

@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     };
     console.log(' Unified data fetched for brief', counts);
 
-    const data = generateBrief(unified);
+    const data = await generateBrief(unified);
     console.log(' Brief generated', { generatedAt: (data as any)?.generated_at, timeRange: (data as any)?.time_range });
 
     return NextResponse.json(data);

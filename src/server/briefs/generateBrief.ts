@@ -1,6 +1,35 @@
 import { BriefingData, ActionItem, Metric, Event as BriefEvent, Theme } from '@/types/briefing';
 import { UnifiedData, IncidentItem, TicketItem, CalendarEventItem } from '@/types/unified';
 
+async function getAchievementsFromPythonService(emails: any[]): Promise<any> {
+  try {
+    const response = await fetch('http://localhost:8000/generate-brief', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: 'some-user-id', // This needs to be passed in
+        emails: emails,
+        days_back: 7, // Or some other value
+        filter_marketing: false,
+        use_llm_override: false,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch achievements from python service:', response.status, response.statusText);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error calling python service:', error);
+    return null;
+  }
+}
+
+
 function iso(date: Date | string): string {
   return typeof date === 'string' ? date : date.toISOString();
 }
@@ -148,9 +177,9 @@ function detectThemes(unified: UnifiedData): Theme[] {
   if (themes.length === 0) {
     const emailCount = unified.emails.length;
     if (emailCount === 0) {
-      themes.push({ 
-        title: 'Awaiting Data Connection', 
-        description: 'Connect Gmail to generate intelligent briefings from your actual communications and calendar' 
+      themes.push({
+        title: 'Awaiting Data Connection',
+        description: 'Connect Gmail to generate intelligent briefings from your actual communications and calendar'
       });
     } else {
       themes.push({ title: 'Business as Usual', description: 'Regular operations with standard monitoring and execution' });
@@ -359,14 +388,30 @@ function mapEvents(unified: UnifiedData): BriefEvent[] {
   });
 }
 
-export function generateBrief(unified: UnifiedData): BriefingData {
+export async function generateBrief(unified: UnifiedData): Promise<BriefingData> {
+  const pythonBrief = await getAchievementsFromPythonService(unified.emails);
+  console.log('pythonBrief:', pythonBrief);
+
+  let themes: Theme[] = [];
+  let kudos: any[] = [];
+
+  if (pythonBrief) {
+    themes = pythonBrief.missionBrief.trends.map((t: string) => ({ title: t, description: '' }));
+    kudos = pythonBrief.winbox;
+  } else {
+    // Fallback to existing logic
+    themes = detectThemes(unified);
+    kudos = []; // Or some other fallback
+  }
+
   return {
-    key_themes: detectThemes(unified),
+    key_themes: themes,
     action_items: mapActionItems(unified),
     metrics: buildMetrics(unified),
     upcoming_events: mapEvents(unified),
     generated_at: iso(new Date()),
     time_range: pickTimeRange(unified),
+    kudos: kudos,
   };
 }
 
@@ -844,7 +889,7 @@ function generateStartupTLDR(context: any, brief: BriefingData): string {
   if (context.hasActiveIncidents) {
     return 'Major issue happening; time to rally the team and show what we can do under pressure.';
   }
-  return `${brief.action_items.length} things to crush today; let's maintain velocity and ship something awesome.`;
+  return `${brief.action_items.length} things to crush today; let\'s maintain velocity and ship something awesome.`;
 }
 
 function generateConsultingTLDR(context: any, brief: BriefingData): string {

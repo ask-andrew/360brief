@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -12,6 +15,7 @@ import traceback
 from config import GEMINI_API_KEY
 import httpx
 from urllib.parse import urljoin
+from achievement_extractor import RealDataPopulator
 
 # Load environment variables
 load_dotenv(find_dotenv())
@@ -42,12 +46,14 @@ class BriefInput(BaseModel):
     emails: List[Dict]
     days_back: int
     filter_marketing: bool
+    use_llm_override: Optional[bool] = None
 
 class UserSubscription(BaseModel):
     subscription_tier: str = 'free'
 
 class BriefOutput(BaseModel):
     missionBrief: Dict
+    winbox: List[Dict]
     processing_metadata: Dict
 
 class EmailBatchInput(BaseModel):
@@ -156,38 +162,75 @@ async def get_user_subscription(user_id: str) -> UserSubscription:
 
 def generate_non_llm_brief(data: List[Dict]) -> dict:
     """
-    Generates a simplified brief from email data without using an LLM.
-    Suitable for free tier users.
+    Generates an enhanced brief from email data using the Achievement Extractor module.
+    This provides real data insights without relying on a full LLM call.
     """
+    logger.info("Generating non-LLM brief with Achievement Extractor")
+    populator = RealDataPopulator()
+
+    # Adapt the input email data to the format expected by the extractor
+    class MockEmail:
+        def __init__(self, email_dict):
+            self.summary = email_dict.get("subject", "No Subject")
+            self.key_points = [email_dict.get("body", "")]
+            self.message_id = email_dict.get("id")
+            self.processed_at = datetime.now()
+
+    processed_emails = [MockEmail(email) for email in data]
+    
+    # Get real data from the achievement extractor
+    real_data = populator.populate_briefing_sections(processed_emails)
+    
+    # Extract achievements and trends
+    winbox_achievements = real_data.get("team_achievements", [])
+    trends = [p["description"] for p in real_data.get("communication_patterns", [])]
+
+    # Fallback if no achievements are found
+    if not winbox_achievements:
+        winbox_achievements = [{
+            "name": "Automated Analysis",
+            "achievement": f"Processed {len(data)} emails to identify key patterns and achievements.",
+            "impact": "No specific team achievements detected in this batch."
+        }]
+
+    # Fallback for trends
+    if not trends:
+        trends = ["Standard communication patterns observed.", "No major blockers or urgent trends detected."]
+
+    # Basic action item extraction (can be improved)
     immediate_actions = []
+    urgent_keywords = ['urgent', 'asap', 'immediate', 'emergency', 'critical', 'deadline']
     for email in data:
-        immediate_actions.append({
-            "title": email.get("subject", "No Subject"),
-            "objective": f"Review email from {email.get('from', {}).get('email', 'Unknown')}",
-            "priority": "medium",
-            "messageId": email.get("id")
-        })
+        email_text = f"{email.get('subject', '')} {email.get('body', '')}".lower()
+        if any(keyword in email_text for keyword in urgent_keywords):
+            immediate_actions.append({
+                "title": email.get("subject", "No Subject"),
+                "objective": f"Address urgent matter from {email.get('from', {}).get('email', 'Unknown')}",
+                "priority": "high",
+                "messageId": email.get("id")
+            })
 
     return {
         "missionBrief": {
             "currentStatus": {
-                "primaryIssue": "Free tier: Manual review required"
+                "primaryIssue": "Review the extracted trends and achievements for situational awareness."
             },
-            "immediateActions": immediate_actions[:10],  # Limit free tier to 10 actions
-            "requiredActions": ["Upgrade to Premium for AI-powered analysis"],
-            "trends": ["Consider upgrading for trend analysis"]
+            "immediateActions": immediate_actions[:5],
+            "requiredActions": [
+                "Review extracted achievements for team recognition opportunities.",
+                "Note the communication patterns for potential follow-up.",
+                "Upgrade to Premium for full AI-powered brief generation."
+            ],
+            "trends": trends
         },
-        "winbox": [{
-            "name": "Free Tier User",
-            "achievement": "Basic email organization completed"
-        }]
+        "winbox": winbox_achievements
     }
 
 async def call_gemini(prompt: str) -> str:
     """Call the Gemini API with the generated prompt."""
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = await model.generate_content_async(prompt)
         return response.text
     except Exception as e:
@@ -207,22 +250,37 @@ async def generate_brief(brief_input: BriefInput):
         user_subscription = await get_user_subscription(brief_input.user_id)
         logger.info(f"User {brief_input.user_id} has {user_subscription.subscription_tier} subscription")
 
-        # Use LLM for premium/enterprise users with API key, otherwise use non-LLM
-        use_llm = (user_subscription.subscription_tier in ['premium', 'enterprise'] and GEMINI_API_KEY)
+        # Temporarily make andrew.ledet@gmail.com premium for testing
+        if brief_input.user_id == 'ef25c737-514e-466a-b7da-0076ae720031':
+            logger.info("🎯 Detected andrew.ledet@gmail.com - upgrading to premium for testing")
+            user_subscription.subscription_tier = 'premium'
+
+        # Use LLM override if provided, otherwise use subscription tier logic
+        if brief_input.use_llm_override is not None:
+            use_llm = brief_input.use_llm_override and GEMINI_API_KEY
+            logger.info(f"Using LLM override: {brief_input.use_llm_override}, LLM enabled: {use_llm}")
+        else:
+            # Use LLM for premium/enterprise users with API key, otherwise use non-LLM
+            use_llm = (user_subscription.subscription_tier in ['premium', 'enterprise'] and GEMINI_API_KEY)
 
         if use_llm:
             logger.info("Using Gemini LLM for premium user")
-            prompt = generate_prompt(brief_input.emails)
-            llm_response = await call_gemini(prompt)
-            model_name = "gemini-premium"
             try:
-                # Gemini may return markdown, so we need to strip it
-                cleaned_response = llm_response.strip().replace('`json', '').replace('`', '')
-                content = json.loads(cleaned_response)
-                logger.info(f"Parsed premium content from Gemini")
-            except json.JSONDecodeError:
-                logger.error(f"Failed to decode Gemini response as JSON: {llm_response}")
-                raise HTTPException(status_code=500, detail="Failed to generate a valid brief from LLM.")
+                prompt = generate_prompt(brief_input.emails)
+                llm_response = await call_gemini(prompt)
+                model_name = "gemini-premium"
+                try:
+                    # Gemini may return markdown, so we need to strip it
+                    cleaned_response = llm_response.strip().replace('`json', '').replace('`', '')
+                    content = json.loads(cleaned_response)
+                    logger.info(f"Parsed premium content from Gemini")
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to decode Gemini response as JSON: {llm_response}")
+                    raise HTTPException(status_code=500, detail="Failed to generate a valid brief from LLM.")
+            except Exception as llm_error:
+                logger.warning(f"LLM failed ({str(llm_error)}), falling back to non-LLM brief")
+                content = generate_non_llm_brief(brief_input.emails)
+                model_name = f"non-llm-fallback-{user_subscription.subscription_tier}"
         else:
             reason = "free tier user" if user_subscription.subscription_tier == 'free' else "GEMINI_API_KEY not found"
             logger.info(f"Using non-LLM brief generation: {reason}")
@@ -231,6 +289,7 @@ async def generate_brief(brief_input: BriefInput):
 
         response_data = {
             "missionBrief": content.get("missionBrief", {}),
+            "winbox": content.get("winbox", []),
             "processing_metadata": {
                 "generated_at": datetime.now(timezone.utc).isoformat(),
                 "model": model_name,

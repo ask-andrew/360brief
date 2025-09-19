@@ -1,0 +1,9 @@
+fastapi
+pydantic
+python-dotenv
+google-generativeai
+spacy
+uvicorn
+
+# Note: The spacy model 'en_core_web_sm' also needs to be downloaded.
+# Run this command to get it: python -m spacy download en_core_web_sm
