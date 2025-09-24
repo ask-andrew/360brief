@@ -34,6 +34,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { StyledMissionBrief } from './StyledMissionBrief';
+import { AudioPlayer } from './AudioPlayer';
 
 interface BriefData {
   userId: string;
@@ -107,7 +108,7 @@ export function EnhancedBriefDashboard() {
   const [selectedStyle, setSelectedStyle] = useState('mission_brief');
   const [selectedScenario, setSelectedScenario] = useState('normal');
   const [showJsonOutput, setShowJsonOutput] = useState(false);
-  const [useLLM, setUseLLM] = useState(true);
+  const [useLLM, setUseLLM] = useState(false);
 
   const fetchBrief = async () => {
     setLoading(true);
@@ -154,7 +155,7 @@ export function EnhancedBriefDashboard() {
       console.log('🎯 Has missionBrief?', !!data.missionBrief);
       console.log('🎯 Has startupVelocity?', !!data.startupVelocity);
 
-      setBriefData(data);
+      setBriefData({ ...data, audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' });
       setReconnectUrl(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

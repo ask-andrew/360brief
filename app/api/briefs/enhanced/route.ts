@@ -79,7 +79,7 @@ export async function GET(req: Request) {
     const useStreaming = searchParams.get('streaming') !== 'false'; // Default to true for enhanced processing
     const style = searchParams.get('style') || 'mission_brief';
     const scenario = searchParams.get('scenario') || 'normal'; // crisis, normal, high_activity
-    const useLLM = searchParams.get('use_llm') !== 'false'; // Default to true
+    const useLLM = searchParams.get('use_llm') === 'true'; // Default to false
     
     // Handle convenient time range presets
     if (timeRange && !startDate && !endDate) {
@@ -331,7 +331,65 @@ export async function GET(req: Request) {
           generated_at: new Date().toISOString(),
         };
       }
-      
+
+      // Apply clustering to organize emails by topic (if we have emails)
+      let clusteringResult = null;
+      if (unified.emails.length >= 2) {
+        try {
+          console.log(`🔗 Applying clustering to ${unified.emails.length} emails...`);
+
+          const clusteringResponse = await fetch('http://localhost:3000/api/clustering/integrate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cookie': req.headers.get('cookie') || '' // Forward auth cookies
+            },
+            body: JSON.stringify({
+              user_id: user?.id,
+              digest_id: `brief_${Date.now()}`,
+              emails: unified.emails.map(email => ({
+                id: email.id,
+                subject: email.subject,
+                body: email.body,
+                from_address: email.from,
+                to: email.to,
+                date: email.date,
+                labels: email.labels || [],
+                has_attachments: false,
+                metadata: email.metadata || {}
+              }))
+            })
+          });
+
+          if (clusteringResponse.ok) {
+            clusteringResult = await clusteringResponse.json();
+            console.log(`✅ Clustering produced ${clusteringResult.metrics?.clusters_found || 0} topic clusters`);
+
+            // Update unified.emails with clustering metadata
+            if (clusteringResult.digest_items) {
+              const clusteredEmails = unified.emails.map(email => {
+                const clusterItem = clusteringResult.digest_items.find((item: any) => item.id === email.id);
+                if (clusterItem?.clustering_info) {
+                  return {
+                    ...email,
+                    metadata: {
+                      ...email.metadata,
+                      clustering: clusterItem.clustering_info
+                    }
+                  };
+                }
+                return email;
+              });
+              unified.emails = clusteredEmails;
+            }
+          } else {
+            console.warn('⚠️ Clustering failed, continuing without clustering');
+          }
+        } catch (clusteringError) {
+          console.warn('⚠️ Clustering error:', clusteringError);
+        }
+      }
+
       // Call Python analysis service for executive intelligence processing
       try {
         console.log(`🧠 GET: Calling Python analysis service with ${unified.emails.length} emails for intelligent processing...`);
@@ -341,7 +399,7 @@ export async function GET(req: Request) {
           try {
             console.log(`🔍 Extracting executive intelligence from ${unified.emails.length} emails...`);
             
-            const extractionResponse = await fetch('http://localhost:8000/process-email-batch', {
+            const extractionResponse = await fetch('http://localhost:8001/generate-brief', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -426,7 +484,7 @@ export async function GET(req: Request) {
 
         console.log(`🧠 Calling Python intelligence service with ${emailsForAnalysis.length} emails`);
 
-        const realAnalysisResponse = await fetch(`http://localhost:8000/generate-brief`, {
+        const realAnalysisResponse = await fetch(`http://localhost:8001/generate-brief`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -473,7 +531,13 @@ export async function GET(req: Request) {
               scenario: undefined,
               timeRange
             },
-            availableTimeRanges: ['3days', 'week', 'month']
+            availableTimeRanges: ['3days', 'week', 'month'],
+            // Include clustering results for frontend display
+            clustering: clusteringResult ? {
+              metrics: clusteringResult.metrics,
+              upgrade_suggestions: clusteringResult.upgrade_suggestions,
+              processing_time_ms: clusteringResult.processing_time_ms
+            } : null
           });
         }
         
@@ -584,12 +648,13 @@ function getScenarioData(scenario: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { 
+    const {
       style = 'mission_brief',
       useRealData = false,
       scenario = 'normal',
       timeRange,
-      customData 
+      customData,
+      useLLM = false
     } = body;
 
     // Validate inputs
@@ -725,7 +790,7 @@ export async function POST(req: Request) {
 
           console.log(`🧠 POST: Calling Python intelligence service with ${emailsForAnalysis.length} emails`);
 
-          const realAnalysisResponse = await fetch(`http://localhost:8000/generate-brief`, {
+          const realAnalysisResponse = await fetch(`http://localhost:8001/generate-brief`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

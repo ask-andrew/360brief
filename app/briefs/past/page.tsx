@@ -15,45 +15,34 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-// Mock data - replace with real data from your backend
-const mockBriefs = [
-  {
-    id: '1',
-    title: 'Weekly Executive Brief - Jan 15',
-    createdAt: '2024-01-15T09:00:00Z',
-    style: 'mission_brief',
-    status: 'completed',
-    timeRange: '1 week',
-    sources: ['Gmail', 'Calendar'],
-    metrics: { emails: 45, meetings: 12 }
-  },
-  {
-    id: '2', 
-    title: 'Daily Operations Brief - Jan 14',
-    createdAt: '2024-01-14T09:00:00Z',
-    style: 'startup_velocity',
-    status: 'completed',
-    timeRange: '24 hours',
-    sources: ['Gmail', 'Calendar'],
-    metrics: { emails: 18, meetings: 4 }
-  },
-  {
-    id: '3',
-    title: 'Management Consulting Brief - Jan 12',
-    createdAt: '2024-01-12T14:30:00Z', 
-    style: 'management_consulting',
-    status: 'completed',
-    timeRange: '3 days',
-    sources: ['Gmail'],
-    metrics: { emails: 23, meetings: 0 }
-  }
-];
+  const [briefs, setBriefs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchBriefs() {
+      try {
+        const response = await fetch('/api/brief-data');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setBriefs(data.briefs); // Assuming the API returns an object with a 'briefs' array
+      } catch (error: any) {
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchBriefs();
+  }, []);
 
 export default function PastBriefsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('all');
 
-  const filteredBriefs = mockBriefs.filter(brief => {
+  const filteredBriefs = briefs.filter(brief => {
     const matchesSearch = brief.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStyle = selectedStyle === 'all' || brief.style === selectedStyle;
     return matchesSearch && matchesStyle;
@@ -108,7 +97,7 @@ export default function PastBriefsPage() {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">{mockBriefs.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{briefs.length}</p>
               <p className="text-sm text-gray-600">Total Briefs</p>
             </div>
           </CardContent>
@@ -148,7 +137,17 @@ export default function PastBriefsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredBriefs.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+              <p className="text-lg font-medium text-gray-900">Loading briefs...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 text-red-500">
+              <p className="text-lg font-medium mb-2">Error loading briefs:</p>
+              <p>{error}</p>
+            </div>
+          ) : filteredBriefs.length > 0 ? (
             <div className="space-y-4">
               {filteredBriefs.map((brief) => (
                 <div 

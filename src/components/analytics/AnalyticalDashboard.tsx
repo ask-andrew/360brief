@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Col, Row, Spin, Typography, Tabs, Alert, Image, Tooltip, Switch, Space, Drawer, Tag, List, Select, Button } from 'antd';
 import { LoadingOutlined, ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined, MailOutlined, MailFilled } from '@ant-design/icons';
 import NextImage from 'next/image';
-import { useBriefData } from '@/hooks/useBriefData';
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 
 // Import components
 import CommunicationPulse from './metrics/CommunicationPulse';
@@ -17,61 +17,7 @@ import DashboardDownload from '@/components/common/DashboardDownload';
 
 const { Title } = Typography;
 
-// Mock data for the dashboard
-const mockAnalyticsData = {
-  // For CommunicationPulse
-  total_count: 1247,
-  inbound_count: 843,
-  outbound_count: 404,
-  avg_response_time_minutes: 127,
-  
-  // For CommunicationVolume
-  dates: Array.from({ length: 30 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i));
-    return date.toISOString().split('T')[0];
-  }),
-  email: {
-    inbound: Array(30).fill(0).map(() => Math.floor(Math.random() * 20) + 5),
-    outbound: Array(30).fill(0).map(() => Math.floor(Math.random() * 15) + 3)
-  },
-  slack: {
-    inbound: Array(30).fill(0).map(() => Math.floor(Math.random() * 15) + 3),
-    outbound: Array(30).fill(0).map(() => Math.floor(Math.random() * 10) + 2)
-  },
-  meeting: {
-    inbound: Array(30).fill(0).map(() => Math.floor(Math.random() * 5) + 1),
-    outbound: Array(30).fill(0).map(() => Math.floor(Math.random() * 5) + 1)
-  },
-  
-  // For TimeAllocation
-  meetings_by_type: {
-    'Project Planning': 12,
-    'Team Sync': 8,
-    'Client Call': 5,
-    'Code Review': 7,
-    'Retrospective': 3
-  },
-  
-  // For NetworkGraph
-  nodes: [
-    { id: '1', name: 'You', email: 'me@example.com', is_external: false, messageCount: 150 },
-    { id: '2', name: 'John Doe', email: 'john@example.com', is_external: false, messageCount: 87 },
-    { id: '3', name: 'Jane Smith', email: 'jane@example.com', is_external: false, messageCount: 65 },
-    { id: '4', name: 'Acme Inc', email: 'contact@acme.com', is_external: true, messageCount: 42 }
-  ],
-  links: [
-    { source: '1', target: '2', weight: 30, projects: ['project1', 'project2'] },
-    { source: '1', target: '3', weight: 25, projects: ['project1'] },
-    { source: '1', target: '4', weight: 15, projects: ['project3'] },
-    { source: '2', target: '3', weight: 20, projects: ['project1'] }
-  ],
-  projects: [
-    { id: 'project1', name: 'Project Alpha', participants: ['1', '2', '3'], messageCount: 75 },
-    { id: 'project2', name: 'Q2 Budget', participants: ['1', '2'], messageCount: 30 },
-    { id: 'project3', name: 'Client Onboarding', participants: ['1', '4'], messageCount: 15 }
-  ]
-};
+
 
 const AnalyticalDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -100,10 +46,10 @@ const AnalyticalDashboard: React.FC = () => {
   }, [activeTab]);
 
   // Fetch real data (unified API). The structure should align with charts; when unavailable, we fall back to demo data.
-  const { data: realData, loading: realLoading, error: realError } = useBriefData<any>({});
+  const { data: realData, loading: realLoading, error: realError } = useAnalyticsData<any>({});
 
   // Selected data source
-  const selectedData = useDemoData ? mockAnalyticsData : (realData ?? null);
+  const selectedData = useDemoData ? null : (realData ?? null);
 
   
 
@@ -307,7 +253,7 @@ const AnalyticalDashboard: React.FC = () => {
 
   const daysWindow = 14;
   const totals = (() => {
-    const d = selectedData ?? mockAnalyticsData;
+    const d = selectedData;
     const len: number = (d?.email?.inbound ?? []).length;
     if (!len) return { deltaTotalPct: null };
     const inboundAll: number[] = Array.from({ length: len }, (_: unknown, i: number) =>
@@ -361,7 +307,7 @@ const AnalyticalDashboard: React.FC = () => {
   }, [extScope]);
 
   const allNodes: { id: string; name: string; is_external: boolean; messageCount?: number; email?: string }[] =
-    (selectedData?.nodes ?? mockAnalyticsData.nodes) as any[];
+    (selectedData?.nodes ?? []) as any[];
   const extFiltered = allNodes
     .filter(n => (extScope === 'all' ? true : extScope === 'external' ? n.is_external : !n.is_external))
     .sort((a, b) => (b.messageCount ?? 0) - (a.messageCount ?? 0));
@@ -376,16 +322,10 @@ const AnalyticalDashboard: React.FC = () => {
     return true;
   });
 
-  // Simulate data loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+
 
   // Render loading state
-  if (loading) {
+  if (realLoading) {
     return (
       <div style={{ 
         display: 'flex', 
@@ -401,7 +341,7 @@ const AnalyticalDashboard: React.FC = () => {
   }
 
   // Render error state
-  if (error) {
+  if (realError) {
     return (
       <div style={{ padding: '24px' }}>
         <Alert
@@ -450,7 +390,7 @@ const AnalyticalDashboard: React.FC = () => {
                       <ArrowUpOutlined style={{ color: '#52c41a' }} />
                     )}
                     <span>
-                      <strong>{(selectedData?.total_count ?? mockAnalyticsData.total_count).toLocaleString()}</strong>
+                      <strong>{(selectedData?.total_count ?? 0).toLocaleString()}</strong>
                       {` total messages — `}
                       {typeof totalDeltaPct === 'number' ? (
                         <span style={{ color: totalDeltaPct >= 0 ? '#52c41a' : '#cf1322' }}>
@@ -959,7 +899,7 @@ const AnalyticalDashboard: React.FC = () => {
                 bodyStyle={{ padding: '16px 24px' }}
               >
                 <div style={{ minHeight: '300px' }}>
-                  <CommunicationVolume data={selectedData ?? mockAnalyticsData} />
+                  <CommunicationVolume data={selectedData} />
                 </div>
               </Card>
             </Col>
@@ -971,7 +911,7 @@ const AnalyticalDashboard: React.FC = () => {
                 bodyStyle={{ padding: '16px 24px' }}
               >
                 <div style={{ minHeight: '300px' }}>
-                  <TimeAllocation data={selectedData ?? mockAnalyticsData} />
+                  <TimeAllocation data={selectedData} />
                 </div>
               </Card>
             </Col>

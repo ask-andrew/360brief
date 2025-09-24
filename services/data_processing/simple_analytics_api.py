@@ -27,6 +27,13 @@ except ImportError as e:
     GMAIL_AVAILABLE = False
 
 try:
+    from data_processing.services.calendar_service import CalendarService
+    CALENDAR_AVAILABLE = True
+except ImportError as e:
+    print(f"Calendar service not available: {e}")
+    CALENDAR_AVAILABLE = False
+
+try:
     from email_intelligence_extractor import EmailIntelligenceExtractor
     EXTRACTOR_AVAILABLE = True
 except ImportError as e:
@@ -662,8 +669,9 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
                 # Convert to analytics format
                 emails_data = {'emails': processed_messages, 'total_count': len(processed_messages)}
                 analytics_data = convert_emails_to_analytics(emails_data, days_back, filter_marketing)
+                analytics_data['calendar_events'] = [event.dict() for event in processed_events]
                 analytics_data['dataSource'] = 'real_data_direct'
-                analytics_data['message'] = f'Real Gmail data: {len(processed_messages)} messages analyzed'
+                analytics_data['message'] = f'Real Gmail data: {len(processed_messages)} messages analyzed, {len(processed_events)} calendar events found.'
                 analytics_data['processed_messages'] = processed_messages  # Include for intelligence processing
 
                 return analytics_data
@@ -674,7 +682,7 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
         logger.error(traceback.format_exc())
         return get_sample_analytics()
 
-def convert_emails_to_analytics(emails_data: Dict[str, Any], days_back: int, filter_marketing: bool) -> Dict[str, Any]:
+def convert_emails_to_analytics(emails_data: Dict[str, Any], calendar_events: List[Dict[str, Any]], days_back: int, filter_marketing: bool) -> Dict[str, Any]:
     """Convert Next.js email data to our analytics format"""
     emails = emails_data.get('emails', [])
     
@@ -702,7 +710,20 @@ def convert_emails_to_analytics(emails_data: Dict[str, Any], days_back: int, fil
             
         except Exception as e:
             logger.warning(f"Error processing email date: {e}")
-    
+            
+    # Process calendar events
+    meeting_counts = {}
+    for event in calendar_events:
+        try:
+            from datetime import datetime
+            date_str = event.get('start_time', '')
+            if date_str:
+                date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                day_key = date.strftime('%Y-%m-%d')
+                meeting_counts[day_key] = meeting_counts.get(day_key, 0) + 1
+        except Exception as e:
+            logger.warning(f"Error processing calendar event date: {e}")
+
     # Build analytics structure
     return {
         "total_count": total_count,
@@ -717,6 +738,9 @@ def convert_emails_to_analytics(emails_data: Dict[str, Any], days_back: int, fil
         "message_distribution": {
             "by_day": [{"date": k, "count": v} for k, v in daily_counts.items()],
             "by_sender": [{"sender": k, "count": v} for k, v in list(senders.items())[:5]]
+        },
+        "calendar_distribution": {
+            "by_day": [{"date": k, "count": v} for k, v in meeting_counts.items()]
         }
     }
 

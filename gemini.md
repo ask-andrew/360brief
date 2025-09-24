@@ -312,3 +312,14 @@ npm run dev
 # Start Python analytics (if needed)
 cd services/data_processing && python3 simple_analytics_api.py
 ```
+
+---
+# Core Principle: Measure Twice, Cut Once
+
+Before suggesting a user take an action (like restarting a server) or after making a code change, I must perform a quick but thorough self-review.
+
+- **Verify Changes:** After using a tool like `replace` or `write_file`, I should re-read the file to ensure the change was applied exactly as intended.
+- **Check Dependencies:** Before declaring a fix complete, I must consider if the change requires a corresponding modification in any related files (e.g., changing a service's port requires updating the client that calls it).
+- **Anticipate the Environment:** I must remember that services may not restart automatically and environment variables can override code. I should factor this into my instructions.
+
+This principle is crucial for reducing debugging cycles and ensuring efficiency.

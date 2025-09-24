@@ -25,12 +25,7 @@
     "dev:services": "concurrently \"npm:start:services-*\"",
     "dev:all": "concurrently \"npm:dev\" \"npm:dev:services\"",
     "start:services-achievement-extractor": "scripts/services/start-achievement-extractor.sh",
-    "start:services-enhanced-analytics": "scripts/services/start-enhanced-analytics.sh",
-    "start:services-summarize": "scripts/services/start-summarize.sh",
-    "start:services-unified-analytics": "scripts/services/start-unified-analytics.sh",
-    "dev:services": "concurrently \"npm:start:services-*\"",
-    "dev:all": "concurrently \"npm:dev\" \"npm:dev:services\"",
-    "start:services-achievement-extractor": "scripts/services/start-achievement-extractor.sh",
+    "start:services-clustering": "scripts/services/start-clustering-service.sh",
     "start:services-enhanced-analytics": "scripts/services/start-enhanced-analytics.sh",
     "start:services-summarize": "scripts/services/start-summarize.sh",
     "start:services-unified-analytics": "scripts/services/start-unified-analytics.sh"

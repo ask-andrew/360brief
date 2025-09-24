@@ -466,8 +466,8 @@ if __name__ == "__main__":
     
     print("=== REAL TEAM ACHIEVEMENTS (replaces hardcoded data) ===")
     for achievement in result["winbox_achievements"]:
-        print(f"**{achievement['name']} ({achievement['category']})**")
-        print(f"{achievement['achievement']}")
+        print(f"**{achievement['from']} ({achievement['category']})**")
+        print(f"{achievement['message']}")
         print(f"{achievement['impact']}")
         print()
     

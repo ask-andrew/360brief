@@ -3,7 +3,7 @@ import { UnifiedData, IncidentItem, TicketItem, CalendarEventItem } from '@/type
 
 async function getAchievementsFromPythonService(emails: any[]): Promise<any> {
   try {
-    const response = await fetch('http://localhost:8000/generate-brief', {
+    const response = await fetch('http://localhost:8001/generate-brief', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -396,8 +396,22 @@ export async function generateBrief(unified: UnifiedData): Promise<BriefingData>
   let kudos: any[] = [];
 
   if (pythonBrief) {
-    themes = pythonBrief.missionBrief.trends.map((t: string) => ({ title: t, description: '' }));
-    kudos = pythonBrief.winbox;
+    // Check if missionBrief structure exists (sophisticated intelligence)
+    if (pythonBrief.missionBrief && pythonBrief.missionBrief.trends) {
+      themes = pythonBrief.missionBrief.trends.map((t: string) => ({ title: t, description: '' }));
+      kudos = pythonBrief.missionBrief.winbox || pythonBrief.winbox || [];
+    } else if (pythonBrief.keyInsights) {
+      // Fallback response structure - use keyInsights as themes
+      themes = pythonBrief.keyInsights.map((insight: string) => ({
+        title: insight,
+        description: ''
+      }));
+      kudos = pythonBrief.winbox || [];
+    } else {
+      // Basic fallback
+      themes = detectThemes(unified);
+      kudos = [];
+    }
   } else {
     // Fallback to existing logic
     themes = detectThemes(unified);
@@ -748,7 +762,7 @@ function extractEmailTrends(unified: UnifiedData): string[] {
 }
 
 function formatMissionBrief(brief: BriefingData, context: any, unified: UnifiedData): any {
-  const urgentActions = brief.action_items.filter(a => a.priority === 'high').slice(0, 4);
+  const urgentActions = brief.action_items ? brief.action_items.filter(a => a.priority === 'high').slice(0, 4) : [];
   const resourceNeeds = calculateResourceNeeds(context, unified);
   
   // Extract intelligence-based achievements and actions
@@ -876,8 +890,8 @@ function generateMissionSubject(context: any, brief: BriefingData): string {
 }
 
 function generateMissionTLDR(context: any, brief: BriefingData): string {
-  const actionCount = brief.action_items.length;
-  const criticalCount = brief.action_items.filter(a => a.priority === 'high').length;
+  const actionCount = brief.action_items?.length || 0;
+  const criticalCount = brief.action_items?.filter(a => a.priority === 'high').length || 0;
   
   if (context.hasActiveIncidents) {
     return `Active incident in progress; ${criticalCount} critical actions requiring immediate coordination and resource allocation.`;
@@ -889,16 +903,16 @@ function generateStartupTLDR(context: any, brief: BriefingData): string {
   if (context.hasActiveIncidents) {
     return 'Major issue happening; time to rally the team and show what we can do under pressure.';
   }
-  return `${brief.action_items.length} things to crush today; let\'s maintain velocity and ship something awesome.`;
+  return `${brief.action_items?.length || 0} things to crush today; let\'s maintain velocity and ship something awesome.`;
 }
 
 function generateConsultingTLDR(context: any, brief: BriefingData): string {
-  return `Strategic assessment reveals ${brief.action_items.length} priority items requiring structured approach and resource optimization.`;
+  return `Strategic assessment reveals ${brief.action_items?.length || 0} priority items requiring structured approach and resource optimization.`;
 }
 
 function generateNewsletterTLDR(context: any, brief: BriefingData): string {
   const themes = brief.key_themes.map(t => typeof t === 'string' ? t : t.title.toLowerCase()).join(', ');
-  return `Key themes: ${themes}; ${brief.action_items.length} action items tracked.`;
+  return `Key themes: ${themes}; ${brief.action_items?.length || 0} action items tracked.`;
 }
 
 // Additional helper functions would continue here...
@@ -995,7 +1009,7 @@ function generateSuccessFactors(context: any): string[] {
 function generateHeadlines(brief: BriefingData, context: any): string[] {
   const headlines = [];
   if (context.hasActiveIncidents) headlines.push('Service Incident: Active response coordination in progress');
-  headlines.push(`Operations Status: ${brief.action_items.length} tracked items, ${brief.action_items.filter(a => a.priority === 'high').length} high priority`);
+  headlines.push(`Operations Status: ${brief.action_items?.length || 0} tracked items, ${brief.action_items?.filter(a => a.priority === 'high').length || 0} high priority`);
   headlines.push(`Team Activity: ${context.mainStakeholders.length} key stakeholders engaged`);
   return headlines;
 }
@@ -1038,3 +1052,4 @@ function identifyKudos(unified: UnifiedData): Array<{name: string, role: string,
   });
   return kudos.slice(0, 3);
 }
+
