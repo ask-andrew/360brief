@@ -12,7 +12,12 @@ export async function GET() {
   }
 
   try {
-    const response = await fetch(`http://localhost:8001/analytics?use_real_data=true&user_id=${user.id}`, {
+    const analyticsServiceUrl = process.env.ANALYTICS_API_URL;
+    if (!analyticsServiceUrl) {
+      throw new Error('ANALYTICS_API_URL is not defined');
+    }
+
+    const response = await fetch(`${analyticsServiceUrl}/analytics?use_real_data=true&user_id=${user.id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

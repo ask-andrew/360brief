@@ -13,7 +13,10 @@ export async function GET(req: Request) {
     const unifiedData = await fetchUnifiedData(user.id, { useCase: 'radar' });
     const emails = (unifiedData as any)?.emails || [];
 
-    const riskRadarServiceUrl = 'http://localhost:8000/radar';
+    const riskRadarServiceUrl = process.env.RADAR_API_URL;
+    if (!riskRadarServiceUrl) {
+      throw new Error('RADAR_API_URL is not defined');
+    }
     const response = await fetch(riskRadarServiceUrl, {
       method: 'GET',
     });
