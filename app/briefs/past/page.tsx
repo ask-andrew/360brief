@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
+export default function PastBriefsPage() {
   const [briefs, setBriefs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,8 +38,6 @@ import { Input } from '@/components/ui/input';
 
     fetchBriefs();
   }, []);
-
-export default function PastBriefsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('all');
 
