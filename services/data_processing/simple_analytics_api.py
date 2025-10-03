@@ -41,12 +41,19 @@ except ImportError as e:
     EXTRACTOR_AVAILABLE = False
 
 try:
-    from data_processing.tiered_intelligence_engine import generate_sophisticated_free_intelligence, PowerfulNonAIIntelligenceEngine
+    from executive_intelligence_engine import generate_executive_brief, generate_sophisticated_free_intelligence
+    from main_integration import ExecutiveBriefGenerator
     INTELLIGENCE_ENGINE_AVAILABLE = True
-    print("✅ Sophisticated intelligence engine available")
+    print("✅ Executive Intelligence Engine v3 available")
 except ImportError as e:
-    print(f"Intelligence engine not available: {e}")
-    INTELLIGENCE_ENGINE_AVAILABLE = False
+    print(f"Executive Intelligence Engine not available: {e}")
+    try:
+        from data_processing.tiered_intelligence_engine import generate_sophisticated_free_intelligence, PowerfulNonAIIntelligenceEngine
+        INTELLIGENCE_ENGINE_AVAILABLE = True
+        print("✅ Fallback to old intelligence engine")
+    except ImportError as e2:
+        print(f"No intelligence engine available: {e2}")
+        INTELLIGENCE_ENGINE_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -497,14 +504,27 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
                 token_info = tokens_data[0]
                 
                 # Check if token needs refresh
-                now = int(datetime.now().timestamp())
-                expires_at = token_info.get('expires_at')
+                now_utc = datetime.now(timezone.utc)
+                expires_at_str = token_info.get('expires_at')
                 
+                if expires_at_str:
+                    try:
+                        # Parse the timestamp, assuming it's in ISO format with a Z suffix
+                        expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
+                    except ValueError:
+                        # Fallback for Unix timestamp
+                        try:
+                            expires_at = datetime.fromtimestamp(int(expires_at_str), tz=timezone.utc)
+                        except (ValueError, TypeError):
+                            expires_at = None
+                else:
+                    expires_at = None
+
                 access_token = token_info['access_token']
                 refresh_token = token_info.get('refresh_token')
                 
                 # If token is expired, try to refresh it
-                if expires_at and expires_at < now:
+                if expires_at and expires_at < now_utc:
                     logger.info("🔄 Token expired, attempting refresh...")
                     
                     try:
@@ -666,13 +686,13 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
                 
                 logger.info(f"✅ Successfully processed {len(processed_messages)} real messages")
                 
-                # Convert to analytics format
-                emails_data = {'emails': processed_messages, 'total_count': len(processed_messages)}
-                analytics_data = convert_emails_to_analytics(emails_data, days_back, filter_marketing)
-                analytics_data['calendar_events'] = [event.dict() for event in processed_events]
-                analytics_data['dataSource'] = 'real_data_direct'
-                analytics_data['message'] = f'Real Gmail data: {len(processed_messages)} messages analyzed, {len(processed_events)} calendar events found.'
-                analytics_data['processed_messages'] = processed_messages  # Include for intelligence processing
+                analytics_data = {
+                    'emails': processed_messages,
+                    'total_count': len(processed_messages),
+                    'dataSource': 'real_data_direct',
+                    'message': f'Real Gmail data: {len(processed_messages)} messages analyzed.',
+                    'processed_messages': processed_messages
+                }
 
                 return analytics_data
                     
@@ -682,67 +702,7 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
         logger.error(traceback.format_exc())
         return get_sample_analytics()
 
-def convert_emails_to_analytics(emails_data: Dict[str, Any], calendar_events: List[Dict[str, Any]], days_back: int, filter_marketing: bool) -> Dict[str, Any]:
-    """Convert Next.js email data to our analytics format"""
-    emails = emails_data.get('emails', [])
-    
-    # Generate analytics from the real email data
-    total_count = len(emails)
-    
-    # Count by day
-    daily_counts = {}
-    senders = {}
-    
-    for email in emails:
-        # Parse date and count
-        try:
-            from datetime import datetime
-            # Assuming email has date field
-            date_str = email.get('date', '')
-            if date_str:
-                date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                day_key = date.strftime('%Y-%m-%d')
-                daily_counts[day_key] = daily_counts.get(day_key, 0) + 1
-            
-            # Count senders
-            sender = email.get('from', {}).get('emailAddress', {}).get('address', 'unknown')
-            senders[sender] = senders.get(sender, 0) + 1
-            
-        except Exception as e:
-            logger.warning(f"Error processing email date: {e}")
-            
-    # Process calendar events
-    meeting_counts = {}
-    for event in calendar_events:
-        try:
-            from datetime import datetime
-            date_str = event.get('start_time', '')
-            if date_str:
-                date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                day_key = date.strftime('%Y-%m-%d')
-                meeting_counts[day_key] = meeting_counts.get(day_key, 0) + 1
-        except Exception as e:
-            logger.warning(f"Error processing calendar event date: {e}")
 
-    # Build analytics structure
-    return {
-        "total_count": total_count,
-        "daily_counts": daily_counts,
-        "top_senders": dict(sorted(senders.items(), key=lambda x: x[1], reverse=True)[:10]),
-        "processing_metadata": {
-            "source": "next_js_proxy",
-            "date_range_days": days_back,
-            "marketing_filtered": filter_marketing,
-            "processed_at": datetime.now().isoformat()
-        },
-        "message_distribution": {
-            "by_day": [{"date": k, "count": v} for k, v in daily_counts.items()],
-            "by_sender": [{"sender": k, "count": v} for k, v in list(senders.items())[:5]]
-        },
-        "calendar_distribution": {
-            "by_day": [{"date": k, "count": v} for k, v in meeting_counts.items()]
-        }
-    }
 
 @app.post("/extract-intelligence")
 async def extract_email_intelligence(request: Dict[str, Any]):
@@ -839,6 +799,174 @@ async def process_email_batch(request: Dict[str, Any]):
         logger.error(f"❌ Error processing email batch: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+def create_intelligent_basic_brief(emails_for_processing: List[Dict], user_id: str, days_back: int) -> Dict[str, Any]:
+    """
+    Create an intelligent basic brief from real email data
+    This replaces the generic fallback with actual email analysis
+    """
+    try:
+        logger.info(f"🧠 Creating intelligent basic brief from {len(emails_for_processing)} emails")
+
+        # Analyze email content for real insights
+        urgent_emails = []
+        action_items = []
+        key_topics = {}
+        sender_stats = {}
+
+        for email in emails_for_processing:
+            subject = email.get('subject', '')
+            body = email.get('body', '')
+            sender = email.get('from', {})
+            if isinstance(sender, str):
+                sender_name = sender.split('<')[0].strip()
+                sender_email = sender
+            else:
+                sender_name = sender.get('name', sender.get('email', 'Unknown'))
+                sender_email = sender.get('email', sender.get('name', ''))
+
+            # Track sender statistics
+            sender_key = f"{sender_name} ({sender_email})"
+            sender_stats[sender_key] = sender_stats.get(sender_key, 0) + 1
+
+            # Check for urgent content
+            if is_urgent(subject, body):
+                urgent_emails.append({
+                    'subject': subject,
+                    'sender': sender_name,
+                    'snippet': body[:200] if body else email.get('snippet', '')[:200]
+                })
+
+            # Check for action items
+            if has_action_items(subject, body):
+                action_items.append({
+                    'subject': subject,
+                    'sender': sender_name,
+                    'snippet': body[:200] if body else email.get('snippet', '')[:200]
+                })
+
+            # Extract key topics from subject lines
+            subject_words = subject.lower().split()
+            for word in subject_words:
+                if len(word) > 4 and word not in ['email', 'message', 'reply', 'forward']:
+                    key_topics[word] = key_topics.get(word, 0) + 1
+
+        # Sort and get top topics
+        top_topics = sorted(key_topics.items(), key=lambda x: x[1], reverse=True)[:10]
+        top_senders = sorted(sender_stats.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        # Create digest items with real content
+        digest_items = []
+
+        # Add urgent items cluster
+        if urgent_emails:
+            digest_items.append({
+                'id': 'urgent-items',
+                'title': f'Urgent Items ({len(urgent_emails)} emails)',
+                'summary': f'Found {len(urgent_emails)} urgent emails requiring immediate attention',
+                'priority': 'high',
+                'emails': urgent_emails[:5],  # Show top 5 urgent emails
+                'email_count': len(urgent_emails),
+                'action_required': True
+            })
+
+        # Add action items cluster
+        if action_items:
+            digest_items.append({
+                'id': 'action-items',
+                'title': f'Action Items ({len(action_items)} emails)',
+                'summary': f'{len(action_items)} emails contain actionable requests or tasks',
+                'priority': 'medium',
+                'emails': action_items[:5],  # Show top 5 action emails
+                'email_count': len(action_items),
+                'action_required': True
+            })
+
+        # Add top communication partners
+        if top_senders:
+            top_sender_names = [sender.split(' (')[0] for sender, _ in top_senders[:3]]
+            digest_items.append({
+                'id': 'frequent-contacts',
+                'title': f'Top Communication Partners ({len(top_senders)} contacts)',
+                'summary': f'Most frequent contacts: {", ".join(top_sender_names)}',
+                'priority': 'low',
+                'emails': [],
+                'email_count': sum(count for _, count in top_senders),
+                'action_required': False
+            })
+
+        # Add topic analysis
+        if top_topics:
+            topic_names = [topic for topic, _ in top_topics[:5]]
+            digest_items.append({
+                'id': 'key-topics',
+                'title': f'Key Discussion Topics ({len(top_topics)} topics)',
+                'summary': f'Main topics: {", ".join(topic_names)}',
+                'priority': 'low',
+                'emails': [],
+                'email_count': sum(count for _, count in top_topics),
+                'action_required': False
+            })
+
+        # Create the intelligence brief structure
+        intelligence_brief = {
+            'brief_id': f'intelligent-basic-{user_id}-{datetime.now().strftime("%Y%m%d")}',
+            'user_id': user_id,
+            'generation_timestamp': datetime.now().isoformat(),
+            'analysis_period': {
+                'days_analyzed': days_back,
+                'start_date': (datetime.now() - timedelta(days=days_back)).isoformat(),
+                'end_date': datetime.now().isoformat()
+            },
+            'digest_items': digest_items,
+            'processing_metadata': {
+                'total_emails_processed': len(emails_for_processing),
+                'intelligence_signals_detected': len(digest_items),
+                'urgent_emails_found': len(urgent_emails),
+                'action_items_found': len(action_items),
+                'processing_engine': 'intelligent_basic_analyzer',
+                'data_source': 'real_gmail_data'
+            },
+            'executive_summary': {
+                'title': f'Executive Intelligence Brief - {len(emails_for_processing)} emails analyzed',
+                'total_emails': len(emails_for_processing),
+                'urgent_count': len(urgent_emails),
+                'action_count': len(action_items),
+                'key_insights': [
+                    f"Processed {len(emails_for_processing)} emails from the past {days_back} days",
+                    f"Found {len(urgent_emails)} urgent items requiring immediate attention" if urgent_emails else "No urgent items found",
+                    f"Identified {len(action_items)} emails with actionable requests" if action_items else "No action items found",
+                    f"Top communication partner: {top_senders[0][0].split(' (')[0]}" if top_senders else "No frequent contacts identified"
+                ]
+            }
+        }
+
+        logger.info(f"✅ Created intelligent basic brief with {len(digest_items)} clusters and {len(urgent_emails)} urgent items")
+        return intelligence_brief
+
+    except Exception as e:
+        logger.error(f"❌ Error creating intelligent basic brief: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+        # Return basic fallback structure
+        return {
+            'brief_id': f'fallback-{user_id}',
+            'user_id': user_id,
+            'generation_timestamp': datetime.now().isoformat(),
+            'digest_items': [],
+            'processing_metadata': {
+                'total_emails_processed': len(emails_for_processing),
+                'intelligence_signals_detected': 0,
+                'processing_engine': 'fallback_analyzer',
+                'error': str(e)
+            },
+            'executive_summary': {
+                'title': 'Brief Generation Failed',
+                'total_emails': len(emails_for_processing),
+                'key_insights': ['Unable to analyze emails due to processing error']
+            }
+        }
+
 @app.post("/generate-brief")
 async def generate_executive_brief(request: Dict[str, Any]):
     """
@@ -878,12 +1006,18 @@ async def generate_executive_brief(request: Dict[str, Any]):
                     'snippet': email.get('snippet', '')
                 })
 
-            logger.info(f"🔍 Processing {len(emails_for_processing)} emails with intelligence engine")
+            logger.info(f"🔍 Processing {len(emails_for_processing)} emails with ExecutiveIntelligenceEngine_v3")
 
-            # Generate sophisticated intelligence
-            intelligence_result = await generate_sophisticated_free_intelligence(emails_for_processing, user_id=user_id)
+            # Generate executive intelligence using new engine
+            try:
+                intelligence_result = await generate_executive_brief(emails_for_processing, user_id=user_id)
+                logger.info(f"✅ Generated executive brief with ExecutiveIntelligenceEngine_v3")
+            except Exception as exec_error:
+                logger.warning(f"ExecutiveIntelligenceEngine_v3 failed, trying fallback: {exec_error}")
+                intelligence_result = await generate_sophisticated_free_intelligence(emails_for_processing, user_id=user_id)
 
-            logger.info(f"✅ Generated sophisticated brief with {intelligence_result.get('processing_metadata', {}).get('intelligence_signals_detected', 0)} signals")
+            signals_detected = len(intelligence_result.get('digest_items', []))
+            logger.info(f"🎯 Generated brief with {signals_detected} actionable clusters")
 
             return intelligence_result
 
@@ -919,12 +1053,18 @@ async def generate_executive_brief(request: Dict[str, Any]):
                     'snippet': msg.get('snippet', '')
                 })
 
-            logger.info(f"🔍 Processing {len(emails_for_processing)} emails with intelligence engine")
+            logger.info(f"🔍 Processing {len(emails_for_processing)} emails with ExecutiveIntelligenceEngine_v3")
 
-            # Generate sophisticated intelligence
-            intelligence_result = await generate_sophisticated_free_intelligence(emails_for_processing, user_id=user_id)
+            # Generate executive intelligence using new engine
+            try:
+                intelligence_result = await generate_executive_brief(emails_for_processing, user_id=user_id)
+                logger.info(f"✅ Generated executive brief with ExecutiveIntelligenceEngine_v3")
+            except Exception as exec_error:
+                logger.warning(f"ExecutiveIntelligenceEngine_v3 failed, trying fallback: {exec_error}")
+                intelligence_result = await generate_sophisticated_free_intelligence(emails_for_processing, user_id=user_id)
 
-            logger.info(f"✅ Generated sophisticated brief with {intelligence_result.get('processing_metadata', {}).get('intelligence_signals_detected', 0)} signals")
+            signals_detected = len(intelligence_result.get('digest_items', []))
+            logger.info(f"🎯 Generated brief with {signals_detected} actionable clusters")
 
             return intelligence_result
 
@@ -939,26 +1079,8 @@ async def generate_executive_brief(request: Dict[str, Any]):
         # Try to use real email data if we have it
         try:
             if 'emails_for_processing' in locals() and emails_for_processing:
-                logger.info(f"🔄 Creating basic brief from {len(emails_for_processing)} real emails")
-                return {
-                    'userId': user_id,
-                    'generatedAt': datetime.utcnow().isoformat(),
-                    'style': 'basic_real_data',
-                    'version': '1.0_fallback',
-                    'dataSource': 'real_gmail_basic',
-                    'executiveSummary': f'Successfully processed {len(emails_for_processing)} emails from Gmail. Advanced intelligence engine encountered an error, showing basic summary.',
-                    'keyInsights': [
-                        f"Found {len(emails_for_processing)} relevant emails in the past {days_back} days",
-                        f"Most recent email: {emails_for_processing[0]['subject'][:50]}..." if emails_for_processing else "No emails found",
-                        "Advanced analysis temporarily unavailable - basic email data extracted successfully"
-                    ],
-                    'processing_metadata': {
-                        'emails_processed': len(emails_for_processing),
-                        'data_source': 'real_gmail',
-                        'intelligence_engine': 'basic_fallback',
-                        'gmail_query_successful': True
-                    }
-                }
+                logger.info(f"🔄 Creating intelligent basic brief from {len(emails_for_processing)} real emails")
+                return create_intelligent_basic_brief(emails_for_processing, user_id, days_back)
         except:
             pass
 
@@ -993,8 +1115,8 @@ async def get_executive_brief(
 
 if __name__ == "__main__":
     print("🚀 Starting 360Brief Analytics API...")
-    print("📊 API will be available at http://localhost:8001")
-    print("📝 API docs at http://localhost:8001/docs")
+    print("📊 API will be available at http://localhost:8000")
+    print("📝 API docs at http://localhost:8000/docs")
     if GMAIL_AVAILABLE:
         print("✅ Gmail API integration enabled")
     else:
@@ -1003,7 +1125,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "simple_analytics_api:app",
         host="0.0.0.0",
-        port=8001,
+        port=8000,
         reload=True,
         log_level="info"
     )

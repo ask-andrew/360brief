@@ -48,15 +48,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Forward request to Python clustering service integration endpoint
-    const clusteringServiceUrl = process.env.CLUSTERING_SERVICE_URL || 'http://localhost:8003';
+    // Forward request to Python analytics service (which has clustering built in)
+    const clusteringServiceUrl = process.env.ANALYTICS_API_URL || 'http://localhost:8000';
 
-    const response = await fetch(`${clusteringServiceUrl}/api/clustering/integrate`, {
+    const response = await fetch(`${clusteringServiceUrl}/generate-brief`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        user_id: body.user_id,
+        emails: body.emails.map(email => ({
+          id: email.id,
+          subject: email.subject,
+          body: email.body,
+          from: {
+            name: email.from && email.from.includes('<') ? email.from.split('<')[0].trim() : (email.from || 'Unknown'),
+            email: email.from && email.from.includes('<') ? email.from.match(/<(.+)>/)?.[1] || email.from : (email.from || 'unknown@example.com')
+          },
+          to: email.to,
+          date: email.date,
+          threadId: email.thread_id || email.id,
+          snippet: email.body?.substring(0, 150) || ""
+        })),
+        days_back: 7,
+        filter_marketing: true
+      }),
     });
 
     if (!response.ok) {

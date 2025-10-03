@@ -187,18 +187,11 @@ export async function GET(request: NextRequest) {
       console.log('✅ Gmail tokens stored successfully', insertData?.length ? `(${insertData.length} records)` : '');
     }
     
-    // Update user metadata to mark Gmail as connected
-    console.log('🔐 Updating user metadata for Gmail connection...');
+    // Update user metadata to mark Gmail as connected AND create authenticated session
+    console.log('🔐 Updating user metadata and creating authenticated session...');
 
     try {
-      // Use service role client to update user metadata
-      const { createClient: createServiceClient } = await import('@supabase/supabase-js');
-      const serviceSupabase = createServiceClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
-
-      console.log(`🔍 Updating metadata for user: ${user.id}`);
+      console.log(`🔍 Updating metadata and creating session for user: ${user.id}`);
 
       // Update user metadata to mark Gmail as connected
       const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(user.id, {
@@ -216,6 +209,54 @@ export async function GET(request: NextRequest) {
         console.log('✅ User metadata updated successfully');
       }
 
+      // Create authenticated session using direct approach
+      console.log('🔄 Creating authenticated session for unified OAuth flow...');
+
+      // Create SSR client for proper session management
+      const ssrSupabase = await createClient();
+
+      try {
+        // Use admin to create a session directly for this user
+        console.log('🔐 Creating session using admin.createUser approach...');
+
+        // Since user already exists, we need to sign them in
+        // First, set a temporary password and sign them in
+        const tempPassword = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Update user with temporary password
+        const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(user.id, {
+          password: tempPassword
+        });
+
+        if (updateError) {
+          console.error('❌ Failed to set temporary password:', updateError);
+          throw updateError;
+        }
+
+        console.log('✅ Temporary password set, signing in user...');
+
+        // Sign in using the SSR client
+        const { data: signInData, error: signInError } = await ssrSupabase.auth.signInWithPassword({
+          email: user.email!,
+          password: tempPassword
+        });
+
+        if (signInError) {
+          console.error('❌ Failed to sign in user:', signInError);
+          throw signInError;
+        }
+
+        console.log('✅ User signed in successfully via SSR client');
+
+        // Create redirect response - the session is now set in cookies
+        const response = NextResponse.redirect(`${request.url.split('/api')[0]}/dashboard?connected=gmail&status=success`);
+        return response;
+
+      } catch (sessionError) {
+        console.error('❌ Failed to create session:', sessionError);
+        // Continue to fallback redirect
+      }
+
       // Success! Redirect back to dashboard with success parameters
       console.log('✅ Gmail connection successful, redirecting to dashboard');
       redirectUrl.pathname = '/dashboard';
@@ -226,7 +267,7 @@ export async function GET(request: NextRequest) {
     } catch (sessionCreateError) {
       console.error('❌ Failed to complete Gmail connection:', sessionCreateError);
 
-      // Even if metadata update fails, Gmail tokens are stored, so redirect with partial success
+      // Even if session creation fails, Gmail tokens are stored, so redirect with partial success
       redirectUrl.pathname = '/dashboard';
       redirectUrl.searchParams.set('connected', 'gmail');
       redirectUrl.searchParams.set('status', 'partial');

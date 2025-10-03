@@ -74,7 +74,7 @@ async function captureGmailTokensManually(code: string, user_id: string): Promis
           provider: 'google',
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
-          expires_at: new Date(Date.now() + (tokens.expires_in * 1000)).toISOString(),
+          expires_at: Math.floor((Date.now() + (tokens.expires_in * 1000)) / 1000),
           scope: tokens.scope || 'https://www.googleapis.com/auth/gmail.readonly',
           token_type: 'Bearer',
           updated_at: new Date().toISOString()
@@ -318,16 +318,16 @@ export async function GET(request: NextRequest) {
     ) {
       try {
         // Calculate proper expiry time
-        let expiresAt: string;
+        let expiresAt: number;
         if (session.expires_in) {
           // Use expires_in if available (seconds from now)
-          expiresAt = new Date(Date.now() + (session.expires_in * 1000)).toISOString();
+          expiresAt = Math.floor((Date.now() + (session.expires_in * 1000)) / 1000);
         } else if (session.expires_at) {
           // Use expires_at if it's a timestamp
-          expiresAt = new Date(session.expires_at * 1000).toISOString();
+          expiresAt = session.expires_at;
         } else {
           // Default to 1 hour from now
-          expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
+          expiresAt = Math.floor((Date.now() + 3600 * 1000) / 1000);
         }
 
         // Store Gmail tokens in user_tokens table

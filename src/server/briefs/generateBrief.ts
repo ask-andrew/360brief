@@ -3,7 +3,7 @@ import { UnifiedData, IncidentItem, TicketItem, CalendarEventItem } from '@/type
 
 async function getAchievementsFromPythonService(emails: any[]): Promise<any> {
   try {
-    const response = await fetch('http://localhost:8001/generate-brief', {
+    const response = await fetch('http://localhost:8000/generate-brief', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

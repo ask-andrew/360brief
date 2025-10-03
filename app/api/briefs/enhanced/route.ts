@@ -80,6 +80,10 @@ export async function GET(req: Request) {
     const style = searchParams.get('style') || 'mission_brief';
     const scenario = searchParams.get('scenario') || 'normal'; // crisis, normal, high_activity
     const useLLM = searchParams.get('use_llm') === 'true'; // Default to false
+    // Heuristic clustering tuning params
+    const topicThreshParam = searchParams.get('topic_thresh');
+    const topicTopNParam = searchParams.get('topic_topn');
+    const topicBigramsParam = searchParams.get('topic_bigrams');
     
     // Handle convenient time range presets
     if (timeRange && !startDate && !endDate) {
@@ -109,7 +113,7 @@ export async function GET(req: Request) {
     const validStyles = ['mission_brief', 'startup_velocity', 'management_consulting', 'newsletter'];
     const briefStyle = validStyles.includes(style) ? style as any : 'mission_brief';
 
-    let unified;
+    let unified: UnifiedData;
     let user = null;
     
     if (useRealData) {
@@ -162,7 +166,8 @@ export async function GET(req: Request) {
             }, { status: 403 });
           }
         } catch (e) {
-          console.warn('⚠️ Unable to verify Gmail token scopes; proceeding. Error:', e);
+          console.warn('⚠️ Unable to verify Gmail token scopes via tokeninfo API; proceeding with Gmail fetch. Error:', e);
+          scopeVerified = undefined; // Unknown
         }
         
         // Fetch Gmail messages (progressive filtering)
@@ -173,13 +178,15 @@ export async function GET(req: Request) {
         attempts = [];
         // Optimized progressive filtering for executive intelligence
         const passes = [
-          { name: 'executive_priority', maxResults: 100, skipPromotions: false, skipNoreply: false, windowDays: 7, priorityOnly: false },
-          { name: 'business_critical', maxResults: 200, skipPromotions: false, skipNoreply: false, windowDays: 14, priorityOnly: false },
-          { name: 'extended_scope', maxResults: 300, skipPromotions: false, skipNoreply: false, windowDays: 21, priorityOnly: false },
-          { name: 'comprehensive', maxResults: 500, skipPromotions: false, skipNoreply: false, windowDays: 30, priorityOnly: false },
+          // Reduce noise early: skip promotions and no-reply first
+          { name: 'executive_priority', maxResults: 100, skipPromotions: true,  skipNoreply: true,  windowDays: 7,  priorityOnly: false },
+          { name: 'business_critical', maxResults: 200, skipPromotions: true,  skipNoreply: true,  windowDays: 14, priorityOnly: false },
+          // Expand only if needed
+          { name: 'extended_scope',    maxResults: 300, skipPromotions: false, skipNoreply: false, windowDays: 21, priorityOnly: false },
+          { name: 'comprehensive',     maxResults: 500, skipPromotions: false, skipNoreply: false, windowDays: 30, priorityOnly: false },
         ];
 
-        const realEmails: Array<{ id: string; messageId: string; subject: string; body: string; from: string; to: string[]; date: string; labels: string[]; isRead: boolean; metadata: { insights: { priority: 'high' | 'medium' | 'low'; hasActionItems: boolean; isUrgent: boolean } } }> = [];
+        const realEmails: Array<{ id: string; messageId: string; threadId: string; subject: string; body: string; from: string; to: string[]; date: string; labels: string[]; isRead: boolean; metadata: { insights: { priority: 'high' | 'medium' | 'low'; hasActionItems: boolean; isUrgent: boolean; isExecutive?: boolean; needsResponse?: boolean; estimatedResponseTime?: number } } }> = [];
 
         for (const pass of passes) {
           if (realEmails.length >= 50) break;
@@ -230,6 +237,7 @@ export async function GET(req: Request) {
               const snippet = meta.data.snippet || '';
               const isPromoLabel = meta.data.labelIds?.includes('CATEGORY_PROMOTIONS') || meta.data.labelIds?.includes('CATEGORY_SOCIAL');
               const isNoreply = /noreply|no-reply/i.test(from);
+              const threadId = (meta as any)?.data?.threadId || (msg.id as string);
               
               // Get full email body for analysis
               let fullBody = snippet; // Fallback to snippet
@@ -279,6 +287,7 @@ export async function GET(req: Request) {
                 realEmails.push({
                   id: String(msg.id!),
                   messageId: String(msg.id!),
+                  threadId: String(threadId),
                   subject,
                   body: fullBody || `Email from ${from}`,
                   from,
@@ -333,7 +342,7 @@ export async function GET(req: Request) {
       }
 
       // Apply clustering to organize emails by topic (if we have emails)
-      let clusteringResult = null;
+      let clusteringResult: any = null;
       if (unified.emails.length >= 2) {
         try {
           console.log(`🔗 Applying clustering to ${unified.emails.length} emails...`);
@@ -390,6 +399,372 @@ export async function GET(req: Request) {
         }
       }
 
+      // Simple heuristic digest builder for non-LLM path or fallback
+      function buildHeuristicDigest(): any {
+        // Utilities
+        const parseAmount = (text: string): number[] => {
+          if (!text) return [];
+          const matches = Array.from(text.matchAll(/\$\s?([0-9]{1,3}(?:[,][0-9]{3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/g));
+          return matches.map(m => Number(String(m[1]).replace(/,/g, ''))).filter(n => !Number.isNaN(n));
+        };
+        const normalizeSubject = (s?: string) => (s || '')
+          .replace(/^\s*(re|fw|fwd)\s*:\s*/i, '')
+          .replace(/\[[^\]]+\]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        const toLowerWords = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+        const STOP = new Set(['the','a','an','and','or','to','of','for','on','in','is','are','with','at','by','from','re','fw','fwd','about','your','my','our','this','that']);
+        const isNewsletter = (from: string, body: string, subject: string) => {
+          const f = from || '';
+          const dom = (f.match(/@([^>\s]+)/)?.[1] || '').toLowerCase();
+          const marketingLike = /news|newsletter|digest|updates?|promo|marketing|noreply|no-reply|mailer|do[-_.]?not[-_.]?reply/i;
+          const unsubscribe = /unsubscribe|manage\s+preferences|view\s+in\s+browser/i;
+          const heavyHtml = /<table|<td|<tr|style=|img\s|mso-/i;
+          return marketingLike.test(f) || marketingLike.test(dom) || unsubscribe.test(body || '') || heavyHtml.test(body || '') || marketingLike.test(subject || '');
+        };
+
+        // 1) Pre-filter emails and build thread groups (prefer Gmail threadId)
+        const emails = (unified.emails || []) as any[];
+        const signalEmails = emails.filter(e => {
+          const subj = normalizeSubject(e.subject || '');
+          if (!subj) return false; // drop empty subjects
+          if (isNewsletter(e.from || '', e.body || '', subj)) return false;
+          return true;
+        });
+
+        const threads = new Map<string, any[]>();
+        for (const e of signalEmails) {
+          const key = e.threadId || normalizeSubject(e.subject || '') || e.id;
+          if (!threads.has(key)) threads.set(key, []);
+          threads.get(key)!.push(e);
+        }
+
+        // 2) Score threads and extract summaries grounded in content
+        type ThreadSummary = { id: string; subject: string; stakeholders: string[]; latestDate?: string; snippet: string; metrics: { decisions: number; blockers: number; achievements: number; financial: number; count: number } };
+        const summarizeThread = (list: any[]): ThreadSummary => {
+          let d = 0, b = 0, a = 0; let fin: number[] = [];
+          let latestDate = '';
+          const sset = new Set<string>();
+          const subject = normalizeSubject(list[0]?.subject || 'No subject');
+          let bestSnippet = '';
+          for (const it of list) {
+            const content = `${it.subject || ''} ${it.body || ''}`;
+            if (/(approve|decision|confirm|review|consent|sign\s?off|deadline|signing)/i.test(content)) d++;
+            if (/(blocked|issue|cannot|error|fail|urgent|delay|risk|escalat)/i.test(content)) b++;
+            if (/(launched|shipped|won|closed\s+deal|congrats|milestone|delivered|completed)/i.test(content)) a++;
+            if (!isNewsletter(it.from || '', it.body || '', it.subject || '')) fin.push(...parseAmount(content));
+            if (it.from) sset.add(String(it.from).split('<')[0].trim());
+            const candidate = (it.body || '').replace(/\s+>/g, '>').split('\n').filter((ln: string) => ln && !/^>/.test(ln)).join(' ').slice(0, 240);
+            if (candidate.length > bestSnippet.length) bestSnippet = candidate;
+            if (!latestDate || (it.date && it.date > latestDate)) latestDate = it.date;
+          }
+          fin = fin.sort((x,y)=>x-y);
+          const totalFin = Math.round(fin.reduce((x,y)=>x+y,0));
+          return {
+            id: list[0]?.threadId || list[0]?.id,
+            subject,
+            stakeholders: Array.from(sset).slice(0,4),
+            latestDate,
+            snippet: bestSnippet,
+            metrics: { decisions: d, blockers: b, achievements: a, financial: totalFin, count: list.length }
+          };
+        };
+
+        const threadSummaries: ThreadSummary[] = Array.from(threads.values()).map(summarizeThread)
+          .filter(t => t.subject && t.subject.length > 2);
+
+        // 3) Build topic clusters using Jaccard over per-thread signatures
+        const URL_TOKEN = /https?:\/\/\S+|www\.\S+/gi;
+        const EMAIL_TOKEN = /\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g;
+        const HTML_TAG = /<[^>]+>/g;
+        const CLEAN_QUOTES = /\"|\'|“|”|‘|’/g;
+
+        const extractTokens = (text: string): string[] => {
+          const cleaned = (text || '')
+            .replace(URL_TOKEN, ' ')
+            .replace(EMAIL_TOKEN, ' ')
+            .replace(HTML_TAG, ' ')
+            .replace(CLEAN_QUOTES, '')
+            .replace(/\[[^\]]+\]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+          return cleaned.split(/[^a-z0-9]+/).filter(w => w && w.length > 2 && !STOP.has(w));
+        };
+
+        const makeBigrams = (tokens: string[]): string[] => {
+          const out: string[] = [];
+          for (let i = 0; i < tokens.length - 1; i++) {
+            out.push(tokens[i] + ' ' + tokens[i+1]);
+          }
+          return out;
+        };
+
+        const TOPN = Math.min(30, Math.max(8, Number(topicTopNParam ?? 15) || 15)); // top features per thread
+        const BIGRAM_WEIGHT = 2;
+        const SUBJECT_WEIGHT = 1.5;
+        let SIM_THRESHOLD = 0.28; // Jaccard threshold
+        if (topicThreshParam) {
+          const v = Number(topicThreshParam);
+          if (!Number.isNaN(v)) SIM_THRESHOLD = Math.min(0.8, Math.max(0.1, v));
+        }
+
+        const ENABLE_BIGRAMS = (topicBigramsParam ?? 'true') !== 'false';
+
+        // Build signatures per thread from underlying emails
+        const threadEmails = new Map<string, any[]>();
+        for (const [tid, list] of threads.entries()) threadEmails.set(String(tid), list);
+
+        const threadSignatures = new Map<string, Set<string>>();
+        const threadTitles = new Map<string, string>();
+        const threadTokenFreqs = new Map<string, Map<string, number>>();
+
+        for (const [tid, list] of threadEmails.entries()) {
+          // Aggregate tokens across emails in thread
+          let subjectTokens: string[] = [];
+          let bodyTokens: string[] = [];
+          for (const e of list) {
+            subjectTokens.push(...extractTokens(normalizeSubject(e.subject || '')));
+            bodyTokens.push(...extractTokens(e.body || ''));
+          }
+          const bigrams = ENABLE_BIGRAMS ? makeBigrams([...subjectTokens, ...bodyTokens]) : [];
+          const freq = new Map<string, number>();
+          const bump = (k: string, w = 1) => freq.set(k, (freq.get(k) || 0) + w);
+          for (const t of bodyTokens) bump(t, 1);
+          for (const t of subjectTokens) bump(t, SUBJECT_WEIGHT);
+          for (const b of bigrams) bump(b, BIGRAM_WEIGHT);
+
+          // Keep top-N tokens/bigrams
+          const top = Array.from(freq.entries())
+            .sort((a,b) => b[1] - a[1])
+            .slice(0, TOPN)
+            .map(([k]) => k);
+          threadSignatures.set(tid, new Set(top));
+          threadTokenFreqs.set(tid, freq);
+          // Preferred title from most common subject token(s)
+          const subj = normalizeSubject(list[0]?.subject || '');
+          threadTitles.set(tid, subj);
+        }
+
+        const jaccard = (a: Set<string>, b: Set<string>): number => {
+          if (!a.size && !b.size) return 0;
+          let inter = 0;
+          for (const v of a) if (b.has(v)) inter++;
+          const uni = a.size + b.size - inter;
+          return inter / Math.max(1, uni);
+        };
+
+        // Domain and keyword-aware similarity boost (for e.g., band/music threads)
+        const SPECIAL_KEYWORDS = new Set([
+          'band','gig','rehearsal','setlist','song','music','guitar','chords','practice','show','performance','ticket','venue','studio',
+          'golf','tee','tournament','round','course',
+          'library','work','meeting','schedule','deadline','docs','report'
+        ]);
+        const domainOf = (from: string) => (from?.match(/@([^>\s]+)/)?.[1] || '').toLowerCase();
+        const signatureHasSpecial = (sig: Set<string>) => {
+          for (const s of sig) {
+            const toks = s.split(' ');
+            for (const t of toks) if (SPECIAL_KEYWORDS.has(t)) return true;
+          }
+          return false;
+        };
+
+        // Union-find clustering
+        const tids = Array.from(threadSignatures.keys());
+        const parent = new Map<string, string>();
+        const find = (x: string): string => {
+          let p = parent.get(x) || x;
+          if (p !== x) {
+            p = find(p);
+            parent.set(x, p);
+          }
+          return p;
+        };
+        const unite = (a: string, b: string) => {
+          const ra = find(a), rb = find(b);
+          if (ra !== rb) parent.set(ra, rb);
+        };
+        for (const t of tids) parent.set(t, t);
+
+        for (let i = 0; i < tids.length; i++) {
+          for (let j = i + 1; j < tids.length; j++) {
+            const aSig = threadSignatures.get(tids[i])!;
+            const bSig = threadSignatures.get(tids[j])!;
+            let s = jaccard(aSig, bSig);
+            // Boost if special keywords present in both
+            if (signatureHasSpecial(aSig) && signatureHasSpecial(bSig)) s += 0.12;
+            // Small boost if same sender domain appears in either thread's emails
+            const aEmail = threadEmails.get(tids[i])?.[0];
+            const bEmail = threadEmails.get(tids[j])?.[0];
+            if (aEmail && bEmail) {
+              const domA = domainOf(aEmail.from || '');
+              const domB = domainOf(bEmail.from || '');
+              if (domA && domB && domA === domB) s += 0.05;
+            }
+            if (s >= SIM_THRESHOLD) unite(tids[i], tids[j]);
+          }
+        }
+
+        // Collect clusters
+        const clusterMap = new Map<string, ThreadSummary[]>();
+        for (const t of tids) {
+          const r = find(t);
+          if (!clusterMap.has(r)) clusterMap.set(r, []);
+          const summary = threadSummaries.find(x => x.id === t);
+          if (summary) clusterMap.get(r)!.push(summary);
+        }
+
+        // 4) Convert clusters to UI digest_items with grounded actions
+        const centralTitleFor = (group: ThreadSummary[]): string => {
+          if (!group.length) return 'General';
+          // centrality by avg similarity
+          let bestIdx = 0, bestScore = -1;
+          for (let i = 0; i < group.length; i++) {
+            const a = threadSignatures.get(group[i].id)!;
+            let sum = 0;
+            for (let j = 0; j < group.length; j++) if (i !== j) sum += jaccard(a, threadSignatures.get(group[j].id)!);
+            const avg = sum / Math.max(1, group.length - 1);
+            if (avg > bestScore) { bestScore = avg; bestIdx = i; }
+          }
+          const raw = (group[bestIdx]?.subject || '').trim();
+          if (raw) {
+            // Heuristic category labels override if strong match
+            const LABELS: Array<{label: string; keys: string[]}> = [
+              { label: 'Music', keys: ['band','gig','rehearsal','setlist','song','music','guitar','chords','practice','show','venue'] },
+              { label: 'Golf', keys: ['golf','tee','tournament','round','course'] },
+              { label: 'Library/Work', keys: ['library','meeting','schedule','deadline','report','docs','work','project'] },
+            ];
+            const tokens = toLowerWords(raw);
+            for (const {label, keys} of LABELS) {
+              if (tokens.some(t => keys.includes(t))) return label;
+            }
+            return raw;
+          }
+          // fallback: top tokens of merged freq
+          const allFreq = new Map<string, number>();
+          const bump = (k: string, v: number) => allFreq.set(k, (allFreq.get(k) || 0) + v);
+          for (const g of group) {
+            const f = threadTokenFreqs.get(g.id);
+            if (!f) continue;
+            for (const [k, v] of f) bump(k, v);
+          }
+          const top = Array.from(allFreq.entries()).sort((a,b)=>b[1]-a[1]).filter(([k]) => k.includes(' ')).slice(0,2).map(([k])=>k);
+          // Map bigrams to categories if possible
+          const bigramTokens = top.join(' ').split(' ');
+          const labelFromBigrams = (() => {
+            const music = ['band','gig','rehearsal','music','guitar','chords','setlist'];
+            const golf = ['golf','tee','round','tournament'];
+            const work = ['library','report','deadline','meeting','project'];
+            if (bigramTokens.some(t => music.includes(t))) return 'Music';
+            if (bigramTokens.some(t => golf.includes(t))) return 'Golf';
+            if (bigramTokens.some(t => work.includes(t))) return 'Library/Work';
+            return null;
+          })();
+          return labelFromBigrams || (top.join(' • ') || 'General');
+        };
+
+        const digest_items_unsorted = Array.from(clusterMap.values()).map((group, idx) => {
+          // within cluster, sort by signal strength
+          group.sort((A,B)=> (B.metrics.blockers - A.metrics.blockers) || (B.metrics.decisions - A.metrics.decisions) || ((B.latestDate||'').localeCompare(A.latestDate||'')) || (B.metrics.count - A.metrics.count));
+
+          let clusterDecisions = 0, clusterBlockers = 0, clusterAchievements = 0;
+          let clusterFinancials: number[] = [];
+          const stakeholders = new Set<string>();
+          for (const t of group) {
+            clusterDecisions += t.metrics.decisions;
+            clusterBlockers += t.metrics.blockers;
+            clusterAchievements += t.metrics.achievements;
+            if (t.metrics.financial) clusterFinancials.push(t.metrics.financial);
+            t.stakeholders.forEach(s => stakeholders.add(s));
+          }
+
+          clusterFinancials = clusterFinancials.sort((a,b)=>a-b);
+          const median = clusterFinancials.length ? clusterFinancials[Math.floor(clusterFinancials.length/2)] : 0;
+          if (clusterFinancials.length > 2 && median > 0) {
+            clusterFinancials = clusterFinancials.filter(v => v <= median * 5);
+          }
+          const totalFinancial = Math.round(clusterFinancials.reduce((a,b)=>a+b,0));
+
+          const title = centralTitleFor(group);
+          const summary = `${clusterDecisions} decisions pending • ${clusterBlockers} blockers • ${clusterAchievements} achievements${totalFinancial ? ` • ~$${totalFinancial.toLocaleString()}` : ''}`;
+
+          // Grounded actions from top threads
+          const actions: string[] = [];
+          const top = group.slice(0, 3);
+          for (const t of top) {
+            if (t.metrics.blockers > 0) {
+              actions.push(`Unblock: '${t.subject}' — ping ${t.stakeholders[0] || 'owner'} to resolve blockers`);
+            } else if (t.metrics.decisions > 0) {
+              actions.push(`Decide: '${t.subject}' — provide approval/decision to keep momentum`);
+            }
+          }
+          if (actions.length === 0 && group.length) {
+            actions.push(`Follow up: '${group[0].subject}' — confirm next steps with stakeholders`);
+          }
+
+          const itemsForUi = group.slice(0, 5).map(t => ({
+            subject: t.subject,
+            snippet: t.snippet,
+            stakeholders: t.stakeholders,
+            date: t.latestDate,
+            metrics: t.metrics
+          }));
+
+          const urgencyScore = (clusterBlockers * 3) + (clusterDecisions * 2) + (clusterAchievements * 0.5) + (group[0]?.latestDate ? Date.parse(group[0].latestDate)/1e13 : 0);
+          return {
+            title,
+            summary,
+            items: itemsForUi,
+            stakeholders: Array.from(stakeholders).slice(0, 6),
+            actions,
+            metrics: { decisions: clusterDecisions, blockers: clusterBlockers, achievements: clusterAchievements, financial_total: totalFinancial, threads: group.length, urgency_score: urgencyScore }
+          };
+        }).filter(c => c.items && c.items.length > 0);
+
+        // Sort by urgency descending
+        const digest_items = digest_items_unsorted.sort((a, b) => (b.metrics?.urgency_score || 0) - (a.metrics?.urgency_score || 0));
+
+        // Executive summary
+        const totalEmails = signalEmails.length;
+        const key_insights: string[] = [
+          `${digest_items.length} topic clusters identified from ${totalEmails} communications`,
+          `Top areas: ${digest_items.slice(0,2).map(d=>d.title).join(' • ')}`,
+          `Detected ${digest_items.reduce((a,d)=>a+(d.metrics?.blockers||0),0)} blockers and ${digest_items.reduce((a,d)=>a+(d.metrics?.decisions||0),0)} pending decisions`
+        ];
+
+        return {
+          executive_summary: { key_insights },
+          digest_items,
+          processing_metadata: {
+            total_emails_processed: totalEmails,
+            generated_at: new Date().toISOString(),
+            intelligence_engine: 'ExecutiveIntelligenceEngine_v3',
+            debug: {
+              topic_thresh: SIM_THRESHOLD,
+              topic_topn: TOPN,
+              topic_bigrams: ENABLE_BIGRAMS,
+              clusters: digest_items.map((d: any) => ({ title: d.title, threads: d.metrics?.threads, blockers: d.metrics?.blockers, decisions: d.metrics?.decisions }))
+            }
+          }
+        };
+      }
+
+      // If LLM is disabled, return heuristic digest immediately for a fast, useful summary
+      if (!useLLM) {
+        const heuristic = buildHeuristicDigest();
+        return NextResponse.json({
+          userId: user?.email,
+          generatedAt: heuristic.processing_metadata.generated_at,
+          style: 'executive_brief_clustered',
+          version: '2.0_clustered_basic',
+          dataSource: 'real_clustered',
+          executive_summary: heuristic.executive_summary,
+          digest_items: heuristic.digest_items,
+          processing_metadata: heuristic.processing_metadata,
+          availableTimeRanges: ['3days', 'week', 'month']
+        });
+      }
+
       // Call Python analysis service for executive intelligence processing
       try {
         console.log(`🧠 GET: Calling Python analysis service with ${unified.emails.length} emails for intelligent processing...`);
@@ -399,7 +774,7 @@ export async function GET(req: Request) {
           try {
             console.log(`🔍 Extracting executive intelligence from ${unified.emails.length} emails...`);
             
-            const extractionResponse = await fetch('http://localhost:8001/generate-brief', {
+            const extractionResponse = await fetch('http://localhost:8000/generate-brief', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -421,7 +796,7 @@ export async function GET(req: Request) {
                 console.log(`📊 Intelligence extraction results:`, extractionResult.results.length);
                 
                 // Create map keyed by sender for easier lookup
-                const intelligenceMap = new Map(extractionResult.results.map((r: any) => [r.sender, r]));
+                const intelligenceMap = new Map<string, any>(extractionResult.results.map((r: any) => [r.sender as string, r]));
                 
                 // Enrich email data with intelligence metadata
                 unified.emails = unified.emails.map((email, index) => {
@@ -484,7 +859,7 @@ export async function GET(req: Request) {
 
         console.log(`🧠 Calling Python intelligence service with ${emailsForAnalysis.length} emails`);
 
-        const realAnalysisResponse = await fetch(`http://localhost:8001/generate-brief`, {
+        const realAnalysisResponse = await fetch(`http://localhost:8000/generate-brief`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -494,13 +869,40 @@ export async function GET(req: Request) {
             emails: emailsForAnalysis,
             days_back: 7,
             filter_marketing: true,
-            use_llm_override: useLLM
+            // Ensure Python service can switch behavior based on toggle
+            use_llm: useLLM,
+            include_context_snippets: useLLM,
+            generate_recommendations: useLLM,
+            return_digest_items: true
           })
         });
 
         if (realAnalysisResponse.ok) {
           const realIntelligence = await realAnalysisResponse.json();
           console.log(`✅ GET: Real intelligence processing completed:`, realIntelligence.processing_metadata);
+
+          // Check if this is a clustered intelligence response and dashboard needs clustered format
+          // If clustered digest items are present, always return clustered format so UI can render topic clusters
+          if (realIntelligence.digest_items && realIntelligence.processing_metadata) {
+            console.log(`📊 Returning clustered intelligence format with ${realIntelligence.digest_items.length} clusters`);
+
+            // Return clustered format directly for dashboard display
+            return NextResponse.json({
+              userId: user.email,
+              generatedAt: realIntelligence.processing_metadata.generated_at || new Date().toISOString(),
+              style: 'executive_brief_clustered',
+              version: '2.0_clustered',
+              dataSource: 'real_clustered',
+              executiveSummary: realIntelligence.executive_summary?.title || `Clustered ${realIntelligence.processing_metadata.total_emails_processed} emails into ${realIntelligence.digest_items.length} topics.`,
+              keyInsights: realIntelligence.executive_summary?.key_insights || [
+                `Saved an estimated ${Math.floor(realIntelligence.processing_metadata.total_emails_processed * 0.5)} minutes by grouping related emails.`,
+                `Identified ${realIntelligence.digest_items.length} key topics from your recent communications.`
+              ],
+              digest_items: realIntelligence.digest_items,
+              processing_metadata: realIntelligence.processing_metadata,
+              availableTimeRanges: ['3days', 'week', 'month']
+            });
+          }
 
           // Create a map of email IDs to dates
           const emailDateMap = new Map(unified.emails.map(email => [email.id, email.date]));
@@ -790,7 +1192,7 @@ export async function POST(req: Request) {
 
           console.log(`🧠 POST: Calling Python intelligence service with ${emailsForAnalysis.length} emails`);
 
-          const realAnalysisResponse = await fetch(`http://localhost:8001/generate-brief`, {
+          const realAnalysisResponse = await fetch(`http://localhost:8000/generate-brief`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

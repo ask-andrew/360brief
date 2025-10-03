@@ -3,8 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
   console.log('/api/analytics endpoint hit');
-  
-  const supabase = createClient();
+
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

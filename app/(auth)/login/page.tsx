@@ -59,9 +59,13 @@ function LoginContent() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8">
         <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
+          <img className="mx-auto h-12 w-auto" src="/images/logo.svg" alt="360Brief Logo" />
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Sign in to 360Brief
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            One-click access to your Gmail data and executive briefs
+          </p>
         </div>
         
         {(error || errorDescription) && (
@@ -102,7 +106,7 @@ function LoginContent() {
                 fillRule="evenodd"
               />
             </svg>
-            <span>Continue with Google</span>
+            <span>Continue with Google + Gmail</span>
           </Button>
         </div>
 

@@ -4,7 +4,7 @@
 import re
 import json
 import numpy as np
-from typing import List, Dict, Optional, Set, Tuple
+from typing import List, Dict, Optional, Set, Tuple, Any
 from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
@@ -13,6 +13,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import cosine_similarity
 import spacy
+import asyncio
+from dateutil import parser
 
 @dataclass
 class EmailItem:
@@ -419,13 +421,38 @@ class EnhancedClusteringEngine:
         # Calculate similarity matrix
         similarity_matrix = cosine_similarity(embeddings)
         distance_matrix = 1 - similarity_matrix
-        
+
+        # Ensure no negative values due to floating point precision
+        distance_matrix = np.clip(distance_matrix, 0, 1)
+
+        # Additional check for any remaining invalid values
+        if np.any(distance_matrix < 0):
+            logger.warning("Found negative values in distance matrix, setting to 0")
+            distance_matrix[distance_matrix < 0] = 0
+
+        # Ensure matrix is symmetric and positive definite
+        distance_matrix = (distance_matrix + distance_matrix.T) / 2
+
+        # Final safeguard: ensure all values are in [0, 1] range
+        distance_matrix = np.abs(distance_matrix)  # Remove any remaining negative values
+        distance_matrix = np.clip(distance_matrix, 0, 1)  # Ensure values in range [0, 1]
+
+        # Check if matrix is valid for clustering
+        if np.any(np.isnan(distance_matrix)) or np.any(np.isinf(distance_matrix)):
+            logger.warning("Invalid values (NaN/Inf) in distance matrix, skipping semantic clustering")
+            return []
+
         # Use DBSCAN for clustering
-        clustering = DBSCAN(
-            metric='precomputed',
-            eps=0.25,  # 0.75 similarity threshold
-            min_samples=2
-        ).fit(distance_matrix)
+        try:
+            clustering = DBSCAN(
+                metric='precomputed',
+                eps=0.25,  # 0.75 similarity threshold
+                min_samples=2
+            ).fit(distance_matrix)
+        except ValueError as e:
+            logger.error(f"DBSCAN clustering failed: {e}")
+            # Return empty clusters if DBSCAN fails
+            return []
         
         # Group by cluster labels
         clusters = defaultdict(list)
@@ -514,6 +541,12 @@ class EnhancedClusteringEngine:
         
         return cluster_results
     
+    def _get_email_address_str(self, from_address) -> str:
+        """Safely extract email address string from potentially dict/string format"""
+        if isinstance(from_address, dict):
+            return from_address.get('email', str(from_address))
+        return str(from_address)
+
     def _analyze_cluster(self, cluster_emails: List[Dict]) -> Dict:
         """
         Analyze a cluster to determine topic, confidence, and key information
@@ -540,7 +573,10 @@ class EnhancedClusteringEngine:
                 all_entities[entity_type].extend(entity_list)
             
             all_subjects.append(email.subject)
-            all_senders.add(email.from_address)
+            from_addr = email.from_address
+            if isinstance(from_addr, dict):
+                from_addr = from_addr.get('email', str(from_addr))
+            all_senders.add(str(from_addr))
             all_dates.append(email.date)
             total_priority += email_data['priority_score']
         
@@ -819,7 +855,7 @@ class EnhancedClusteringEngine:
         
         # Check for key contacts
         for contact in self.key_contacts:
-            if contact.lower() in email.from_address.lower():
+            if contact.lower() in self._get_email_address_str(email.from_address).lower():
                 score += 0.5
         
         # Check for urgency patterns
@@ -995,7 +1031,7 @@ class TieredIntelligenceEngineEnhancement:
             digest_item = {
                 'type': 'individual',
                 'title': email.subject,
-                'summary': f"Individual email from {email.from_address}",
+                'summary': f"Individual email from {email.from_address if isinstance(email.from_address, str) else email.from_address.get('emailAddress', 'Unknown')}",
                 'email_ids': [email.id],
                 'metadata': {
                     'standalone': True
@@ -1069,6 +1105,132 @@ def test_enhanced_clustering():
     
     print(f"\nUnclustered emails: {len(result.unclustered_emails)}")
     print(f"Upgrade suggestions: {result.upgrade_suggestions}")
+
+async def generate_sophisticated_free_intelligence(emails: List[Dict], user_id: str = None) -> Dict:
+    """
+    Generate sophisticated intelligence from real email data using the EnhancedClusteringEngine.
+    """
+    if not emails:
+        return {
+            "total_count": 0, "inbound_count": 0, "outbound_count": 0,
+            "priority_messages": {"awaiting_my_reply": [], "awaiting_their_reply": []},
+            "top_projects": [], "dataSource": "real", "userId": user_id or "unknown"
+        }
+
+    # Initialize clustering engine
+    engine = EnhancedClusteringEngine(user_tier='free')
+
+    # Convert raw email dicts to EmailItem objects
+    email_items = []
+    for email_data in emails:
+        try:
+            # Ensure date is a datetime object
+            date_str = email_data.get('date', '')
+            if isinstance(date_str, str):
+                try:
+                    # Handle different date formats gracefully
+                    from dateutil import parser
+                    email_date = parser.parse(date_str)
+                except (ValueError, TypeError):
+                    email_date = datetime.now()
+            else:
+                email_date = email_data.get('date', datetime.now())
+
+            email_items.append(EmailItem(
+                id=email_data.get('id', ''),
+                subject=email_data.get('subject', ''),
+                body=email_data.get('body', ''),
+                from_address=email_data.get('from', ''),
+                to=email_data.get('to', []),
+                date=email_date,
+                thread_id=email_data.get('threadId'),
+                labels=email_data.get('labels', [])
+            ))
+        except Exception as e:
+            print(f"Could not process email: {e}")
+            continue
+
+    # Process emails with enhanced clustering
+    clustering_result = engine.process_email_batch(email_items)
+
+    # Convert clustering result to the format expected by the frontend
+    digest_items = []
+    for cluster in clustering_result.clusters:
+        digest_items.append({
+            'type': 'cluster',
+            'title': cluster['topic_name'],
+            'summary': cluster['description'],
+            'email_ids': cluster['email_ids'],
+            'metadata': {
+                'cluster_id': cluster['cluster_id'],
+                'topic_category': cluster['topic_category'],
+                'confidence_score': cluster['confidence_score'],
+                'key_entities': cluster['key_entities'],
+                'upgrade_hint': cluster.get('upgrade_hint'),
+            }
+        })
+
+    # Add unclustered emails as individual items
+    for email in clustering_result.unclustered_emails:
+        digest_items.append({
+            'type': 'individual',
+            'title': email.subject,
+            'summary': f"Individual email from {email.from_address if isinstance(email.from_address, str) else email.from_address.get('emailAddress', 'Unknown')}",
+            'email_ids': [email.id],
+            'metadata': {'standalone': True}
+        })
+
+    # Construct the final brief
+    return {
+        "userId": user_id or "unknown",
+        "generatedAt": datetime.now().isoformat(),
+        "style": "executive_brief_clustered",
+        "version": "2.0_clustered",
+        "dataSource": "real_clustered",
+        "executiveSummary": f"Clustered {clustering_result.metrics['total_messages']} emails into {clustering_result.metrics['clusters_found']} topics.",
+        "keyInsights": [
+            f"Saved an estimated {clustering_result.metrics['time_saved_minutes']} minutes by grouping related emails.",
+            f"Identified {clustering_result.metrics['clusters_found']} key topics from your recent communications."
+        ],
+        "digest_items": digest_items,
+        "processing_metadata": {
+            "emails_processed": clustering_result.metrics['total_messages'],
+            "data_source": "real_gmail_clustered",
+            "intelligence_engine": "EnhancedClusteringEngine_v2",
+            "clustering_metrics": clustering_result.metrics,
+            "upgrade_suggestions": clustering_result.upgrade_suggestions,
+            "processing_time_ms": clustering_result.processing_time_ms
+        }
+    }
+
+
+class PowerfulNonAIIntelligenceEngine:
+    """
+    Non-AI intelligence engine that processes real email data without requiring AI models.
+    This provides the PowerfulNonAIIntelligenceEngine class that was missing.
+    """
+
+    def __init__(self, user_preferences: Dict = None):
+        self.user_preferences = user_preferences or {}
+
+    async def process_emails(self, emails: List[Dict], user_id: str = None) -> Dict:
+        """
+        Process emails using non-AI methods to extract real intelligence.
+        """
+        return await generate_sophisticated_free_intelligence(emails, user_id)
+
+    def extract_patterns(self, email_content: str) -> Dict:
+        """
+        Extract patterns from email content using regex and rules.
+        """
+        patterns = {
+            'financial': re.findall(r'\$[\d,]+(?:\.\d{2})?', email_content),
+            'dates': re.findall(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b', email_content),
+            'phone_numbers': re.findall(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', email_content),
+            'urgency': re.findall(r'\b(?:urgent|asap|critical|deadline)\b', email_content, re.IGNORECASE)
+        }
+        return patterns
+
 
 if __name__ == "__main__":
     test_enhanced_clustering()
