@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
+
+// Use production env if NODE_ENV is production, otherwise use local
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local';
+require('dotenv').config({ path: path.resolve(__dirname, `../${envFile}`) });
+
+console.log(`[dotenv@17.2.1] injecting env (1) from ${envFile}`);
 
 // Read the template file
 const templatePath = path.resolve(__dirname, '../public/oauth-callback.template.html');

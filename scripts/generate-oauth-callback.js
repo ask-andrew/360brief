@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
+
+// Use production env if NODE_ENV is production, otherwise use local
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local';
+require('dotenv').config({ path: path.join(__dirname, `../${envFile}`) });
+
+console.log(`[dotenv@17.2.1] injecting env (1) from ${envFile}`);
 
 // Ensure we're using localhost for development
 const SUPABASE_URL = process.env.NODE_ENV === 'development' 

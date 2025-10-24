@@ -48,6 +48,7 @@
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
+        storageKey: 'sb-auth-code-verifier',
         storage: {
           getItem: (key) => {
             // Try to get from URL parameters first (for PKCE)
@@ -97,45 +98,8 @@
             }
 
             // Get state from URL and storage
-            const state = urlParams.get('state');
-            const storedState = localStorage.getItem('oauth_state');
-            
-            console.log('State validation:', { state, storedState });
-            
-            // Clean up the state regardless of success/failure
-            localStorage.removeItem('oauth_state');
-            
-            // Get the authentication code
-            const code = urlParams.get('code');
-            if (!code) {
-              throw new Error('No authentication code found in the URL.');
-            }
-
-            console.log('Exchanging code for session...');
-            
-            try {
-              // First, try to exchange the code for a session
-              const { error: exchangeError, data } = await supabase.auth.exchangeCodeForSession(code);
               
-              if (exchangeError) {
-                console.error('Session exchange error:', exchangeError);
-                throw exchangeError;
-              }
-              
-              console.log('Session exchange successful:', data);
-              
-              // Success - redirect to dashboard
-              setStatus('success');
-              
-              // Force a session refresh
-              const { data: { session } } = await supabase.auth.getSession();
-              console.log('Current session:', session);
-              
-              // Redirect to dashboard after a short delay
-              setTimeout(() => {
-                window.location.href = '/dashboard';
-              }, 1500);
-              
+              return { code, state, error, errorDescription };
             } catch (exchangeErr) {
               console.error('Error during session exchange:', exchangeErr);
               
