@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -34,8 +32,109 @@ import {
   ServerCrash
 } from 'lucide-react';
 
+interface Trend {
+  change: number;
+  direction: 'up' | 'down';
+}
+
+interface Sentiment {
+  positive: number;
+  neutral: number;
+  negative: number;
+  overall_trend: 'positive' | 'negative' | 'neutral';
+}
+
+interface PriorityMessage {
+  id: string;
+  sender: string;
+  subject: string;
+  channel: string;
+  timestamp: string;
+  priority: 'high' | 'medium' | 'low';
+  link: string;
+}
+
+interface Channel {
+  name: string;
+  count: number;
+  percentage: number;
+}
+
+interface TimeSlot {
+  hour: string;
+  count: number;
+}
+
+interface Project {
+  name: string;
+  messageCount: number;
+}
+
+interface ReconnectContact {
+  name: string;
+  role: string;
+  days: number;
+  email: string;
+}
+
+interface NetworkNode {
+  id: string;
+  name: string;
+  type: 'project' | 'topic';
+  messageCount: number;
+  connections: number;
+}
+
+interface NetworkConnection {
+  source: string;
+  target: string;
+}
+
+interface NetworkAnalytics {
+  total_active_network_size: number;
+  internal_collaborators: number;
+  external_collaborators: number;
+  project_specific_degree: number;
+  top_projects_by_collaborator_count: { name: string; collaborator_count: number; }[];
+  average_project_duration_days: number;
+  cross_unit_bridging_score: number;
+  idea_breadth_index: number;
+}
+
+interface AnalyticsData {
+  total_count: number;
+  inbound_count: number;
+  outbound_count: number;
+  avg_response_time_minutes: number;
+  missed_messages: number;
+  focus_ratio: number;
+  external_percentage: number;
+  internal_percentage: number;
+  top_projects: Project[];
+  reconnect_contacts: ReconnectContact[];
+  recent_trends: {
+    messages: Trend;
+    response_time: Trend;
+    meetings: Trend;
+  };
+  sentiment_analysis: Sentiment;
+  priority_messages: {
+    awaiting_my_reply: PriorityMessage[];
+    awaiting_their_reply: PriorityMessage[];
+  };
+  channel_analytics: {
+    by_channel: Channel[];
+    by_time: TimeSlot[];
+  };
+  network_data: {
+    nodes: NetworkNode[];
+    connections: NetworkConnection[];
+  };
+  network_analytics: NetworkAnalytics;
+}
+
 // Mock data - same structure as your existing analytics but simplified
-const mockAnalyticsData = {
+const mockAnalyticsData: AnalyticsData = {
   total_count: 1247,
   inbound_count: 843,
   outbound_count: 404,
@@ -132,6 +231,22 @@ const mockAnalyticsData = {
       { source: 'client-onboarding', target: 'product-launch' },
       { source: 'product-launch', target: 'design-review' }
     ]
+  },
+  network_analytics: {
+    total_active_network_size: 84,
+    internal_collaborators: 52,
+    external_collaborators: 32,
+    project_specific_degree: 128,
+    top_projects_by_collaborator_count: [
+      { name: 'Project Alpha', collaborator_count: 15 },
+      { name: 'Client Onboarding', collaborator_count: 12 },
+      { name: 'Q2 Budget', collaborator_count: 10 },
+      { name: 'Product Launch', collaborator_count: 8 },
+      { name: 'Team Sync', collaborator_count: 5 },
+    ],
+    average_project_duration_days: 28,
+    cross_unit_bridging_score: 45,
+    idea_breadth_index: 4,
   }
 };
 
@@ -202,10 +317,115 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
   );
 }
 
+function NetworkReachAndSegmentation({ data }: { data: NetworkAnalytics }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          Network Reach & Segmentation
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <AnalyticsMetricCard
+          title="Total Active Network Size"
+          value={data.total_active_network_size}
+          icon={Users}
+          description="Unique people in 90 days"
+        />
+        <AnalyticsMetricCard
+          title="Internal Collaborators"
+          value={data.internal_collaborators}
+          icon={Users}
+          description="From the same company domain"
+        />
+        <AnalyticsMetricCard
+          title="External Collaborators"
+          value={data.external_collaborators}
+          icon={Users}
+          description="From different company domains"
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ProjectSpecificCollaboration({ data }: { data: NetworkAnalytics }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Network className="w-5 h-5" />
+          Project-Specific Collaboration
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <AnalyticsMetricCard
+            title="Project-Specific Degree"
+            value={data.project_specific_degree}
+            icon={Network}
+            infoTooltip="Measures the total number of distinct collaborations across all active projects. A higher Degree is associated with generating higher quality ideas."
+          />
+          <AnalyticsMetricCard
+            title="Average Project Duration"
+            value={`${data.average_project_duration_days} days`}
+            icon={Timer}
+            infoTooltip="Measures the typical time a collaboration chain lasts. A shorter duration may indicate focused, high-intensity idea generation."
+          />
+        </div>
+        <div>
+          <h4 className="font-medium mb-2">Top 5 Projects (by Collaborator Count)</h4>
+          <div className="space-y-2">
+            {data.top_projects_by_collaborator_count.map((project, index) => (
+              <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium">{project.name}</p>
+                  <p className="text-sm text-muted-foreground">{project.collaborator_count} collaborators</p>
+                </div>
+                <Badge variant="outline">{`#${index + 1}`}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BridgingAndInnovationIndex({ data }: { data: NetworkAnalytics }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="w-5 h-5" />
+          Bridging & Innovation Index
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <AnalyticsMetricCard
+          title="Cross-Unit Bridging Score"
+          value={`${data.cross_unit_bridging_score}%`}
+          icon={Zap}
+          description="of internal collaborators from different units"
+          infoTooltip="Identifies your role in connecting otherwise disconnected parts of the organization. Being a Bridge improves innovation quality."
+        />
+        <AnalyticsMetricCard
+          title="Idea Breadth Index"
+          value={data.idea_breadth_index}
+          icon={Hash}
+          description="Unique topics in top projects"
+          infoTooltip="Measures the variety of organizational topics you are collaborating on. Brokering across structural holes leads to more novel innovation."
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ModernAnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDemo, setIsDemo] = useState(true);
-  const [analyticsData, setAnalyticsData] = useState<any | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -432,7 +652,7 @@ export function ModernAnalyticsDashboard() {
         
         <AnalyticsMetricCard
           title="Peak Activity"
-          value={data.channel_analytics.by_time.reduce((prev, current) => (prev.count > current.count) ? prev : current).hour}
+          value={data.channel_analytics.by_time.reduce((prev: TimeSlot, current: TimeSlot) => (prev.count > current.count) ? prev : current).hour}
           icon={Timer}
           description="most active time"
         />
@@ -440,10 +660,11 @@ export function ModernAnalyticsDashboard() {
 
       {/* Tabs Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="communication">Communication</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
+          <TabsTrigger value="network">Network</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -536,7 +757,7 @@ export function ModernAnalyticsDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {data.top_projects.map((project, index) => (
+                {data.top_projects.map((project: Project, index: number) => (
                   <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <div>
                       <p className="font-medium">{project.name}</p>
@@ -589,7 +810,7 @@ export function ModernAnalyticsDashboard() {
                     Urgent: Awaiting My Response
                   </h4>
                   <div className="space-y-2">
-                    {data.priority_messages.awaiting_my_reply.map((message) => (
+                    {data.priority_messages.awaiting_my_reply.map((message: PriorityMessage) => (
                       <div key={message.id} className="flex justify-between items-center p-3 border border-red-200 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -627,7 +848,7 @@ export function ModernAnalyticsDashboard() {
                     Waiting for Response
                   </h4>
                   <div className="space-y-2">
-                    {data.priority_messages.awaiting_their_reply.map((message) => (
+                    {data.priority_messages.awaiting_their_reply.map((message: PriorityMessage) => (
                       <div key={message.id} className="flex justify-between items-center p-3 border border-blue-200 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -671,7 +892,7 @@ export function ModernAnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {data.channel_analytics.by_channel.map((channel, index) => (
+                  {data.channel_analytics.by_channel.map((channel: Channel, index: number) => (
                     <div key={index} className="flex justify-between items-center">
                       <span className="text-sm font-medium">{channel.name}</span>
                       <div className="flex items-center gap-2">
@@ -702,7 +923,7 @@ export function ModernAnalyticsDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.channel_analytics.by_time.map((timeSlot, index) => (
+                  {data.channel_analytics.by_time.map((timeSlot: TimeSlot, index: number) => (
                     <div key={index} className="flex justify-between items-center">
                       <span className="text-sm font-medium">{timeSlot.hour}</span>
                       <div className="flex items-center gap-2">
@@ -710,7 +931,7 @@ export function ModernAnalyticsDashboard() {
                           <div 
                             className="bg-indigo-600 h-2 rounded-full"
                             style={{ 
-                              width: `${(timeSlot.count / Math.max(...data.channel_analytics.by_time.map(t => t.count))) * 100}%` 
+                              width: `${(timeSlot.count / Math.max(...data.channel_analytics.by_time.map((t: TimeSlot) => t.count))) * 100}%` 
                             }}
                           ></div>
                         </div>
@@ -822,7 +1043,7 @@ export function ModernAnalyticsDashboard() {
                   {/* Column 1 - Projects */}
                   <div className="space-y-6">
                     <h4 className="font-medium text-sm text-gray-600 text-center">Projects</h4>
-                    {data.network_data.nodes.filter(n => n.type === 'project').map((node, index) => {
+                    {data.network_data.nodes.filter((n: NetworkNode) => n.type === 'project').map((node: NetworkNode, index: number) => {
                       const size = Math.max(40, Math.min(80, (node.messageCount / 250) * 80));
                       return (
                         <div key={node.id} className="flex flex-col items-center">
@@ -875,7 +1096,7 @@ export function ModernAnalyticsDashboard() {
                   {/* Column 3 - Topics */}
                   <div className="space-y-6">
                     <h4 className="font-medium text-sm text-gray-600 text-center">Topics</h4>
-                    {data.network_data.nodes.filter(n => n.type === 'topic').map((node, index) => {
+                    {data.network_data.nodes.filter((n: NetworkNode) => n.type === 'topic').map((node: NetworkNode, index: number) => {
                       const size = Math.max(40, Math.min(80, (node.messageCount / 250) * 80));
                       return (
                         <div key={node.id} className="flex flex-col items-center">
@@ -930,7 +1151,7 @@ export function ModernAnalyticsDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {data.reconnect_contacts.map((contact, index) => (
+                {data.reconnect_contacts.map((contact: ReconnectContact, index: number) => (
                   <div key={index} className="flex justify-between items-center p-2 border rounded hover:bg-gray-50 transition-colors">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -1052,6 +1273,26 @@ export function ModernAnalyticsDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="network" className="space-y-6">
+          <NetworkReachAndSegmentation data={data.network_analytics} />
+          <ProjectSpecificCollaboration data={data.network_analytics} />
+          <BridgingAndInnovationIndex data={data.network_analytics} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Network className="w-5 h-5" />
+                Network Visualization
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+                <p className="text-gray-500">Chord Diagram/Force-Directed Graph coming soon...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
     </div>
   );

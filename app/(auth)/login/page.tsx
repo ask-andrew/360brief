@@ -1,140 +1,74 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from "@/components/ui/button";
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useToast } from '@/components/ui/use-toast';
+import { LoginForm } from '@/components/auth/LoginForm';
 
-function LoginContent() {
-  const { signInWithGoogle, user, loading } = useAuth();
-  const searchParams = useSearchParams();
+export default function LoginPage() {
+  const { toast } = useToast();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const error = searchParams?.get('error') || '';
-  const errorDescription = searchParams?.get('error_description') || '';
+  const [error, setError] = useState<string | null>(null);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!loading && user) {
-      console.log('🔄 User already authenticated, redirecting to dashboard');
-      router.push('/dashboard');
-    }
-  }, [user, loading, router]);
-
-  const handleGoogleSignIn = async () => {
+  const handleGoogleLogin = async () => {
     try {
-      setIsLoading(true);
-      await signInWithGoogle();
-    } catch (error) {
-      console.error('Sign in error:', error);
-    } finally {
-      setIsLoading(false);
+      setError(null);
+      // The LoginForm component handles the Google login
+      router.push('/dashboard');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An error occurred during login';
+      setError(message);
+      toast({
+        title: 'Login failed',
+        description: message,
+        variant: 'destructive',
+      });
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't show login form if user is already authenticated
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <p className="text-gray-600">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div>
-          <img className="mx-auto h-12 w-auto" src="/images/logo.svg" alt="360Brief Logo" />
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to 360Brief
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            One-click access to your Gmail data and executive briefs
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <img className="mx-auto h-12 w-auto" src="/images/360brief-logo.svg" alt="360Brief Logo" />
+          <h1 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">Sign in to your account</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+              Sign up
+            </Link>
           </p>
         </div>
-        
-        {(error || errorDescription) && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <div className="text-sm text-red-600">
-              <div className="font-semibold">Authentication Error:</div>
-              {errorDescription || error || 'An error occurred during authentication.'}
+
+        {error && (
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
             </div>
           </div>
         )}
 
         <div className="mt-8">
-          <Button
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center space-x-2"
-            variant="outline"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                fillRule="evenodd"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                fillRule="evenodd"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-                fillRule="evenodd"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fillRule="evenodd"
-              />
-            </svg>
-            <span>Continue with Google + Gmail</span>
-          </Button>
+          <LoginForm />
         </div>
 
-        <div className="text-center mt-4">
-          <button 
-            onClick={() => router.push('/debug-auth')}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Debug Auth State
-          </button>
+        <div className="mt-6">
+          <p className="text-center text-sm text-gray-600">
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full space-y-8 bg-white rounded-xl shadow-lg p-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Loading...</h2>
-          </div>
-        </div>
-      </div>
-    }>
-      <LoginContent />
-    </Suspense>
   );
 }

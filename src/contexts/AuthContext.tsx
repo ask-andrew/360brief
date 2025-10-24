@@ -90,11 +90,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       setError(null)
 
-      console.log('🔐 Initiating unified Gmail OAuth for auth + Gmail access...')
+      console.log('🔐 Initiating Supabase OAuth with Google...')
 
-      // Use unified Gmail OAuth flow that handles both user authentication AND Gmail permissions
-      // This redirects to /api/auth/gmail/authorize which will handle the complete flow
-      window.location.href = '/api/auth/gmail/authorize?redirect=/dashboard'
+      // Use Supabase's built-in OAuth flow
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      })
+
+      if (oauthError) {
+        console.error('❌ OAuth error:', oauthError)
+        throw oauthError
+      }
+
+      console.log('✅ Supabase OAuth initiated successfully')
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in with Google'
@@ -104,19 +119,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [supabase])
 
   const connectGmail = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      
-      console.log('📧 Connecting Gmail via direct OAuth...')
-      
-      // Use direct Gmail OAuth flow instead of Supabase OAuth
-      // This redirects to /api/auth/gmail/authorize which handles the full OAuth flow
-      window.location.href = '/api/auth/gmail/authorize'
-      
+
+      console.log('📧 Connecting Gmail via Supabase OAuth...')
+
+      // Use the same Supabase OAuth flow for Gmail connection
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      })
+
+      if (oauthError) {
+        console.error('❌ Gmail OAuth error:', oauthError)
+        throw oauthError
+      }
+
+      console.log('✅ Gmail OAuth initiated successfully')
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to connect Gmail'
       console.error('❌ Gmail connect error:', errorMessage)
@@ -125,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [supabase])
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     try {

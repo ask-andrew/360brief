@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     
     // Analyze the data
     const userEmail = user.email || '';
-    const analytics = analyzeGmailData(messages, userEmail);
+    const analytics = await analyzeGmailData(messages, userEmail);
     
     console.log(`✅ Gmail analytics generated successfully - ${analytics.total_count} messages analyzed`);
     

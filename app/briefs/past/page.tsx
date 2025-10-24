@@ -15,8 +15,21 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
+interface Brief {
+  id: string;
+  title: string;
+  style: string;
+  timeRange: string;
+  createdAt: string;
+  sources: string[];
+  metrics: {
+    emails: number;
+    meetings: number;
+  };
+}
+
 export default function PastBriefsPage() {
-  const [briefs, setBriefs] = useState([]);
+  const [briefs, setBriefs] = useState<Brief[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 

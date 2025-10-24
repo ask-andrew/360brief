@@ -3,6 +3,13 @@
 Simplified Analytics API for 360Brief
 """
 
+from dotenv import load_dotenv
+import os
+
+# Construct the path to the .env.local file in the project root
+dotenv_path = os.path.join(os.path.dirname(__file__), '../../.env.local')
+load_dotenv(dotenv_path=dotenv_path)
+
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -496,16 +503,19 @@ async def get_real_analytics(days_back: int = 7, filter_marketing: bool = True, 
                     return get_sample_analytics()
                     
                 tokens_data = await response.json()
+                logger.info(f"🔍 Supabase response: {tokens_data}")
                 
                 if not tokens_data:
                     logger.error(f"❌ REAL DATA REQUIRED: No tokens found for user {user_id}")
                     raise HTTPException(status_code=404, detail=f"No Gmail tokens found for user {user_id}")
                 
                 token_info = tokens_data[0]
+                logger.info(f"🔍 Token info: {token_info}")
                 
                 # Check if token needs refresh
                 now_utc = datetime.now(timezone.utc)
                 expires_at_str = token_info.get('expires_at')
+                logger.info(f"🔍 Expires at string: {expires_at_str}")
                 
                 if expires_at_str:
                     try:

@@ -183,9 +183,22 @@ class GmailService:
                     
                     # Set expiry if available
                     if token_data.get('expires_at'):
-                        from datetime import datetime
-                        self.credentials.expiry = datetime.fromtimestamp(token_data['expires_at'])
-                    
+                        from datetime import datetime, timezone
+                        # Convert expires_at (seconds) to a timezone-aware datetime object
+                        self.credentials.expiry = datetime.fromtimestamp(token_data['expires_at'], tz=timezone.utc)
+
+                    # Check if credentials need to be refreshed
+                    if self.credentials and self.credentials.expired and self.credentials.refresh_token:
+                        logger.info("Token expired, attempting to refresh...")
+                        try:
+                            self.credentials.refresh(Request())
+                            logger.info("✅ Token refreshed successfully.")
+                            # Optionally, you could have a mechanism to update the token back in your central storage
+                        except RefreshError as e:
+                            logger.error(f"🔥 Failed to refresh token: {e}")
+                            # If refresh fails, the credentials are no longer valid.
+                            return False
+
                     logger.info("✅ Loaded credentials from Next.js token API")
                     return True
                     

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { google } from 'googleapis';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -109,12 +110,151 @@ interface IntelligenceBrief {
   };
 }
 
+async function fetchRealEmails(userId: string, daysBack: number, filterMarketing: boolean): Promise<any[]> {
+  // Fetch real emails from Gmail for the authenticated user
+  console.log(`🔄 Fetching real Gmail data for user: ${userId}`);
+
+  // Get Gmail access token from user_tokens table
+  const { data: tokens, error: tokenError } = await supabase
+    .from('user_tokens')
+    .select('access_token, refresh_token, expires_at, user_id, provider')
+    .eq('user_id', userId)
+    .eq('provider', 'google')
+    .limit(1);
+
+  if (tokenError || !tokens || tokens.length === 0) {
+    console.error('❌ No tokens found for user:', userId);
+    throw new Error('No Gmail authentication tokens found');
+  }
+
+  const token = tokens[0];
+  const now = Math.floor(Date.now() / 1000);
+
+  // Check if token needs refresh
+  if (token.expires_at && token.expires_at < now) {
+    console.log('🔄 Token expired, attempting refresh...');
+
+    try {
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+      );
+
+      oauth2Client.setCredentials({
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+      });
+
+      const { credentials } = await oauth2Client.refreshAccessToken();
+
+      // Update token in database
+      await supabase
+        .from('user_tokens')
+        .update({
+          access_token: credentials.access_token,
+          expires_at: credentials.expiry_date ? Math.floor(credentials.expiry_date / 1000) : null,
+        })
+        .eq('user_id', userId)
+        .eq('provider', 'google');
+
+      token.access_token = credentials.access_token;
+      console.log('✅ Successfully refreshed access token');
+
+    } catch (refreshError) {
+      console.error('❌ Token refresh failed:', refreshError);
+      throw new Error('Token refresh failed');
+    }
+  }
+
+  // Set up Gmail API
+  const oauth2Client = new google.auth.OAuth2();
+  oauth2Client.setCredentials({ access_token: token.access_token });
+  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+  // Calculate date range
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - daysBack);
+
+  // Build search query
+  let query = `after:${Math.floor(startDate.getTime() / 1000)}`;
+  if (filterMarketing) {
+    query += ' -category:promotions -category:social';
+  }
+
+  console.log(`📧 Gmail search query: ${query}`);
+
+  // Get message list
+  const listResponse = await gmail.users.messages.list({
+    userId: 'me',
+    q: query,
+    maxResults: 50,
+  });
+
+  if (!listResponse.data.messages) {
+    return [];
+  }
+
+  console.log(`📊 Found ${listResponse.data.messages.length} message IDs`);
+
+  // Get full message details
+  const messages: any[] = [];
+  const batchSize = 10; // Process in smaller batches to avoid timeouts
+
+  for (let i = 0; i < listResponse.data.messages.length; i += batchSize) {
+    const batch = listResponse.data.messages.slice(i, i + batchSize);
+
+    const batchPromises = batch.map(async (msg) => {
+      try {
+        const fullMessage = await gmail.users.messages.get({
+          userId: 'me',
+          id: msg.id!,
+          format: 'full',
+        });
+
+        const message = fullMessage.data;
+        const headers = message.payload?.headers || [];
+
+        // Extract common email fields
+        const fromHeader = headers.find((h: any) => h.name === 'From');
+        const toHeader = headers.find((h: any) => h.name === 'To');
+        const subjectHeader = headers.find((h: any) => h.name === 'Subject');
+        const dateHeader = headers.find((h: any) => h.name === 'Date');
+
+        return {
+          id: message.id!,
+          threadId: message.threadId!,
+          labelIds: message.labelIds,
+          snippet: message.snippet || '',
+          internalDate: message.internalDate || '',
+          date: dateHeader?.value || new Date(parseInt(message.internalDate || '0')).toISOString(),
+          from: fromHeader ? { emailAddress: { address: fromHeader.value } } : undefined,
+          to: toHeader ? { emailAddress: { address: toHeader.value } } : undefined,
+          subject: subjectHeader?.value || '(no subject)',
+          body: message.snippet || '', // Use snippet as body for processing
+        };
+
+      } catch (error) {
+        console.error(`❌ Error fetching message ${msg.id}:`, error);
+        return null;
+      }
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    messages.push(...batchResults.filter(msg => msg !== null));
+  }
+
+  console.log(`✅ Successfully fetched ${messages.length} real Gmail messages`);
+  return messages;
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const userId = url.searchParams.get('user_id') || 'andrew.ledet@gmail.com';
   const daysBack = parseInt(url.searchParams.get('days_back') || '7');
   const filterMarketing = url.searchParams.get('filter_marketing') !== 'false';
   const useIntelligence = url.searchParams.get('use_intelligence') !== 'false';
+  const useRealData = url.searchParams.get('use_real_data') === 'true';
 
   try {
     console.log(`📝 Generating executive brief for ${userId}`);
@@ -132,16 +272,42 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Call Python intelligence service
+    // Check if we should use real data (for testing, use hardcoded user ID)
+    const realDataEnabled = useRealData;
+
+    let emails: any[] = [];
+    let dataSource = 'mock';
+
+    if (realDataEnabled) {
+      try {
+        console.log('🔄 Attempting to fetch real Gmail data...');
+        emails = await fetchRealEmails(userId, daysBack, filterMarketing);
+        dataSource = emails.length > 0 ? 'real' : 'mock';
+        console.log(`✅ Successfully fetched ${emails.length} real emails`);
+      } catch (error) {
+        console.error('❌ Failed to fetch real emails:', error);
+        console.log('🔄 Falling back to mock data...');
+        emails = []; // Python service will generate mock data
+        dataSource = 'mock';
+      }
+    } else {
+      console.log('📝 Using mock data for testing');
+      emails = [];
+      dataSource = 'mock';
+    }
+
+    // Call Python intelligence service with email data
     const pythonServiceUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:8001';
 
     const requestBody = {
       user_id: userId,
+      emails: emails, // Pass real emails if available, empty array for mock data
       days_back: daysBack,
       filter_marketing: filterMarketing
     };
 
     console.log(`🔗 Calling Python service: ${pythonServiceUrl}/generate-brief`);
+    console.log(`📊 Email count: ${emails.length}, Data source: ${dataSource}`);
 
     const response = await fetch(`${pythonServiceUrl}/generate-brief`, {
       method: 'POST',
@@ -169,7 +335,7 @@ export async function GET(req: NextRequest) {
       generatedAt: intelligenceBrief.generatedAt,
       style: 'sophisticated_intelligence',
       version: intelligenceBrief.version,
-      dataSource: intelligenceBrief.dataSource,
+      dataSource: dataSource, // Use our determined data source
 
       // Core brief content
       summary: intelligenceBrief.executiveSummary,
@@ -234,7 +400,11 @@ export async function GET(req: NextRequest) {
         })) || [],
 
       // Processing metadata
-      processing_metadata: intelligenceBrief.processing_metadata,
+      processing_metadata: {
+        ...intelligenceBrief.processing_metadata,
+        data_source: dataSource,
+        real_emails_fetched: emails.length
+      },
 
       // Timeframe
       timeframe: {
@@ -280,7 +450,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, daysBack = 7, filterMarketing = true, useIntelligence = true } = body;
+    const { userId, daysBack = 7, filterMarketing = true, useIntelligence = true, useRealData = false } = body;
 
     // Redirect to GET with query parameters
     const url = new URL(req.url);
@@ -288,6 +458,7 @@ export async function POST(req: NextRequest) {
     url.searchParams.set('days_back', daysBack.toString());
     url.searchParams.set('filter_marketing', filterMarketing.toString());
     url.searchParams.set('use_intelligence', useIntelligence.toString());
+    url.searchParams.set('use_real_data', useRealData.toString());
 
     const getRequest = new NextRequest(url.toString(), { method: 'GET' });
     return await GET(getRequest);

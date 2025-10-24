@@ -1,3 +1,15 @@
+# Extension Configuration and Best Practices
+
+## Open-Aware Extension
+The `open-aware` extension is available, providing specialized tools for comprehensive awareness and project analysis.
+
+**When addressing requests, first consult the guidance provided in its documentation to ensure optimal usage and feature utilization.**
+
+# Import Open-Aware Documentation
+ @./.gemini/extensions/open-aware/gemini-extension/GEMINI.md
+
+---
+
 # memories
 360Brief is a "one-stop shop" executive briefing platform that solves information overload by consolidating communication streams (emails, Slack, meeting transcripts, project management tools) into actionable insights.
 
@@ -323,3 +335,72 @@ Before suggesting a user take an action (like restarting a server) or after maki
 - **Anticipate the Environment:** I must remember that services may not restart automatically and environment variables can override code. I should factor this into my instructions.
 
 This principle is crucial for reducing debugging cycles and ensuring efficiency.
+
+# Executive Intelligence Briefing System: Technical Design Canvas
+
+## 1. Customer Wants & Value Proposition (ICP: Executive/High-Value User) 🎯
+
+The core value to the user is **Cognitive Relief** and **Actionable Focus**.
+
+| Executive Need | Current System Issue (Pre-Narrative Fix) | Desired Solution (Immense Value) |
+| :--- | :--- | :--- |
+| **"What's the one thing I must decide today?"** | Buried in lists of `Blockers` and `Decisions` grouped by status. | **Immediate Actions Required:** Itemized, synthesized actions (e.g., "Authorize $40K Crisis Response Package"). |
+| **"What's the status of the Allied deal?"** | Data is fragmented across **Achievement** section and three separate **Topics** (1, 2, 3). | **Project-Centric Grouping:** All related items (emails, decisions, blockers, achievements) are clustered under one named heading (e.g., **Allied-Ledet Project**). |
+| **"Why does this matter?"** | Provides only a title (e.g., "Blocker identified: Allied - Ledet"). | **Narrative Context:** A 2-3 sentence paragraph explaining the *cause*, *impact*, and *risk* (e.g., "Timeline is stalled due to a legal issue related to vendor terms."). |
+| **"Don't waste my time with junk."** | Treats all emails equally, listing learning newsletters alongside high-value decisions. | **Prioritization & Filtering:** Low-action recurring content is grouped into a single **General Momentum** section. |
+
+-----
+
+## 2. Technical Execution: Best Practices for Content Processing
+
+The process is divided into a mandatory **Preprocessing Pipeline** and an optional but highly recommended **Synthesis Layer (LLM/AI)**.
+
+### 2.1. Preprocessing Pipeline (Mandatory, Non-LLM)
+
+This layer provides the structured input necessary for any high-quality summarization model (or rule-based system). It fixes the fragmentation issue.
+
+| Step | Goal | Technique/Algorithm | Notes for Engineer |
+| :--- | :--- | :--- | :--- |
+| **A. Data Cleaning** | Normalize text and extract key metadata. | Standard NLP tokenization, stemming. | **Essential:** Strip HTML/signatures/footers from email bodies before processing. Log the clean text length vs. raw text length. |
+| **B. Entity Recognition (NER)** | Identify key people, organizations, products, and financial terms. | Custom NER (Regex for $ amounts, known project names, email addresses). Simple SpaCy model for general people/orgs. | Must train on user-specific project jargon (e.g., "WINBOX" is a custom entity). |
+| **C. Coreference Resolution** | Link pronouns/aliases to primary entities. | Basic rule-based approach (e.g., "Chris" $ightarrow$ "Chris Laguna"). Advanced $ightarrow$ neural coreference models (if using local AI). | Helps link a reply that says "He agreed" back to "Andrew Ledet." |
+| **D. Project Clustering** | Group all related items across the entire dataset. | **Heuristic Co-occurrence:** Use a graph database approach or simple dict mapping. A cluster exists if **2+ items share the same primary Entity** (e.g., "Re: Allied - Ledet" and "Financial item: Allied..."). | **Crucial Fix:** This is the project-centric grouping layer. Assign a score (urgency/value) to each cluster for ordering. |
+| **E. Status & Financial Tagging** | Assign aggregated urgency and financial data to the cluster. | **Status:** Max-urgency propagation (Blocker > Decision > Achievement). **Financial:** Strict regex extraction. **Constraint Enforcement:** Only tag a cluster with `financial_value` if $\ge 1$ message contains a $ amount. |
+
+### 2.2. Synthesis Layer (Optional/Enhanced - LLM/AI)
+
+This layer generates the "ungodly value" by creating the narrative and connecting the dots (the "Executive Response" and "Timeline Critical" sections in your ideal brief).
+
+| Output Component | Technique/Model Type | Prompt Engineering Focus |
+| :--- | :--- | :--- |
+| **1. Contextual Summary** | **Abstractive Summarization** (e.g., GPT-4, Llama 3, or open-source T5/BART). | **INSTRUCTION:** "You are an executive assistant. Based on the following clustered messages, synthesize a 3-sentence summary covering the **Cause**, **Impact/Risk**, and **Required Next Step**." **INPUT:** The full text of all emails in a cluster (from Preprocessing). |
+| **2. Executive Synthesis** | **Extractive + Abstractive Synthesis.** | **INSTRUCTION:** "Review the top 3 highest-urgency project clusters. Stitch together a 5-sentence narrative highlighting the **primary blocker, primary decision, and net financial impact** to be read by a CEO." |
+| **3. Action Item Derivation** | **Instruction-Tuned LLM.** | **INSTRUCTION:** "From the text provided, identify one explicit action or delegation that the executive (Andrew Ledet) needs to perform. Format as: **[Action Type]: [Brief Description]**." |
+| **4. Recurring Content Coherence** | **Topic Modeling + Summarization.** | **INSTRUCTION:** "The following are recurring newsletters. Identify the 3 most prominent topics across the titles and create a single, non-actionable, concise summary for the 'General Momentum' section." |
+
+-----
+
+## 3. Deployment Strategy: LLM vs. Rule-Based Trade-offs
+
+| Feature | LLM/Generative AI (High Quality) | Rule-Based/Heuristic (Low Cost/Fast) |
+| :--- | :--- | :--- |
+| **Project Clustering** | **Heuristic:** (See 2.1.D) Fast, reliable for known entities. | **Heuristic:** (See 2.1.D) Fast, reliable for known entities. |
+| **Contextual Summary** | **Generative:** Highest quality, narrative-rich, connects disparate facts. | **Extractive:** Concatenates the subject lines and the first two sentences of the most urgent email. (Low value). |
+| **Action Item Derivation** | **Generative:** Can infer implied actions ("CTO hasn't responded" $ightarrow$ "Action: Re-engage CTO via alternative channel"). | **Rule-Based:** Searches for keywords (`decision required`, `approval needed`, `sign-off`). |
+| **Cost & Latency** | **High Cost:** External API calls (GPT) or high GPU requirement (local open-source). **Latency:** $\sim$2-5 seconds. | **Low Cost:** Runs on a standard CPU. **Latency:** Milliseconds. |
+| **Recommended Path** | **Hybrid Model:** Use the rule-based **Preprocessing Pipeline (2.1)** for clustering and data normalization. Feed the resulting structured JSON and clean text to a **Synthesis LLM (2.2)** for the final narrative generation. |
+
+## 4. Technical Implementation Checklist (For the Engineer)
+
+1.  **Project Key Generation:** Implement `infer_project_key(item)` using contributor names and shared nouns (excluding stop words) in the subject line.
+2.  **Narrative Brief Endpoint:** Ensure the `POST /generate-narrative-brief` endpoint is robust. Its primary input must be the raw email/chat array, and its output must be the final Markdown string.
+3.  **Financial Guardrails:** Double-check the financial extraction logic:
+    ```python
+    def enforce_financial_constraint(cluster_data):
+        # Only set 'financial_value' if any item in the cluster passes the regex check.
+        has_money_explicitly = any(re.search(r'\$\s*\d{1,3}(?:,\d{3})*(?:\.\d{2})?', text)
+                                   for item in cluster_data)
+        if not has_money_explicitly:
+            cluster_data['financial_value'] = None
+    ```
+4.  **Testing Strategy:** Unit tests for clustering logic with known failure cases (e.g., two unrelated emails with the same sender name). Integration tests to ensure the final narrative Markdown is valid and has the necessary **Project Headings**, **Contextual Summaries**, and **Action Needed** bullets.

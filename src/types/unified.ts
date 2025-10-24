@@ -38,7 +38,12 @@ export interface EmailItem {
       hasProjectContext?: boolean;
       isPositive?: boolean;
       isUrgent?: boolean;
-      priority?: 'high' | 'medium' | 'low';
+      category?: string;
+      priority?: string;
+      sentiment?: string;
+      actionItems?: string[];
+      keyTopics?: string[];
+      responseRequired?: boolean;
     };
     nlpInsights?: {
       sentiment?: {
@@ -184,4 +189,5 @@ export interface UnifiedData {
   calendarEvents: CalendarEventItem[];
   tickets: TicketItem[];
   generated_at?: string; // ISO
+  enhanced_insights?: any;
 }

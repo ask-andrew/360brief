@@ -430,11 +430,11 @@ export async function generateBrief(unified: UnifiedData): Promise<BriefingData>
 }
 
 // Style-aware brief generation with enhanced formatting
-export function generateStyledBrief(
+export async function generateStyledBrief(
   unified: UnifiedData, 
   style: 'mission_brief' | 'startup_velocity' | 'management_consulting' | 'newsletter' = 'mission_brief'
-): any {
-  const baseBrief = generateBrief(unified);
+): Promise<any> {
+  const baseBrief = await generateBrief(unified);
   const context = analyzeBusinessContext(unified);
   const insights = generateDataInsights(unified);
   const attribution = generateDataAttribution(unified);

@@ -38,8 +38,9 @@ import {
   Trophy,
   Star
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { NarrativeFeedbackDashboard } from './NarrativeFeedbackDashboard';
 import { StyledMissionBrief } from './StyledMissionBrief';
-import { AudioPlayer } from './AudioPlayer';
 
 interface BriefData {
   userId: string;
@@ -123,6 +124,17 @@ export function EnhancedBriefDashboard() {
   const [topicBigrams, setTopicBigrams] = useState(true);
   const [tuningPreset, setTuningPreset] = useState<'low' | 'medium' | 'high'>('medium');
   const [showTuning, setShowTuning] = useState(false);
+  // Narrative brief state
+  const [narrativeMarkdown, setNarrativeMarkdown] = useState<string>('');
+  const [narrativeLoading, setNarrativeLoading] = useState<boolean>(false);
+  const [narrativeError, setNarrativeError] = useState<string | null>(null);
+  const [narrativeFeedback, setNarrativeFeedback] = useState<'helpful' | 'not_helpful' | null>(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState<boolean>(false);
+  const [showFeedbackComments, setShowFeedbackComments] = useState<boolean>(false);
+  const [feedbackComments, setFeedbackComments] = useState<string>('');
+  const [currentBriefMetadata, setCurrentBriefMetadata] = useState<any>(null);
+
+  const { user } = useAuth();
 
   const applyPreset = useCallback((preset: 'low' | 'medium' | 'high') => {
     setTuningPreset(preset);
@@ -216,6 +228,109 @@ export function EnhancedBriefDashboard() {
       fetchBrief();
     }
   }, [fetchBrief]);
+
+  // Submit narrative feedback
+  const submitNarrativeFeedback = useCallback(async (feedbackType: 'helpful' | 'not_helpful') => {
+    if (!currentBriefMetadata || !narrativeMarkdown) return;
+
+    setFeedbackSubmitting(true);
+    try {
+      const response = await fetch('/api/narrative-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          engine_used: currentBriefMetadata.engine_used,
+          generation_timestamp: currentBriefMetadata.generation_timestamp,
+          input_emails_count: currentBriefMetadata.input_emails_count,
+          input_clusters_count: currentBriefMetadata.input_clusters_count,
+          cluster_data: currentBriefMetadata.cluster_data,
+          llm_prompt: currentBriefMetadata.llm_prompt,
+          llm_model: currentBriefMetadata.llm_model,
+          llm_response_time_ms: currentBriefMetadata.response_time_ms,
+          generated_markdown: narrativeMarkdown,
+          executive_summary: currentBriefMetadata.executive_summary,
+          feedback_type: feedbackType,
+          feedback_comments: feedbackComments.trim() || undefined
+        })
+      });
+
+      if (response.ok) {
+        setNarrativeFeedback(feedbackType);
+        setShowFeedbackComments(false);
+        setFeedbackComments('');
+      } else {
+        throw new Error('Failed to submit feedback');
+      }
+    } catch (error) {
+      console.error('Error submitting narrative feedback:', error);
+      // Could add toast notification here
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  }, [currentBriefMetadata, narrativeMarkdown, feedbackComments]);
+
+  // Generate narrative brief via proxy route using real emails when available
+  const generateNarrativeBrief = useCallback(async () => {
+    if (!briefData) return;
+    // Prefer raw emails if present
+    let emails: any[] = Array.isArray(briefData.rawAnalyticsData?.emails)
+      ? briefData.rawAnalyticsData.emails
+      : [];
+    // Fallback: synthesize email-like objects from digest_items
+    if ((!emails || emails.length === 0) && Array.isArray(briefData.digest_items)) {
+      const synthesized: any[] = [];
+      for (const cluster of briefData.digest_items) {
+        if (Array.isArray(cluster.items)) {
+          for (const it of cluster.items) {
+            const subject = it.subject || it.title || 'No Subject';
+            const body = it.content || it.snippet || '';
+            const sender = it.from || it.sender || it.author || undefined;
+            const date = it.date || it.timestamp || undefined;
+            synthesized.push({ id: it.id || subject, subject, body, from: sender, date });
+          }
+        }
+      }
+      emails = synthesized;
+    }
+    if (!Array.isArray(emails) || emails.length === 0) {
+      setNarrativeError('No source emails available in this brief to generate a narrative.');
+      setNarrativeMarkdown('');
+      return;
+    }
+
+    setNarrativeLoading(true);
+    setNarrativeError(null);
+    try {
+      const res = await fetch('/api/briefs/narrative', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emails,
+          max_projects: 8,
+          include_clusters: true,
+          use_real_data: useRealData,
+          user_id: user?.id || 'andrew.ledet@gmail.com'
+        })
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setNarrativeError(`Upstream error: ${text || res.statusText}`);
+        setNarrativeMarkdown('');
+        return;
+      }
+      const data = await res.json();
+      setNarrativeMarkdown(data.markdown || '');
+      setCurrentBriefMetadata(data.feedback_metadata || null);
+      setNarrativeFeedback(null); // Reset feedback state for new brief
+      setShowFeedbackComments(false);
+      setFeedbackComments('');
+    } catch (e: any) {
+      setNarrativeError(e?.message ? `Network error: ${e.message}` : 'Network error generating narrative.');
+      setNarrativeMarkdown('');
+    } finally {
+      setNarrativeLoading(false);
+    }
+  }, [briefData, useRealData, user]);
 
   const renderBriefContent = () => {
     if (!briefData) return null;
@@ -472,6 +587,150 @@ export function EnhancedBriefDashboard() {
       ) : (
         renderBriefContent()
       )}
+
+      {/* Narrative Brief Preview Panel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Narrative Brief Preview (Project-clustered)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={generateNarrativeBrief}
+              disabled={
+                narrativeLoading || !(
+                  (briefData?.rawAnalyticsData?.emails?.length ?? 0) > 0 ||
+                  (briefData?.digest_items?.length ?? 0) > 0
+                )
+              }
+            >
+              {narrativeLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Generating...
+                </>
+              ) : (
+                'Generate Narrative Brief'
+              )}
+            </Button>
+            {!(
+              (briefData?.rawAnalyticsData?.emails?.length ?? 0) > 0 ||
+              (briefData?.digest_items?.length ?? 0) > 0
+            ) && (
+              <span className="text-xs text-muted-foreground">No source items detected for narrative generation. Load real data and refresh the brief.</span>
+            )}
+          </div>
+
+          {narrativeError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="w-4 h-4" />
+              <AlertDescription>{narrativeError}</AlertDescription>
+            </Alert>
+          )}
+
+          {narrativeMarkdown && (
+            <div className="space-y-4">
+              {/* Feedback buttons */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Was this summary helpful?</span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant={narrativeFeedback === 'helpful' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => submitNarrativeFeedback('helpful')}
+                      disabled={feedbackSubmitting || narrativeFeedback !== null}
+                      className="flex items-center gap-1"
+                    >
+                      <span className="text-lg">👍</span>
+                      Helpful
+                    </Button>
+                    <Button
+                      variant={narrativeFeedback === 'not_helpful' ? 'destructive' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setNarrativeFeedback('not_helpful');
+                        setShowFeedbackComments(true);
+                      }}
+                      disabled={feedbackSubmitting || narrativeFeedback === 'helpful'}
+                      className="flex items-center gap-1"
+                    >
+                      <span className="text-lg">👎</span>
+                      Not Helpful
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Engine info */}
+                {currentBriefMetadata && (
+                  <Badge variant="outline" className="text-xs">
+                    {currentBriefMetadata.llm_model ? 'LLM Enhanced' : 'Rule-Based'}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Feedback comments (shown when "Not Helpful" is clicked) */}
+              {showFeedbackComments && narrativeFeedback === 'not_helpful' && (
+                <div className="space-y-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <Label className="text-sm font-medium text-red-800">
+                    What could be improved? (Optional)
+                  </Label>
+                  <Textarea
+                    placeholder="e.g., Missing key information, unclear actions, wrong priorities..."
+                    value={feedbackComments}
+                    onChange={(e) => setFeedbackComments(e.target.value)}
+                    className="min-h-[80px] text-sm"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => submitNarrativeFeedback('not_helpful')}
+                      disabled={feedbackSubmitting}
+                    >
+                      {feedbackSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setShowFeedbackComments(false);
+                        setNarrativeFeedback(null);
+                        setFeedbackComments('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Thank you message */}
+              {narrativeFeedback && !showFeedbackComments && (
+                <div className={`p-3 rounded-lg text-sm ${
+                  narrativeFeedback === 'helpful'
+                    ? 'bg-green-50 border border-green-200 text-green-800'
+                    : 'bg-blue-50 border border-blue-200 text-blue-800'
+                }`}>
+                  {narrativeFeedback === 'helpful'
+                    ? 'Thank you! This feedback helps us improve the narrative quality.'
+                    : 'Thank you for your feedback! We\'ll use this to improve our synthesis prompts and rules.'
+                  }
+                </div>
+              )}
+
+              {/* Narrative brief content */}
+              <div className="border rounded-md p-3 bg-muted/20 overflow-x-auto whitespace-pre-wrap">
+                <pre className="text-sm leading-6">{narrativeMarkdown}</pre>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Narrative Feedback Analytics */}
+      <NarrativeFeedbackDashboard />
 
       {/* JSON Output Section for LLM Experimentation */}
       {briefData && (
@@ -740,9 +999,82 @@ function ClusteredBriefView({ data }: { data: BriefData }) {
   const achievementClusters = allClusters.filter((cluster: any) => cluster.signal_type === 'achievement');
   const otherClusters = allClusters.filter((cluster: any) => cluster.signal_type !== 'achievement');
 
-  const individualItems = allClusters.reduce((acc: number, cluster: any) => acc + (cluster.items?.length || 0), 0);
-
   const processingMeta = data.processing_metadata || {};
+
+  // Master de-duplication and aggregation logic
+  const masterItems = new Map<string, {
+    id: string;
+    title: string;
+    content: string;
+    statuses: Set<string>;
+    financial_impact: number;
+    stakeholders: Set<string>;
+    clusters: Set<string>;
+    items: any[];
+    highest_severity: string;
+  }>();
+
+  // Process all items from all clusters
+  for (const cluster of allClusters) {
+    if (cluster.items && Array.isArray(cluster.items)) {
+      for (const item of cluster.items) {
+        const itemKey = item.subject || item.content || item.id;
+        if (!itemKey) continue;
+
+        if (masterItems.has(itemKey)) {
+          // Update existing master item
+          const master = masterItems.get(itemKey)!;
+          master.financial_impact += item.financial_impact || 0;
+          (item.stakeholders || []).forEach((stakeholder: string) => master.stakeholders.add(stakeholder));
+          master.clusters.add(cluster.title || 'Unnamed Cluster');
+          master.items.push(item);
+
+          // Update statuses based on cluster type and item properties
+          if (cluster.signal_type === 'achievement') master.statuses.add('Achievement');
+          if (cluster.signal_type === 'blocker') master.statuses.add('Blocker');
+          if (cluster.signal_type === 'decision') master.statuses.add('Decision');
+        } else {
+          // Create new master item
+          const statuses = new Set<string>();
+          if (cluster.signal_type === 'achievement') statuses.add('Achievement');
+          if (cluster.signal_type === 'blocker') statuses.add('Blocker');
+          if (cluster.signal_type === 'decision') statuses.add('Decision');
+
+          masterItems.set(itemKey, {
+            id: item.id || itemKey,
+            title: itemKey,
+            content: item.content || item.snippet || '',
+            statuses,
+            financial_impact: item.financial_impact || 0,
+            stakeholders: new Set(item.stakeholders || []),
+            clusters: new Set([cluster.title || 'Unnamed Cluster']),
+            items: [item],
+            highest_severity: 'Medium'
+          });
+        }
+      }
+    }
+  }
+
+  // Calculate highest severity for each master item
+  for (const master of masterItems.values()) {
+    if (master.statuses.has('Blocker')) {
+      master.highest_severity = 'Urgent';
+    } else if (master.statuses.has('Decision')) {
+      master.highest_severity = 'High';
+    } else if (master.statuses.has('Achievement')) {
+      master.highest_severity = 'Medium';
+    }
+  }
+
+  // Convert to array for easier processing
+  const uniqueItems = Array.from(masterItems.values());
+
+  // Get actionable items (decisions and blockers)
+  const actionableItems = uniqueItems.filter(item =>
+    item.statuses.has('Decision') || item.statuses.has('Blocker')
+  );
+
   const emailsProcessed = processingMeta.total_emails_processed || allClusters.length;
   const intelligence = processingMeta.intelligence_engine || 'ExecutiveIntelligenceEngine_v3';
 
@@ -777,110 +1109,224 @@ function ClusteredBriefView({ data }: { data: BriefData }) {
             </div>
           )}
 
-          {/* Strategic Recommendations (dynamic) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div className="bg-gradient-to-r from-blue-100 to-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                <Target className="w-4 h-4" />
-                Recommended Actions
-              </h4>
-              {(() => {
-                // Collect top actions from clusters (sorted by urgency if available)
-                const clustersSorted = [...allClusters].sort((a: any, b: any) => (b.metrics?.urgency_score || 0) - (a.metrics?.urgency_score || 0));
-                const actions = clustersSorted.flatMap((c: any) => Array.isArray(c.actions) ? c.actions.slice(0, 2) : []).filter(Boolean);
-                // Fallbacks if no actions returned by API
-                const fallbacks = clustersSorted.slice(0, 3).map((c: any) => {
-                  if ((c.metrics?.blockers || 0) > 0) return `Unblock: '${c.title}' — ping owner to resolve blockers`;
-                  if ((c.metrics?.decisions || 0) > 0) return `Decide: '${c.title}' — provide approval/decision`;
-                  return `Follow up: '${c.title}' — confirm next steps`;
-                });
-                const deduped = Array.from(new Set([...(actions as string[]), ...fallbacks])).slice(0, 6);
-                return (
-                  <ul className="space-y-1 text-sm text-blue-800">
-                    {deduped.map((a: string, i: number) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <span>{a}</span>
-                      </li>
-                    ))}
-                    {deduped.length === 0 && (
-                      <li className="text-sm text-blue-900/80">No immediate actions detected. Adjust tuning or timeframe.</li>
-                    )}
-                  </ul>
-                );
-              })()}
-            </div>
+          {/* Executive Synthesis - Bold Summary Statement */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200 mb-6">
+            <h3 className="font-bold text-xl text-blue-900 mb-3 flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Executive Intelligence Brief
+            </h3>
+
+            {(() => {
+              // Calculate key metrics for synthesis using master items
+              const totalItems = uniqueItems.length;
+              const urgentItems = uniqueItems.filter(item => item.highest_severity === 'Urgent').length;
+              const highPriorityItems = uniqueItems.filter(item => item.highest_severity === 'High').length;
+              const achievements = uniqueItems.filter(item => item.statuses.has('Achievement')).length;
+              const totalFinancial = uniqueItems.reduce((acc, item) => acc + item.financial_impact, 0);
+
+              // Build synthesis statement
+              const parts = [];
+              if (urgentItems > 0) parts.push(`${urgentItems} urgent blocker${urgentItems > 1 ? 's' : ''}`);
+              if (highPriorityItems > 0) parts.push(`${highPriorityItems} decision${highPriorityItems > 1 ? 's' : ''} pending`);
+              if (achievements > 0) parts.push(`${achievements} achievement${achievements > 1 ? 's' : ''}`);
+
+              const synthesis = parts.length > 0
+                ? `${parts.join(' and ')} ${totalFinancial > 0 ? `totaling $${(totalFinancial / 1000000).toFixed(1)}M` : ''} are your top priorities today.`
+                : `Review ${totalItems} communications for opportunities and risks.`;
+
+              return (
+                <div className="bg-white/70 p-4 rounded-lg border border-blue-100">
+                  <p className="text-lg font-semibold text-blue-800 mb-2">
+                    {synthesis}
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-600">{urgentItems}</div>
+                      <div className="text-gray-600">Urgent Items</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">{highPriorityItems}</div>
+                      <div className="text-gray-600">High Priority</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{achievements}</div>
+                      <div className="text-gray-600">Achievements</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{totalItems}</div>
+                      <div className="text-gray-600">Total Items</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{allClusters.length}</div>
-              <div className="text-sm text-muted-foreground">Topic Clusters</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{individualItems}</div>
-              <div className="text-sm text-muted-foreground">Individual Items</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{emailsProcessed}</div>
-              <div className="text-sm text-muted-foreground">Total Analyzed</div>
-            </div>
+          {/* Decision & Action Required Section - Individual Items First */}
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg border border-orange-200 mb-6">
+            <h3 className="font-bold text-xl text-orange-900 mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Immediate Actions Required
+            </h3>
+
+            {(() => {
+              // Show individual actionable items with their aggregated data
+              const displayedItems = actionableItems.slice(0, 8);
+
+              return (
+                <div className="space-y-3">
+                  {displayedItems.map((item, i) => {
+                    const statusText = Array.from(item.statuses).join('/');
+                    const stakeholdersArray = Array.from(item.stakeholders);
+                    const financialText = item.financial_impact > 0 ? `$${item.financial_impact.toLocaleString()}` : '';
+
+                    return (
+                      <div key={i} className={`p-3 rounded-lg border ${item.highest_severity === 'Urgent' ? 'bg-red-100 border-red-300' : 'bg-orange-100 border-orange-300'}`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 mb-1">{item.title}</div>
+                            <div className="text-sm text-gray-700">
+                              <span className="font-medium">Status:</span> {statusText} {financialText && `| ${financialText}`}
+                            </div>
+                          </div>
+                        </div>
+                        {stakeholdersArray.length > 0 && (
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Contributors:</span> {stakeholdersArray.join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {actionableItems.length === 0 && (
+                    <div className="text-gray-500 italic">No immediate actions identified.</div>
+                  )}
+                  {actionableItems.length > 8 && (
+                    <div className="text-sm text-gray-600 bg-orange-100 p-2 rounded border border-orange-200">
+                      +{actionableItems.length - 8} additional actions requiring attention
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Financial Health Snapshot */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border border-green-200 mb-6">
+            <h3 className="font-bold text-xl text-green-900 mb-4 flex items-center gap-2">
+              <DollarSign className="w-5 h-5" />
+              Financial Health Snapshot
+            </h3>
+
+            {(() => {
+              const achievements = uniqueItems.filter(item => item.statuses.has('Achievement'));
+              const highImpact = achievements.filter(item => item.highest_severity === 'High').length;
+              const totalValue = achievements.reduce((acc, item) => acc + item.financial_impact, 0);
+
+              const decisionItems = uniqueItems.filter(item => item.statuses.has('Decision'));
+              const decisionValue = decisionItems.reduce((acc, item) => acc + item.financial_impact, 0);
+
+              const blockerItems = uniqueItems.filter(item => item.statuses.has('Blocker'));
+              const riskValue = blockerItems.reduce((acc, item) => acc + item.financial_impact, 0);
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white/70 p-4 rounded-lg border border-green-200">
+                    <div className="text-sm font-medium text-green-700 mb-1">Total Achievement Value</div>
+                    <div className="text-2xl font-bold text-green-600">${(totalValue / 1000000).toFixed(1)}M</div>
+                    <div className="text-xs text-gray-600">{achievements.length} achievements</div>
+                  </div>
+
+                  <div className="bg-white/70 p-4 rounded-lg border border-orange-200">
+                    <div className="text-sm font-medium text-orange-700 mb-1">Decisions Pending Value</div>
+                    <div className="text-2xl font-bold text-orange-600">${(decisionValue / 1000000).toFixed(1)}M</div>
+                    <div className="text-xs text-gray-600">{decisionItems.length} decision items</div>
+                  </div>
+
+                  <div className="bg-white/70 p-4 rounded-lg border border-red-200">
+                    <div className="text-sm font-medium text-red-700 mb-1">Items At Risk</div>
+                    <div className="text-2xl font-bold text-red-600">${(riskValue / 1000000).toFixed(1)}M</div>
+                    <div className="text-xs text-gray-600">{blockerItems.length} blocker items</div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </CardContent>
       </Card>
 
-      {/* Winbox - Team Achievements */}
+      {/* Winbox - Team Achievements (Optimized) */}
       {achievementClusters.length > 0 && (
         <Card>
           <CardHeader className="bg-green-50">
             <CardTitle className="flex items-center gap-2 text-green-800">
               <Trophy className="w-5 h-5" />
-              WINBOX - Team Achievements
+              WINBOX - Team Achievements & Momentum
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
-              {achievementClusters.map((achCluster: any) => (
-                achCluster.items && Array.isArray(achCluster.items) && achCluster.items.map((item: any, itemIndex: number) => (
-                  <div key={itemIndex} className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-r-lg shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="bg-green-100 p-2 rounded-full">
-                            <Star className="w-5 h-5 text-green-600" />
-                          </div>
-                          <div>
-                            <span className="font-bold text-gray-900 text-lg">{item.content}</span>
-                            {item.impact_level && (
-                              <Badge className={`ml-2 text-xs ${item.impact_level === 'high' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-blue-100 text-blue-800 border-blue-300'}`}>
-                                {item.impact_level === 'high' ? '🚀 High Impact' : '✨ Notable'}
+            {(() => {
+              // Show only top 2-3 high-impact achievements from master items
+              const highImpactAchievements = uniqueItems
+                .filter(item => item.statuses.has('Achievement') && item.highest_severity === 'High')
+                .slice(0, 2);
+
+              const remainingAchievements = uniqueItems
+                .filter(item => item.statuses.has('Achievement') && item.highest_severity !== 'High')
+                .length;
+
+              return (
+                <div className="space-y-4">
+                  {/* Top High-Impact Achievements */}
+                  {highImpactAchievements.map((item, itemIndex) => (
+                    <div key={itemIndex} className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-r-lg shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-green-100 p-2 rounded-full">
+                              <Star className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                              <span className="font-bold text-gray-900 text-lg">{item.title}</span>
+                              <Badge className="ml-2 text-xs bg-green-100 text-green-800 border-green-300">
+                                🚀 High Impact
                               </Badge>
-                            )}
+                            </div>
                           </div>
-                        </div>
-                        {item.stakeholders && Array.isArray(item.stakeholders) && item.stakeholders.length > 0 && (
-                          <p className="text-sm text-gray-600 mb-2">🎯 <strong>Contributors:</strong> {item.stakeholders.join(', ')}</p>
-                        )}
-                        {item.financial_impact && (
-                          <p className="text-sm text-green-700 font-medium mb-2">💰 <strong>Value:</strong> ${item.financial_impact.toLocaleString()}</p>
-                        )}
-                        <div className="bg-white/60 p-3 rounded-lg border border-green-200">
-                          <p className="text-sm text-gray-700 italic">"This achievement demonstrates exceptional {item.impact_level === 'high' ? 'strategic impact' : 'execution'} and contributes significantly to our goals."</p>
+                          {Array.from(item.stakeholders).length > 0 && (
+                            <p className="text-sm text-gray-600 mb-2">🎯 <strong>Contributors:</strong> {Array.from(item.stakeholders).join(', ')}</p>
+                          )}
+                          {item.financial_impact > 0 && (
+                            <p className="text-sm text-green-700 font-medium mb-2">💰 <strong>Value:</strong> ${item.financial_impact.toLocaleString()}</p>
+                          )}
+                          <div className="bg-white/60 p-3 rounded-lg border border-green-200">
+                            <p className="text-sm text-gray-700 italic">"This achievement demonstrates exceptional strategic impact and contributes significantly to our goals."</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              ))}
-            </div>
-            <div className="mt-4 p-3 bg-green-100 rounded-lg">
-              <p className="text-sm text-green-800 font-medium">💡 Consider sending kudos to recognize these achievements</p>
-            </div>
+                  ))}
+
+                  {/* Summary of remaining achievements */}
+                  {remainingAchievements > 0 && (
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Trophy className="w-4 h-4 text-green-600" />
+                        <span className="font-medium text-green-800">
+                          {remainingAchievements} additional achievement{remainingAchievements > 1 ? 's' : ''} noted across learning and execution
+                        </span>
+                      </div>
+                      <p className="text-sm text-green-700">💡 Consider sending kudos to recognize these contributions</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       )}
 
-      {/* Key Topic Areas (other clusters) */}
+      {/* Key Topic Areas - Contextual Summaries & Coherent Clustering */}
       {otherClusters.length > 0 && (
         <Card>
           <CardHeader>
@@ -890,92 +1336,104 @@ function ClusteredBriefView({ data }: { data: BriefData }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
-              {otherClusters.map((cluster: any, index: number) => (
-                <div key={index} className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                        Topic {index + 1}
+            <div className="space-y-6">
+              {otherClusters.map((cluster: any, index: number) => {
+                // Group items by source/domain for recurring messages
+                const itemsBySource = new Map<string, any[]>();
+                cluster.items?.forEach((item: any) => {
+                  const source = item.from?.email || item.from?.name || 'Unknown';
+                  if (!itemsBySource.has(source)) {
+                    itemsBySource.set(source, []);
+                  }
+                  itemsBySource.get(source)!.push(item);
+                });
+
+                // Generate contextual summary
+                const generateContextualSummary = () => {
+                  const iteratorResult = itemsBySource.values().next();
+                  const firstValue = iteratorResult.value;
+                  if (itemsBySource.size === 1 && firstValue && firstValue.length > 3) {
+                    // Recurring newsletter pattern
+                    const source = Array.from(itemsBySource.keys())[0];
+                    const items = itemsBySource.get(source)!;
+                    const titles = items.map(item => item.subject || item.content).slice(0, 3);
+
+                    return `${source} - Recurring Newsletter (${items.length} items processed): Latest highlights include ${titles.join(', ')}. No business action required.`;
+                  } else {
+                    // Standard cluster summary
+                    return cluster.summary || `${cluster.title || `Topic ${index + 1}`}: ${cluster.items?.length || 0} related items processed.`;
+                  }
+                };
+
+                // Get non-actionable items (not already shown in Immediate Actions)
+                const nonActionableItems = cluster.items?.filter((item: any) => {
+                  const itemKey = item.subject || item.content || item.id;
+                  return !actionableItems.some(actionable => actionable.title === itemKey);
+                }).slice(0, 3) || [];
+
+                return (
+                  <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                          Topic {index + 1}
+                        </Badge>
+                      </div>
+                      <Badge variant="secondary">
+                        {cluster.items?.length || 0} items
                       </Badge>
                     </div>
-                    <Badge variant="secondary">
-                      {cluster.items?.length || 0} items
-                    </Badge>
-                  </div>
 
-                  <h4 className="font-semibold text-lg mb-2 text-gray-900">
-                    {cluster.title || `Topic ${index + 1}`}
-                  </h4>
+                    <h4 className="font-semibold text-lg mb-2 text-gray-900">
+                      {cluster.title || `Topic ${index + 1}`}
+                    </h4>
 
-                  {(() => {
-                    const blk = cluster.metrics?.blockers || 0;
-                    const dec = cluster.metrics?.decisions || 0;
-                    const ach = cluster.metrics?.achievements || 0;
-                    const dates = (cluster.items || []).map((it: any) => it.date).filter(Boolean).map((d: string) => new Date(d).getTime());
-                    const minD = dates.length ? new Date(Math.min(...dates)).toLocaleDateString() : null;
-                    const maxD = dates.length ? new Date(Math.max(...dates)).toLocaleDateString() : null;
-                    const theme = cluster.title || `Topic ${index + 1}`;
-                    const sentiment = ach > 0 && blk === 0 && dec === 0 ? 'running smoothly' : blk > 0 ? 'needs attention' : dec > 0 ? 'awaiting decisions' : 'active';
-                    const range = minD && maxD ? (minD === maxD ? minD : `${minD} – ${maxD}`) : undefined;
-                    const pieces: string[] = [];
-                    if (ach > 0) pieces.push(`${ach} achievement${ach>1?'s':''}`);
-                    if (dec > 0) pieces.push(`${dec} decision${dec>1?'s':''} pending`);
-                    if (blk > 0) pieces.push(`${blk} blocker${blk>1?'s':''}`);
-                    const statusText = pieces.length ? pieces.join(', ') : 'no blockers or decisions pending';
-                    const synthesized = `${theme}: ${sentiment}${statusText ? ` — ${statusText}` : ''}${range ? ` (${range})` : ''}.`;
-                    const line = (cluster.summary && String(cluster.summary).trim().length>0) ? cluster.summary : synthesized;
-                    return (
-                      <div className="mb-3 bg-white p-3 rounded border border-gray-200">
-                        <div className="text-xs font-semibold text-gray-700 mb-1">Summary</div>
-                        <p className="text-gray-700 mb-2 text-sm">{line}</p>
-                        <div className="flex gap-3 text-xs text-gray-600">
-                          <span>Decisions: {dec}</span>
-                          <span>Blockers: {blk}</span>
-                          <span>Achievements: {ach}</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {cluster.items && Array.isArray(cluster.items) && cluster.items.length > 0 && (
-                    <div className="border-t pt-3 mt-3">
-                      <div className="text-sm font-medium text-gray-600 mb-2">Related Items:</div>
-                      <div className="space-y-2">
-                        {cluster.items.slice(0, 3).map((item: any, itemIndex: number) => (
-                          <div key={itemIndex} className="text-sm bg-white p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
-                            <div className="flex items-start gap-2 mb-2">
-                              <div className="bg-blue-100 p-1 rounded-full flex-shrink-0 mt-0.5">
-                                <MessageSquare className="w-3 h-3 text-blue-600" />
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900 mb-1">{item.subject || item.content}</div>
-                                <div className="text-gray-700 text-xs leading-relaxed">{item.snippet || item.content}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
-                              {item.stakeholders && Array.isArray(item.stakeholders) && item.stakeholders.length > 0 && (
-                                <span>👥 {item.stakeholders.join(', ')}</span>
-                              )}
-                              {item.date && (
-                                <span>📅 {new Date(item.date).toLocaleDateString()}</span>
-                              )}
-                            </div>
-                          </div>
-                        ))} 
-                        {cluster.items.length > 3 && (
-                          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-dashed border-gray-300 hover:bg-gray-100 cursor-pointer transition-colors">
-                            <div className="flex items-center gap-1 justify-center">
-                              <ChevronDown className="w-3 h-3" />
-                              <span>+{cluster.items.length - 3} more items in this topic</span>
-                            </div>
-                          </div>
-                        )}
+                    {/* Contextual Summary */}
+                    <div className="mb-3 bg-white p-3 rounded border border-gray-200">
+                      <div className="text-xs font-semibold text-gray-700 mb-1">Contextual Summary</div>
+                      <p className="text-gray-700 mb-2 text-sm">{generateContextualSummary()}</p>
+                      <div className="flex gap-3 text-xs text-gray-600">
+                        <span>Decisions: {cluster.metrics?.decisions || 0}</span>
+                        <span>Blockers: {cluster.metrics?.blockers || 0}</span>
+                        <span>Achievements: {cluster.metrics?.achievements || 0}</span>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Show non-actionable items if any */}
+                    {nonActionableItems.length > 0 && (
+                      <div className="border-t pt-3 mt-3">
+                        <div className="text-sm font-medium text-gray-600 mb-2">Related Items:</div>
+                        <div className="space-y-2">
+                          {nonActionableItems.map((item: any, itemIndex: number) => (
+                            <div key={itemIndex} className="text-sm bg-white p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                              <div className="flex items-start gap-2 mb-2">
+                                <div className="bg-blue-100 p-1 rounded-full flex-shrink-0 mt-0.5">
+                                  <MessageSquare className="w-3 h-3 text-blue-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900 mb-1">{item.subject || item.content}</div>
+                                  <div className="text-gray-700 text-xs leading-relaxed">{item.snippet || item.content}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                                {Array.from(masterItems.get(item.subject || item.content || item.id)?.stakeholders || []).length > 0 && (
+                                  <span className="flex items-center gap-1">
+                                    <Users className="w-3 h-3" />
+                                    {Array.from(masterItems.get(item.subject || item.content || item.id)?.stakeholders || []).join(', ')}
+                                  </span>
+                                )}
+                                {item.date && (
+                                  <span>📅 {new Date(item.date).toLocaleDateString()}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -1001,10 +1459,10 @@ function ClusteredBriefView({ data }: { data: BriefData }) {
                   <div className="text-xs text-muted-foreground">Total emails processed</div>
                 </div>
               )}
-              {individualItems && (
+              {uniqueItems && (
                 <div>
                   <div className="font-medium text-gray-600">Relevant Signals</div>
-                  <div className="text-lg">{individualItems}</div>
+                  <div className="text-lg">{uniqueItems.length}</div>
                   <div className="text-xs text-muted-foreground">Extracted insights & actions</div>
                 </div>
               )}

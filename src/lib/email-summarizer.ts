@@ -7,14 +7,14 @@ export interface EmailInsight {
   priority: 'high' | 'medium' | 'low';
   hasActionItems: boolean;
   isUrgent: boolean;
-  category: 'strategic' | 'operational' | 'financial' | 'client' | 'people' | 'compliance' | 'decision' | 'personal' | 'notification' | 'marketing' | 'other';
+  category: string; // 'strategic' | 'operational' | 'financial' | 'client' | 'people' | 'compliance' | 'decision' | 'personal' | 'notification' | 'marketing' | 'other';
   subcategory?: string; // More specific categorization
   sentiment: 'positive' | 'neutral' | 'negative';
   actionItems: string[];
   keyTopics: string[];
   responseRequired: boolean;
   executiveLevel: 'c-suite' | 'vp' | 'director' | 'manager' | 'individual'; // Target audience level
-  businessImpact: 'high' | 'medium' | 'low'; // Potential business impact
+  businessImpact: string; // 'high' | 'medium' | 'low'; // Potential business impact
   deadline?: string;
 }
 
@@ -112,7 +112,7 @@ export function analyzeEmail(email: EmailData): EmailInsight {
   // Enhanced priority determination for executive context
   let priority: 'high' | 'medium' | 'low' = 'medium';
   
-  if (isUrgent || businessImpact === 'high' || 
+  if (isUrgent || (businessImpact as string) === 'high' || 
       category === 'strategic' || category === 'compliance' ||
       (category === 'client' && text.includes('escalation')) ||
       (category === 'financial' && text.includes('quarterly')) ||
@@ -137,7 +137,7 @@ export function analyzeEmail(email: EmailData): EmailInsight {
                           text.includes('approval') ||
                           text.includes('decision') ||
                           text.includes('?') ||
-                          category === 'decision';
+                        (category as string) === 'decision';
   
   // Extract key topics
   const keyTopics = extractKeyTopics(text);

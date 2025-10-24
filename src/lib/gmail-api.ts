@@ -7,6 +7,7 @@ interface GmailMessage {
   labelIds: string[];
   snippet: string;
   payload: {
+    mimeType: string;
     headers: Array<{ name: string; value: string }>;
     body?: { data?: string };
     parts?: Array<{

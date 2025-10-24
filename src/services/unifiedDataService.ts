@@ -186,7 +186,7 @@ export async function fetchUnifiedData(_userId?: string, _opts: FetchUnifiedOpti
   };
 
   // Choose endpoint based on use case
-  if (useCase === 'brief') {
+  if ((useCase as string) === 'brief') {
     // For briefs: Use enhanced streaming API for better performance and scalability
     console.log(`🔄 Using enhanced streaming API for brief generation with user: ${_userId}`);
 

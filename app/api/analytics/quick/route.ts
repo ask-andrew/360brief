@@ -131,45 +131,28 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (user) {
-      console.log('🔍 Quick analytics: User authenticated, trying real data');
-    } else {
-      console.log('🔍 Quick analytics: No authenticated user, will use fallback');
+    if (!user) {
+        console.log('🔍 Quick analytics: No authenticated user, will use fallback');
+        return NextResponse.json({
+            ...realDataSample,
+            dataSource: 'fallback',
+            message: 'Fallback data for demo'
+        });
     }
 
-    // Redirect real data requests to the main analytics endpoint which handles Gmail directly
-    console.log('🔄 Redirecting real data request to main analytics endpoint');
-    console.log('🔍 Quick endpoint debug:', {
-      hasCookies: !!request.headers.get('cookie'),
-      cookiePreview: request.headers.get('cookie')?.substring(0, 50) + '...',
-      origin: request.nextUrl.origin
-    });
-    
+    console.log(`🔍 Quick analytics: User authenticated, trying real data for user ${user.id}`);
+
     try {
-      const origin = request.nextUrl.origin;
+      const pythonApiUrl = `http://localhost:8000/analytics?use_real_data=true&user_id=${user.id}`;
       
-      // Forward all relevant headers to preserve authentication context
-      const forwardHeaders: HeadersInit = {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-      };
-      
-      // Forward authentication-related headers
-      if (request.headers.get('cookie')) {
-        forwardHeaders['Cookie'] = request.headers.get('cookie')!;
-      }
-      if (request.headers.get('authorization')) {
-        forwardHeaders['Authorization'] = request.headers.get('authorization')!;
-      }
-      if (request.headers.get('user-agent')) {
-        forwardHeaders['User-Agent'] = request.headers.get('user-agent')!;
-      }
-      
-      console.log('🔄 Forwarding headers:', Object.keys(forwardHeaders));
-      
-      const response = await fetch(`${origin}/api/analytics?use_real_data=true`, {
+      console.log(`🔄 Forwarding request to Python service: ${pythonApiUrl}`);
+
+      const response = await fetch(pythonApiUrl, {
         method: 'GET',
-        headers: forwardHeaders,
+        headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+        },
       });
 
       if (response.ok) {
@@ -181,9 +164,9 @@ export async function GET(request: NextRequest) {
         
         return NextResponse.json({
           ...realData,
-          dataSource: 'gmail_real',
+          dataSource: 'python_real',
           cached: false,
-          message: `Real Gmail data: ${realData.processing_metadata?.message_count || 'N/A'} messages analyzed`
+          message: `Real data from Python service: ${realData.total_count || 'N/A'} items analyzed`
         });
       } else {
         let errorData;
@@ -192,12 +175,12 @@ export async function GET(request: NextRequest) {
         } catch {
           errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
         }
-        console.error('❌ Main analytics endpoint failed:', errorData);
-        throw new Error(errorData.error || 'Main analytics endpoint failed');
+        console.error('❌ Python analytics service failed:', errorData);
+        throw new Error(errorData.detail || 'Python analytics service failed');
       }
     } catch (fetchError) {
-      console.error('❌ Failed to fetch from main analytics endpoint:', fetchError);
-      throw new Error(`Real Gmail data unavailable: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+      console.error('❌ Failed to fetch from Python analytics service:', fetchError);
+      throw new Error(`Real data unavailable: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
     }
 
   } catch (error) {

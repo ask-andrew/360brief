@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       rls_policies_exist: false,
       functions_exist: false,
       indexes_exist: false,
-      errors: []
+      errors: [] as string[]
     };
 
     // Check 1: user_preferences table extensions

@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+import { pageview } from '@/lib/gtag';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,6 +13,12 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (pathname) {
+      pageview(new URL(pathname, window.location.origin));
+    }
+  }, [pathname]);
 
   // Protect routes that require authentication
   useEffect(() => {

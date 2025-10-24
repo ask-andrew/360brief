@@ -3,8 +3,8 @@ import { nlpEnhancedEmailData } from '@/mocks/nlpEnhancedEmailData';
 import { generateStyledBrief } from '@/server/briefs/generateBrief';
 
 test.describe('NLP Enhanced Brief Generation', () => {
-  test('should generate a mission brief with NLP insights', () => {
-    const briefData = generateStyledBrief(nlpEnhancedEmailData, 'mission_brief');
+  test('should generate a mission brief with NLP insights', async () => {
+    const briefData = await generateStyledBrief(nlpEnhancedEmailData, 'mission_brief');
     
     // Validate overall brief structure
     expect(briefData).toBeDefined();
@@ -29,9 +29,9 @@ test.describe('NLP Enhanced Brief Generation', () => {
     expect(immediateActions[0].priority).toBeDefined();
   });
 
-  test('should handle different brief styles with NLP insights', () => {
-    const startupBrief = generateStyledBrief(nlpEnhancedEmailData, 'startup_velocity');
-    const consultingBrief = generateStyledBrief(nlpEnhancedEmailData, 'management_consulting');
+  test('should handle different brief styles with NLP insights', async () => {
+    const startupBrief = await generateStyledBrief(nlpEnhancedEmailData, 'startup_velocity');
+    const consultingBrief = await generateStyledBrief(nlpEnhancedEmailData, 'management_consulting');
     
     expect(startupBrief.style).toBe('startup_velocity');
     expect(consultingBrief.style).toBe('management_consulting');

@@ -24,7 +24,7 @@ export function Providers({
       defaultTheme={theme}
       enableSystem={enableSystem}
       disableTransitionOnChange={disableTransitionOnChange}
-      suppressColorSchemeWarning
+
     >
       <ToastProvider>
         <AuthProvider>

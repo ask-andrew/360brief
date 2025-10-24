@@ -57,7 +57,7 @@ test.describe('LLM-Free Executive Briefing Flow', () => {
       await gmailButton.click();
       
       // Should redirect to Google OAuth (or mock response)
-      await page.waitForURL(url => url.includes('google') || url.includes('callback'));
+      await page.waitForURL(url => url.toString().includes('google') || url.toString().includes('callback'));
     });
   });
 

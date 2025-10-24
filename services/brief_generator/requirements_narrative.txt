@@ -1,0 +1,31 @@
+"""
+Requirements for Enhanced Narrative Brief System
+"""
+
+# Core dependencies
+fastapi>=0.104.0
+pydantic>=2.5.0
+uvicorn[standard]>=0.24.0
+
+# Data processing and NLP
+python-dotenv>=1.0.0
+regex>=2023.10.3
+
+# Optional: Enhanced NLP (if needed for advanced features)
+# spacy>=3.7.0  # For advanced NER and coreference resolution
+# nltk>=3.8.1   # For tokenization and stemming
+
+# HTTP client for external APIs
+httpx>=0.25.0
+
+# Google Gemini API
+google-generativeai>=0.3.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Development and linting
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0

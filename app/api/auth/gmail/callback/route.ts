@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error listing users:', {
         code: listError.code,
         message: listError.message,
-        details: listError.details,
+
       });
     }
     
@@ -99,8 +99,7 @@ export async function GET(request: NextRequest) {
         console.error('❌ Failed to create Supabase user:', {
           code: createError.code,
           message: createError.message,
-          details: createError.details,
-          hint: createError.hint,
+
           email: googleUser.email,
         });
         throw new Error(`Failed to create user account: ${createError.message}`);
@@ -176,8 +175,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Token insert error:', {
         code: tokenError.code,
         message: tokenError.message,
-        details: tokenError.details,
-        hint: tokenError.hint,
+
       });
       
       redirectUrl.searchParams.set('auth', 'error');

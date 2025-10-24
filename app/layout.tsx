@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Poiret_One } from 'next/font/google';
 import './globals.css';
 import { ClientLayoutWrapper } from '@/components/layout/ClientLayoutWrapper';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${poiretOne.variable} h-full`} suppressHydrationWarning>
       <body className={`${inter.className} flex flex-col min-h-full`}>
         <ClientLayoutWrapper>
+          <GoogleAnalytics />
           {children}
         </ClientLayoutWrapper>
       </body>
