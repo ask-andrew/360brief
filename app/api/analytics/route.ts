@@ -78,6 +78,76 @@ function extractTopProjects(data: any[]): Array<{name: string, messageCount: num
     .map(([name, messageCount]) => ({ name, messageCount }));
 }
 
+// Helper function to calculate reply times
+function calculateReplyTimes(messages: any[], userEmail: string): number[] {
+  const replyTimes: number[] = [];
+  const threads: { [threadId: string]: any[] } = {};
+
+  // Group messages by threadId
+  messages.forEach(msg => {
+    if (msg.threadId) {
+      if (!threads[msg.threadId]) {
+        threads[msg.threadId] = [];
+      }
+      threads[msg.threadId].push(msg);
+    }
+  });
+
+  for (const threadId in threads) {
+    const threadMessages = threads[threadId].sort((a: any, b: any) => parseInt(a.internalDate) - parseInt(b.internalDate));
+
+    let executiveLastOutgoing: any = null;
+    let lastIncomingToExecutive: any = null;
+
+    threadMessages.forEach((msg: any) => {
+      const headers = msg.payload?.headers || [];
+      const fromHeader = headers.find((h: any) => h.name === 'From');
+      const toHeader = headers.find((h: any) => h.name === 'To');
+
+      const isOutgoing = fromHeader?.value.includes(userEmail);
+      const isIncoming = toHeader?.value.includes(userEmail) && !isOutgoing;
+
+      const messageTime = parseInt(msg.internalDate);
+
+      if (isOutgoing) {
+        executiveLastOutgoing = { msg, messageTime };
+        // If there was a previous incoming message, calculate reply time
+        if (lastIncomingToExecutive) {
+          replyTimes.push(messageTime - lastIncomingToExecutive.messageTime);
+          lastIncomingToExecutive = null; // Reset after reply
+        }
+      } else if (isIncoming) {
+        lastIncomingToExecutive = { msg, messageTime };
+        // If executive had sent a message, calculate reply time
+        if (executiveLastOutgoing) {
+          replyTimes.push(messageTime - executiveLastOutgoing.messageTime);
+          executiveLastOutgoing = null; // Reset after reply
+        }
+      }
+    });
+  }
+
+  // Convert milliseconds to minutes
+  return replyTimes.map(time => Math.round(time / (1000 * 60)));
+}
+
+function getPlainTextBody(payload: any): string {
+  if (!payload || !payload.parts) {
+    return payload?.body?.data ? Buffer.from(payload.body.data, 'base64').toString('utf8') : '';
+  }
+
+  for (const part of payload.parts) {
+    if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+      return Buffer.from(part.body.data, 'base64').toString('utf8');
+    }
+    if (part.parts) {
+      const result = getPlainTextBody(part);
+      if (result) return result;
+    }
+  }
+  return '';
+}
+
 // Function to convert Gmail data to analytics format
 function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: string): any {
   const now = new Date();
@@ -90,6 +160,7 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
   const hours: { [key: string]: number } = {};
   let totalInbound = 0;
   let totalOutbound = 0;
+  const threadsData: { [threadId: string]: any[] } = {}; // New object to store messages grouped by thread
   
   data.forEach(item => {
     if (item.platform === 'Google Calendar') {
@@ -149,10 +220,17 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
           // Determine if message is inbound or outbound
           if (toHeader && toHeader.value.includes(userEmail) && !fromHeader.value.includes(userEmail)) {
             totalInbound++;
-          } else if (fromHeader.value.includes(userEmail)) {
-            totalOutbound++;
-          }
-        }
+                } else if (fromHeader.value.includes(userEmail)) {
+                  totalOutbound++;
+                }
+          
+                // Group messages by threadId for later processing
+                if (item.threadId) {
+                  if (!threadsData[item.threadId]) {
+                    threadsData[item.threadId] = [];
+                  }
+                  threadsData[item.threadId].push(item);
+                }        }
       } catch (e) {
         console.error('Error processing message:', e);
       }
@@ -164,8 +242,11 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
     .sort(([,a], [,b]) => b - a)
     .slice(0, 5)
     .map(([sender, count]) => ({ name: sender, count }));
-    
-  // Calculate peak hour
+
+  const emailMessages = data.filter(item => item.platform !== 'Google Calendar');
+  const replyTimes = calculateReplyTimes(emailMessages, userEmail);
+  const avgReplyTime = replyTimes.length > 0 ? replyTimes.reduce((sum, time) => sum + time, 0) / replyTimes.length : 0;
+
   const peakHour = Object.entries(hours).reduce((a, b) => a[1] > b[1] ? a : b, ['12', 0])[0];
   
   // Calculate external vs internal percentage
@@ -187,13 +268,14 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
     total_count: totalCount,
     inbound_count: totalInbound,
     outbound_count: totalOutbound,
-    avg_response_time_minutes: calculateAverageResponseTime(data, userEmail),
+    avg_response_time_minutes: avgReplyTime,
     missed_messages: 0, // This would require tracking read status
     focus_ratio: focusRatio,
     external_percentage: externalPercentage,
     internal_percentage: internalPercentage,
     top_projects: extractTopProjects(data),
     reconnect_contacts: [], // This would require tracking contacts
+    threads_summary: threadsData, // New field for thread-level data
     message_distribution: {
       by_day: Object.entries(dailyCounts).map(([date, count]) => ({ date, count })),
       by_sender: topSenders
@@ -216,7 +298,8 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
     recent_trends: {
       messages: { change: 0, direction: 'up' as const },
       response_time: { change: 0, direction: 'down' as const },
-      meetings: { change: 0, direction: 'up' as const }
+      meetings: { change: 0, direction: 'up' as const },
+      avg_reply_time: avgReplyTime // Add avgReplyTime here
     },
     priority_messages: {
       awaiting_my_reply: [], // This would require tracking message threads
@@ -375,7 +458,7 @@ export async function GET(request: NextRequest) {
             const meta = await gmail.users.messages.get({
               userId: 'me',
               id: item.id!,
-              format: 'metadata',
+              format: 'full', // Fetch full message for sentiment analysis
               metadataHeaders: ['From', 'To', 'Subject', 'Date']
             });
             // Client-side filters similar to briefs
@@ -398,15 +481,15 @@ export async function GET(request: NextRequest) {
             if (pass.skipNoreply && isNoreply) continue;
 
             // Keep metadata shape expected by convertGmailToAnalytics
-            const normalized = {
-              id: meta.data.id,
-              threadId: meta.data.threadId,
-              labelIds: meta.data.labelIds || [],
-              snippet: meta.data.snippet || '',
-              internalDate: String(date.getTime()),
-              payload: { headers: headers as any }
-            };
-            messages.push(normalized);
+                      const normalized = {
+                        id: meta.data.id,
+                        threadId: meta.data.threadId,
+                        labelIds: meta.data.labelIds || [],
+                        snippet: meta.data.snippet || '',
+                        internalDate: String(date.getTime()),
+                        payload: { headers: headers as any },
+                        body: getPlainTextBody(meta.data.payload) // Add full body for sentiment analysis
+                      };            messages.push(normalized);
             processed++;
             if (listed.length > 1) await new Promise(r => setTimeout(r, 60));
           } catch (e) {
