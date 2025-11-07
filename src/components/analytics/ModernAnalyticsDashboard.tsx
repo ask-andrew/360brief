@@ -137,6 +137,44 @@ const mockAnalyticsData = {
   }
 };
 
+// Zero-value analytics used only to keep UI shape safe when real data is unavailable
+const zeroAnalyticsData = {
+  total_count: 0,
+  inbound_count: 0,
+  outbound_count: 0,
+  avg_response_time_minutes: 0,
+  missed_messages: 0,
+  focus_ratio: 0,
+  external_percentage: 0,
+  internal_percentage: 0,
+  top_projects: [] as Array<{ name: string; messageCount?: number }>,
+  reconnect_contacts: [] as Array<{ name: string; role?: string; days?: number; email?: string }>,
+  recent_trends: {
+    messages: { change: 0, direction: 'up' as const },
+    response_time: { change: 0, direction: 'up' as const },
+    meetings: { change: 0, direction: 'up' as const }
+  },
+  sentiment_analysis: {
+    positive: 0,
+    neutral: 0,
+    negative: 0,
+    overall_trend: 'neutral' as const
+  },
+  priority_messages: {
+    awaiting_my_reply: [] as any[],
+    awaiting_their_reply: [] as any[]
+  },
+  channel_analytics: {
+    by_channel: [ { name: 'Email', count: 0, percentage: 100 } ],
+    by_time: [ { hour: '', count: 0 } ] as Array<{ hour: string; count: number }>
+  },
+  message_distribution: {
+    by_day: [] as Array<{ date: string; count: number }>,
+    by_sender: [] as Array<{ sender: string; count: number }>
+  },
+  network_data: { nodes: [] as any[], connections: [] as any[] },
+};
+
 interface AnalyticsMetricCardProps {
   title: string;
   value: string | number;
@@ -198,10 +236,6 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
           <div className="p-3 bg-primary/10 rounded-lg">
             <Icon className="w-6 h-6 text-primary" />
           </div>
-          {/* Email Sender Analytics */}
-          <div className="mt-6">
-            <EmailSenderAnalytics />
-          </div>
         </div>
       </CardContent>
     </Card>
@@ -210,13 +244,14 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
 
 // API Data fetching hook
 function useAnalyticsData(isDemo: boolean) {
-  const [data, setData] = useState(mockAnalyticsData);
+  const [data, setData] = useState(zeroAnalyticsData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isDemo) {
-      setData(mockAnalyticsData);
+      // Do not show mock data; keep zero data and allow toggling back to real
+      setData(zeroAnalyticsData);
       setLoading(false);
       setError(null);
       return;
@@ -228,62 +263,43 @@ function useAnalyticsData(isDemo: boolean) {
       setError(null);
       
       try {
-        // Check if Gmail is connected
-        const authResponse = await fetch('/api/auth/gmail/status');
-        const authStatus = await authResponse.json();
-        
-        if (!authStatus.authenticated) {
-          let errorMessage = 'Gmail not connected. Please connect your Gmail account to view real data.';
-          if (authStatus.expired) {
-            errorMessage = 'Gmail connection expired. Please reconnect your Gmail account.';
-          } else if (authStatus.error) {
-            errorMessage = `Gmail authentication issue: ${authStatus.error}`;
-          }
-          setError(errorMessage);
-          setData(mockAnalyticsData);
-          setLoading(false);
-          return;
-        }
-        
-        console.log('✅ Gmail authenticated, fetching real analytics data...');
-        
-        // Fetch real data with Gmail integration - use simple test endpoint first
-        const response = await fetch('/api/analytics-simple');
+        // Fetch real analytics (server returns 401/409/5xx as appropriate)
+        const response = await fetch('/api/analytics');
+
         if (response.ok) {
           const apiData = await response.json();
-          console.log('✅ Real analytics data received:', {
-            dataSource: apiData.dataSource,
-            totalCount: apiData.total_count,
-            message: apiData.message,
-            cached: apiData.cached,
-            processing: apiData.processing,
-            fullData: apiData
-          });
-          
-          // Handle processing status - retry after delay
-          if (apiData.processing && apiData.status === 'processing') {
-            console.log('⏳ Analytics still processing, will retry in 5 seconds...');
-            setData({
-              ...apiData,
-              message: apiData.message || 'Processing your Gmail data...'
-            });
-            
-            // Retry after 5 seconds
-            setTimeout(() => {
-              checkAuthAndFetchData();
-            }, 5000);
-            return;
-          }
-          
-          setData(apiData);
+          // Normalize by_time to include 'hour' for UI compatibility
+          const normalizedByTime = (apiData?.channel_analytics?.by_time || []).map((t: any) => ({
+            hour: t?.hour ?? t?.date ?? '',
+            count: t?.count ?? 0,
+          }));
+
+          const merged = {
+            ...zeroAnalyticsData,
+            ...apiData,
+            sentiment_analysis: apiData?.sentiment_analysis ?? zeroAnalyticsData.sentiment_analysis,
+            priority_messages: {
+              awaiting_my_reply: apiData?.priority_messages?.awaiting_my_reply ?? [],
+              awaiting_their_reply: apiData?.priority_messages?.awaiting_their_reply ?? [],
+            },
+            channel_analytics: {
+              by_channel: (apiData?.channel_analytics?.by_channel && apiData.channel_analytics.by_channel.length > 0) ? apiData.channel_analytics.by_channel : zeroAnalyticsData.channel_analytics.by_channel,
+              by_time: normalizedByTime.length ? normalizedByTime : zeroAnalyticsData.channel_analytics.by_time,
+            },
+            top_projects: apiData?.top_projects ?? [],
+            message_distribution: {
+              by_day: apiData?.message_distribution?.by_day ?? [],
+              by_sender: apiData?.message_distribution?.by_sender ?? [],
+            },
+          };
+
+          console.log('✅ Real analytics data received:', { dataSource: merged.dataSource, totalCount: merged.total_count });
+          setData(merged);
         } else if (response.status === 202) {
           // Handle HTTP 202 Processing
           const processingData = await response.json();
           console.log('⏳ Analytics processing (HTTP 202), retrying in 5 seconds...');
-          setData({
-            ...processingData,
-            message: processingData.message || 'Processing your Gmail data...'
-          });
+          setData(zeroAnalyticsData);
           
           setTimeout(() => {
             checkAuthAndFetchData();
@@ -296,7 +312,7 @@ function useAnalyticsData(isDemo: boolean) {
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
-        setData(mockAnalyticsData);
+        setData(zeroAnalyticsData);
       } finally {
         setLoading(false);
       }
@@ -758,7 +774,7 @@ export function ModernAnalyticsDashboard() {
 
         <TabsContent value="communication" className="space-y-6">
           {/* Email Sender Analytics */}
-          <EmailSenderAnalytics />
+          <EmailSenderAnalytics senders={data.message_distribution.by_sender} />
           
           {/* Priority Messages Section */}
           <Card>
