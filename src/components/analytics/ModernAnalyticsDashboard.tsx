@@ -36,6 +36,8 @@ import {
 } from 'lucide-react';
 import { EmailSenderAnalytics } from './EmailSenderAnalytics';
 
+type SentimentTrend = 'positive' | 'neutral' | 'negative';
+
 // Mock data - same structure as your existing analytics but simplified
 const mockAnalyticsData = {
   total_count: 1247,
@@ -158,7 +160,7 @@ const zeroAnalyticsData = {
     positive: 0,
     neutral: 0,
     negative: 0,
-    overall_trend: 'neutral' as const
+    overall_trend: 'neutral' as SentimentTrend
   },
   priority_messages: {
     awaiting_my_reply: [] as any[],
@@ -170,7 +172,7 @@ const zeroAnalyticsData = {
   },
   message_distribution: {
     by_day: [] as Array<{ date: string; count: number }>,
-    by_sender: [] as Array<{ sender: string; count: number }>
+    by_sender: [] as Array<{ name: string; count: number }>
   },
   network_data: { nodes: [] as any[], connections: [] as any[] },
 };
@@ -262,9 +264,19 @@ function useAnalyticsData(isDemo: boolean) {
       setLoading(true);
       setError(null);
       
+      let fetchTimeout: ReturnType<typeof setTimeout> | undefined;
+      const doFetch = async (timeoutMs: number) => {
+        const controller = new AbortController();
+        fetchTimeout = setTimeout(() => controller.abort(), timeoutMs);
+        return fetch(`/api/analytics?ts=${Date.now()}` as const, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+      };
+
       try {
-        // Fetch real analytics (server returns 401/409/5xx as appropriate)
-        const response = await fetch('/api/analytics');
+        // first attempt (120s)
+        let response = await doFetch(120_000);
 
         if (response.ok) {
           const apiData = await response.json();
@@ -293,14 +305,19 @@ function useAnalyticsData(isDemo: boolean) {
             },
           };
 
-          console.log('✅ Real analytics data received:', { dataSource: merged.dataSource, totalCount: merged.total_count });
+          console.log('✅ Real analytics data received:', { dataSource: merged.dataSource, totalCount: (apiData?.totalCount ?? merged.total_count) });
           setData(merged);
         } else if (response.status === 202) {
           // Handle HTTP 202 Processing
           const processingData = await response.json();
           console.log('⏳ Analytics processing (HTTP 202), retrying in 5 seconds...');
           setData(zeroAnalyticsData);
-          
+          // Clear timeout and end current loading cycle before scheduling retry
+          if (fetchTimeout) {
+            clearTimeout(fetchTimeout);
+          }
+          setLoading(false);
+
           setTimeout(() => {
             checkAuthAndFetchData();
           }, 5000);
@@ -311,9 +328,59 @@ function useAnalyticsData(isDemo: boolean) {
           throw new Error(errorData.error || `Failed to fetch analytics data (${response.status})`);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        setData(zeroAnalyticsData);
+        // Ensure timeout is cleared
+        // eslint-disable-next-line no-console
+        console.warn('Analytics fetch failed:', err);
+        // One graceful retry if aborted
+        const isAbort = (err as any)?.name === 'AbortError';
+        if (isAbort) {
+          try {
+            let response = await doFetch(120_000);
+            if (response.ok) {
+              const apiData = await response.json();
+              const normalizedByTime = (apiData?.channel_analytics?.by_time || []).map((t: any) => ({
+                hour: t?.hour ?? t?.date ?? '',
+                count: t?.count ?? 0,
+              }));
+              const merged = {
+                ...zeroAnalyticsData,
+                ...apiData,
+                sentiment_analysis: apiData?.sentiment_analysis ?? zeroAnalyticsData.sentiment_analysis,
+                priority_messages: {
+                  awaiting_my_reply: apiData?.priority_messages?.awaiting_my_reply ?? [],
+                  awaiting_their_reply: apiData?.priority_messages?.awaiting_their_reply ?? [],
+                },
+                channel_analytics: {
+                  by_channel: (apiData?.channel_analytics?.by_channel && apiData.channel_analytics.by_channel.length > 0) ? apiData.channel_analytics.by_channel : zeroAnalyticsData.channel_analytics.by_channel,
+                  by_time: normalizedByTime.length ? normalizedByTime : zeroAnalyticsData.channel_analytics.by_time,
+                },
+                top_projects: apiData?.top_projects ?? [],
+                message_distribution: {
+                  by_day: apiData?.message_distribution?.by_day ?? [],
+                  by_sender: apiData?.message_distribution?.by_sender ?? [],
+                },
+              };
+              console.log('✅ Real analytics data received (retry):', { dataSource: merged.dataSource, totalCount: (apiData?.totalCount ?? merged.total_count) });
+              setData(merged);
+              setError(null);
+            } else {
+              const errorData = await response.json();
+              throw new Error(errorData.error || `Failed to fetch analytics data (${response.status})`);
+            }
+          } catch (retryErr) {
+            console.warn('Analytics fetch retry failed:', retryErr);
+            setError(retryErr instanceof Error ? retryErr.message : 'Unknown error');
+            setData(zeroAnalyticsData);
+          }
+        } else {
+          setError(err instanceof Error ? err.message : 'Unknown error');
+          setData(zeroAnalyticsData);
+        }
       } finally {
+        // Clear the timeout if it hasn't fired
+        if (fetchTimeout) {
+          clearTimeout(fetchTimeout);
+        }
         setLoading(false);
       }
     };
