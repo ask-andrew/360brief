@@ -1,7 +1,9 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { ModernAnalyticsDashboard } from '@/components/analytics/ModernAnalyticsDashboard';
+import ExecutiveDashboard from '@/components/analytics/ExecutiveDashboard';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function AnalyticsLoading() {
   return (
@@ -21,9 +23,26 @@ function AnalyticsLoading() {
 }
 
 export default function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState('executive');
+
   return (
-    <Suspense fallback={<AnalyticsLoading />}>
-      <ModernAnalyticsDashboard />
-    </Suspense>
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <Tabs 
+          value={activeTab} 
+          onValueChange={setActiveTab}
+          className="w-[400px]"
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="executive">Executive View</TabsTrigger>
+            <TabsTrigger value="detailed">Detailed Analytics</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+      
+      <Suspense fallback={<AnalyticsLoading />}>
+        {activeTab === 'executive' ? <ExecutiveDashboard /> : <ModernAnalyticsDashboard />}
+      </Suspense>
+    </div>
   );
 }
