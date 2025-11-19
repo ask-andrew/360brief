@@ -13,8 +13,10 @@ import {
   Clock,
   Activity,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  MessageSquare
 } from 'lucide-react';
+import CommunicationPatterns from '@/components/analytics/CommunicationPatterns';
 import { useAuth } from '@/contexts/AuthContext';
 import { ServiceConnectionCard } from './ServiceConnectionCard';
 import { BriefGenerationCard } from './BriefGenerationCard';
@@ -532,6 +534,28 @@ export function EnhancedDashboard() {
                     <Badge variant="outline" className="text-xs">Calendar</Badge>
                   )}
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Communication Patterns - Only show if Gmail is connected */}
+      {gmailStatus.connected && (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Communication Patterns
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Insights from your email communication over the past 2 weeks
+              </p>
+              <div className="rounded-lg border">
+                <CommunicationPatterns />
               </div>
             </div>
           </CardContent>
