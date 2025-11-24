@@ -31,9 +31,12 @@ interface Message {
 }
 
 interface SentimentData {
-  positive: number;
-  neutral: number;
-  negative: number;
+  positive: number; // percentage
+  neutral: number;  // percentage
+  negative: number; // percentage
+  positive_count?: number;
+  neutral_count?: number;
+  negative_count?: number;
   overall_trend?: 'positive' | 'neutral' | 'negative' | string;
   sentiment_scores?: number[];
   negative_messages?: Array<{
@@ -189,17 +192,29 @@ export function SentimentInsights({ messages }: SentimentInsightsProps) {
       { 
         name: 'Positive', 
         Sent: sentMessagesSentiment.positive, 
-        Received: receivedMessagesSentiment.positive 
+        Received: receivedMessagesSentiment.positive,
+        SentCount: sentMessagesSentiment.positive_count || 0,
+        ReceivedCount: receivedMessagesSentiment.positive_count || 0,
+        totalSent: sentMessagesSentiment.total || 0,
+        totalReceived: receivedMessagesSentiment.total || 0
       },
       { 
         name: 'Neutral', 
         Sent: sentMessagesSentiment.neutral, 
-        Received: receivedMessagesSentiment.neutral 
+        Received: receivedMessagesSentiment.neutral,
+        SentCount: sentMessagesSentiment.neutral_count || 0,
+        ReceivedCount: receivedMessagesSentiment.neutral_count || 0,
+        totalSent: sentMessagesSentiment.total || 0,
+        totalReceived: receivedMessagesSentiment.total || 0
       },
       { 
         name: 'Negative', 
         Sent: sentMessagesSentiment.negative, 
-        Received: receivedMessagesSentiment.negative 
+        Received: receivedMessagesSentiment.negative,
+        SentCount: sentMessagesSentiment.negative_count || 0,
+        ReceivedCount: receivedMessagesSentiment.negative_count || 0,
+        totalSent: sentMessagesSentiment.total || 0,
+        totalReceived: receivedMessagesSentiment.total || 0
       }
     ];
   }, [sentMessagesSentiment, receivedMessagesSentiment]);
@@ -208,9 +223,24 @@ export function SentimentInsights({ messages }: SentimentInsightsProps) {
     if (!activeData) return [];
     
     return [
-      { name: 'Positive', value: activeData.positive },
-      { name: 'Neutral', value: activeData.neutral },
-      { name: 'Negative', value: activeData.negative }
+      { 
+        name: 'Positive', 
+        value: activeData.positive,
+        count: activeData.positive_count || 0,
+        total: activeData.total || 0
+      },
+      { 
+        name: 'Neutral', 
+        value: activeData.neutral,
+        count: activeData.neutral_count || 0,
+        total: activeData.total || 0
+      },
+      { 
+        name: 'Negative', 
+        value: activeData.negative,
+        count: activeData.negative_count || 0,
+        total: activeData.total || 0
+      }
     ];
   }, [activeData]);
 
@@ -347,7 +377,11 @@ export function SentimentInsights({ messages }: SentimentInsightsProps) {
                       domain={[0, 100]}
                     />
                     <Tooltip 
-                      formatter={(value: number) => [`${value}%`, '']}
+                      formatter={(value: number, name: string, props: any) => {
+                        const count = props.payload.count || 0;
+                        const total = props.payload.total || 0;
+                        return [`${value}% (${count} of ${total})`, name];
+                      }}
                       labelFormatter={(label: string) => `${label} Sentiment`}
                     />
                     <Legend />
@@ -374,7 +408,11 @@ export function SentimentInsights({ messages }: SentimentInsightsProps) {
                       domain={[0, 100]}
                     />
                     <Tooltip 
-                      formatter={(value: number) => [`${value}%`, '']}
+                      formatter={(value: number, name: string, props: any) => {
+                        const count = props.payload.count || 0;
+                        const total = props.payload.total || 0;
+                        return [`${value}% (${count} of ${total})`, name];
+                      }}
                       labelFormatter={(label: string) => `${label} Sentiment`}
                     />
                     <Bar
@@ -447,7 +485,11 @@ export function SentimentInsights({ messages }: SentimentInsightsProps) {
                       domain={[0, 100]}
                     />
                     <Tooltip 
-                      formatter={(value: number) => [`${value}%`, '']}
+                      formatter={(value: number, name: string, props: any) => {
+                        const count = props.payload.count || 0;
+                        const total = props.payload.total || 0;
+                        return [`${value}% (${count} of ${total})`, name];
+                      }}
                       labelFormatter={(label: string) => `${label} Sentiment`}
                     />
                     <Bar

@@ -19,6 +19,29 @@ export interface AnalyticsResponse {
   fetch_attempts?: any[];
   totalCount?: number;
   error?: string;
+  // Added fields for dashboard
+  inbound_count?: number;
+  outbound_count?: number;
+  avg_response_time_minutes?: number;
+  channel_analytics?: {
+    by_channel: Array<{ name: string; count: number; percentage: number }>;
+    by_time: Array<{ hour: string; count: number }>;
+  };
+  message_distribution?: {
+    by_day: Array<{ date: string; count: number }>;
+    by_sender: Array<{ name: string; count: number }>;
+  };
+  top_projects?: Array<{ name: string; messageCount: number }>;
+  priority_messages?: {
+    awaiting_my_reply: any[];
+    awaiting_their_reply: any[];
+  };
+  sentiment_analysis?: {
+    positive: number;
+    neutral: number;
+    negative: number;
+    overall_trend: 'positive' | 'neutral' | 'negative';
+  };
 }
 
 export interface AnalyticsRequestParams {
@@ -38,6 +61,7 @@ export interface GmailMessage {
   payload?: {
     headers?: Array<{ name: string; value: string }>;
     parts?: any[];
+    body?: { data?: string; size?: number };
   };
   internalDate?: string;
 }
@@ -47,14 +71,14 @@ export interface CalendarEvent {
   summary?: string;
   start?: { dateTime?: string; date?: string };
   end?: { dateTime?: string; date?: string };
-  attendees?: Array<{ 
-    email?: string; 
+  attendees?: Array<{
+    email?: string;
     displayName?: string;
     responseStatus?: string;
     self?: boolean;
   }>;
-  organizer?: { 
-    email?: string; 
+  organizer?: {
+    email?: string;
     displayName?: string;
     self?: boolean;
   };

@@ -31,34 +31,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshAuth = useCallback(async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       
-      console.log('🔄 Refreshing auth state...')
+      console.log('🔄 Refreshing auth state...');
       
-      // Get current session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Auth refresh timeout after 5s')), 5000)
+      );
+      
+      const sessionPromise = supabase.auth.getSession();
+      
+      // Race between session fetch and timeout
+      const { data: { session }, error: sessionError } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as Awaited<ReturnType<typeof supabase.auth.getSession>>;
       
       if (sessionError) {
-        console.error('❌ Session error:', sessionError)
-        throw sessionError
+        console.error('❌ Session error:', sessionError);
+        throw sessionError;
       }
       
-      console.log('✅ Session retrieved:', session ? 'Found' : 'None')
+      console.log('✅ Session retrieved:', session ? 'Found' : 'None');
       
-      setSession(session)
-      setUser(session?.user ?? null)
+      setSession(session);
+      setUser(session?.user ?? null);
       
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown auth error'
-      console.error('❌ Auth refresh error:', errorMessage)
-      setError(errorMessage)
-      setSession(null)
-      setUser(null)
+      const errorMessage = err instanceof Error ? err.message : 'Unknown auth error';
+      console.error('❌ Auth refresh error:', errorMessage);
+      
+      // Don't set error for timeout - just proceed without session
+      if (errorMessage.includes('timeout')) {
+        console.warn('⚠️ Auth refresh timed out, proceeding without session');
+      } else {
+        setError(errorMessage);
+      }
+      
+      setSession(null);
+      setUser(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [supabase])
+  }, [supabase]);
 
   useEffect(() => {
     // Initial auth state check

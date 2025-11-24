@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     // Exchange code for tokens using direct Next.js implementation
     const tokens = await exchangeCodeForTokens(code);
-    
+
     if (!tokens.access_token || !tokens.refresh_token) {
       throw new Error('Invalid tokens received from Google');
     }
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     // Get current user
     const supabase = await createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+
     if (userError || !user) {
       throw new Error('User not authenticated');
     }
@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
     // Ensure profile exists
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .upsert({ 
-        id: user.id, 
+      .upsert({
+        id: user.id,
         email: user.email || '',
         // Add any other default profile fields here 
       })
@@ -65,23 +65,23 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    
+
     const tokenData = {
       user_id: user.id,
       provider: 'google',
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
-      expires_at: tokens.expiry_date ? Math.floor(tokens.expiry_date / 1000) : null, // Convert Google's milliseconds to Unix seconds
-      updated_at: Math.floor(Date.now() / 1000), // Store as Unix timestamp
+      expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null, // Convert to ISO timestamp
+      updated_at: new Date().toISOString(), // Store as ISO timestamp
     };
-    
+
     console.log(`🔍 Storing token data:`, {
       user_id: tokenData.user_id,
       provider: tokenData.provider,
       expires_at: tokenData.expires_at,
       expires_raw: tokens.expiry_date,
     });
-    
+
     const { data: insertData, error: tokenError } = await serviceSupabase
       .from('user_tokens')
       .upsert(tokenData, {
@@ -91,11 +91,14 @@ export async function GET(request: NextRequest) {
 
     if (tokenError) {
       console.error('❌ Token insert error:', tokenError);
-      
+      console.error('❌ Token error details:', JSON.stringify(tokenError, null, 2));
+      console.error('❌ Token data attempted:', JSON.stringify(tokenData, null, 2));
+      console.error('❌ Service role key present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+
       // More specific error handling for common issues
       if (tokenError.code === '23505') {
         console.log('🔄 Duplicate key error - attempting direct update...');
-        
+
         // Try direct update instead of upsert
         const { error: updateError } = await serviceSupabase
           .from('user_tokens')
@@ -103,38 +106,39 @@ export async function GET(request: NextRequest) {
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
             expires_at: tokenData.expires_at,
-            updated_at: Math.floor(Date.now() / 1000), // Store as Unix timestamp
+            updated_at: new Date().toISOString(), // Use ISO timestamp
           })
           .eq('user_id', user.id)
           .eq('provider', 'google');
-          
+
         if (updateError) {
           console.error('❌ Token update also failed:', updateError);
+          console.error('❌ Update error details:', JSON.stringify(updateError, null, 2));
           redirectUrl.searchParams.set('auth', 'error');
-          redirectUrl.searchParams.set('message', 'Failed to save Gmail connection');
+          redirectUrl.searchParams.set('message', `Token storage failed: ${updateError.message || 'Unknown error'}`);
           return NextResponse.redirect(redirectUrl);
         }
-        
+
         console.log('✅ Gmail tokens updated successfully after duplicate error');
       } else {
         redirectUrl.searchParams.set('auth', 'error');
-        redirectUrl.searchParams.set('message', 'Failed to save Gmail connection');
+        redirectUrl.searchParams.set('message', `Token storage failed: ${tokenError.message || 'Unknown database error'}`);
         return NextResponse.redirect(redirectUrl);
       }
     } else {
       console.log('✅ Gmail tokens stored successfully', insertData?.length ? `(${insertData.length} records)` : '');
     }
-    
+
     // Redirect to dashboard with success message
     redirectUrl.searchParams.set('auth', 'success');
     redirectUrl.searchParams.set('message', 'Gmail connected successfully!');
     return NextResponse.redirect(redirectUrl);
-    
+
   } catch (error) {
     console.error('❌ Gmail Callback Error:', error);
-    
+
     redirectUrl.searchParams.set('auth', 'error');
-    redirectUrl.searchParams.set('message', 
+    redirectUrl.searchParams.set('message',
       error instanceof Error ? error.message : 'Gmail connection failed'
     );
     return NextResponse.redirect(redirectUrl);

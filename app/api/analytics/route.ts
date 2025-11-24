@@ -62,11 +62,11 @@ function parseRequestParams(searchParams: URLSearchParams): { daysBack: number; 
  */
 export async function GET(request: NextRequest) {
   console.log('🔍 Analytics API called');
-  
+
   try {
     const { searchParams } = new URL(request.url);
     const { daysBack, useMock } = parseRequestParams(searchParams);
-    
+
     // For testing with mock data
     if (useMock) {
       console.log('Using mock data for analytics');
@@ -94,67 +94,170 @@ export async function GET(request: NextRequest) {
           is_real_data: false,
         },
       };
-      
+
       return NextResponse.json(mockData, {
         headers: { 'Cache-Control': 'no-store' },
       });
     }
-    
+
     // Initialize Supabase client (server-side)
     const supabase = await createClient();
-    
+
     // Get user session with retry logic
-    const { data: { session }, error: sessionError } = await withRetry(async () => {
-      const result = await supabase.auth.getSession();
-      if (result.error) throw result.error;
-      return result;
-    });
-    
-    if (sessionError || !session) {
+    let session;
+    try {
+      const result = await withRetry(async () => {
+        const res = await supabase.auth.getSession();
+        if (res.error) throw res.error;
+        return res;
+      });
+      session = result.data.session;
+    } catch (sessionError: any) {
       console.error('🔒 Authentication error:', sessionError?.message || 'No active session');
       return NextResponse.json(
         { error: 'Unauthorized - Please sign in' },
         { status: 401, headers: { 'Cache-Control': 'no-store' } }
       );
     }
-    
-    // Get user profile
-    const { data: { user }, error: userError } = await withRetry(async () => {
-      const result = await supabase.auth.getUser();
-      if (result.error) throw result.error;
-      return result;
-    });
 
-    if (userError || !user) {
+    if (!session) {
+      console.error('🔒 No active session found');
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in' },
+        { status: 401, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    // Get user profile
+    let user;
+    try {
+      const result = await withRetry(async () => {
+        const res = await supabase.auth.getUser();
+        if (res.error) throw res.error;
+        return res;
+      });
+      user = result.data.user;
+    } catch (userError: any) {
       console.error('🔍 User not found:', userError?.message || 'No user data');
       return NextResponse.json(
         { error: 'User not found' },
-        { status: 404, headers: { 'Cache-Control': 'no-store' }}
+        { status: 404, headers: { 'Cache-Control': 'no-store' } }
       );
     }
-    
+
+    if (!user) {
+      console.error('🔍 No user data available');
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
     // Cache: return cached analytics if present
     const cacheKey = `analytics:${user.id}:${daysBack}`;
     const cached = getCache<AnalyticsResponse>(cacheKey);
     if (cached && !useMock) {
+      console.log('✅ Returning cached analytics data');
       return NextResponse.json(cached, { headers: { 'Cache-Control': 'no-store' } });
     }
-    
-    // Ensure valid Google access token (refresh if needed)
+
+    // PRE-FLIGHT CHECK: Verify Gmail tokens exist before attempting to fetch
+    console.log('🔍 Checking if user has Gmail tokens...');
+    const { data: tokenCheck, error: tokenCheckError } = await supabase
+      .from('user_tokens')
+      .select('id, expires_at, refresh_token')
+      .eq('user_id', user.id)
+      .eq('provider', 'google')
+      .limit(1);
+
+    if (tokenCheckError) {
+      console.error('❌ Token check query failed:', tokenCheckError);
+    }
+
+    if (!tokenCheck || tokenCheck.length === 0) {
+      console.log('⚠️ No Gmail tokens found for user. Returning empty analytics with connection prompt.');
+      const emptyResponse: AnalyticsResponse = {
+        message: 'Please connect your Gmail account to see analytics',
+        total_count: 0,
+        period_days: daysBack,
+        daily_counts: [],
+        top_senders: [],
+        categories: {},
+        dataSource: 'none',
+        processing_metadata: {
+          source: 'api',
+          processed_at: new Date().toISOString(),
+          message_count: 0,
+          days_analyzed: daysBack,
+          is_real_data: false,
+        },
+        error: 'No Gmail connection found',
+      };
+
+      return NextResponse.json(emptyResponse, {
+        status: 200, // Return 200, not 400, so frontend can display empty state
+        headers: { 'Cache-Control': 'no-store' }
+      });
+    }
+
+    console.log('✅ Gmail tokens found. Proceeding to fetch and validate...');
+
+    // Ensure valid Google access token with TIMEOUT PROTECTION
     let oauth2Client: OAuth2Client;
     try {
-      const { oauth2 } = await ensureValidAccessToken(supabase as any, user.id);
+      console.log('🔄 Fetching valid access token (10s timeout)...');
+
+      // Wrap in a timeout promise to prevent indefinite hanging
+      const tokenPromise = ensureValidAccessToken(supabase as any, user.id);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Token fetch timeout - took longer than 10 seconds')), 10000)
+      );
+
+      const { oauth2 } = await Promise.race([tokenPromise, timeoutPromise]) as { oauth2: OAuth2Client };
       oauth2Client = oauth2;
+      console.log('✅ Valid access token obtained');
+
     } catch (error: any) {
-      console.error('🔍 Analytics API called with invalid params:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Invalid request parameters';
+      console.error('❌ Failed to get valid access token:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to authenticate with Gmail';
+
+      // If it's a timeout or token error, ask user to reconnect
+      if (errorMessage.includes('timeout') || errorMessage.includes('refresh token')) {
+        const reconnectResponse: AnalyticsResponse = {
+          message: 'Gmail connection expired. Please reconnect your account.',
+          total_count: 0,
+          period_days: daysBack,
+          daily_counts: [],
+          top_senders: [],
+          categories: {},
+          dataSource: 'none',
+          processing_metadata: {
+            source: 'api',
+            processed_at: new Date().toISOString(),
+            message_count: 0,
+            days_analyzed: daysBack,
+            is_real_data: false,
+          },
+          error: 'Gmail connection expired',
+        };
+
+        return NextResponse.json(reconnectResponse, {
+          status: 200,
+          headers: { 'Cache-Control': 'no-store' }
+        });
+      }
+
+      // For other errors, return generic error
       return NextResponse.json(
-        { error: errorMessage },
-        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+        {
+          error: 'Failed to authenticate with Gmail',
+          details: errorMessage
+        },
+        { status: 500, headers: { 'Cache-Control': 'no-store' } }
       );
     }
-    
+
     // Fetch data from Google APIs with pagination and batching
+    console.log('📧 Fetching Gmail messages and calendar events...');
     const [gmailMessages, calendarEvents] = await Promise.all([
       fetchGmailMessages(oauth2Client, daysBack, 200), // Limit to 200 messages
       fetchCalendarEvents(oauth2Client, {
@@ -163,7 +266,9 @@ export async function GET(request: NextRequest) {
         timeZone: 'America/Chicago' // Set appropriate timezone
       }),
     ]);
-    
+
+    console.log(`✅ Fetched ${gmailMessages.length} Gmail messages and ${calendarEvents.length} calendar events`);
+
     // Process and combine data via analytics processor service
     const analyticsData: AnalyticsResponse = computeAnalytics({
       gmail: gmailMessages as any,
@@ -171,22 +276,24 @@ export async function GET(request: NextRequest) {
       daysBack,
       userEmail: user.email ?? undefined,
     });
-    
+
+    console.log('✅ Analytics computed successfully');
+
     // Cache the computed analytics briefly
     setCache(cacheKey, analyticsData, 60 * 1000);
     return NextResponse.json(analyticsData, {
       headers: { 'Cache-Control': 'no-store' },
     });
-    
+
   } catch (error) {
     console.error('🚨 Analytics API Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch analytics data',
         details: errorMessage
       },
-      { status: 500, headers: { 'Cache-Control': 'no-store' }}
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
     );
   }
 }
@@ -195,7 +302,7 @@ export async function GET(request: NextRequest) {
 function generateMockAnalyticsData(): any {
   const now = new Date();
   const daysBack = 7;
-  
+
   return {
     message: "Mock analytics data - Connect Gmail for real insights",
     total_count: 45,
@@ -229,16 +336,16 @@ function calculateAverageResponseTime(data: any[], userEmail: string): number {
   // For now, return a reasonable default based on message volume
   const messageCount = data.length;
   if (messageCount === 0) return 0;
-  
+
   // Base response time in minutes, decreases with more messages (simulating busier days)
   return Math.max(30, 120 - Math.min(100, messageCount));
 }
 
 // Helper function to extract top projects from message subjects
-function extractTopProjects(data: any[]): Array<{name: string, messageCount: number}> {
+function extractTopProjects(data: any[]): Array<{ name: string, messageCount: number }> {
   const projectKeywords = ['project', 'initiative', 'launch', 'sprint', 'q1', 'q2', 'q3', 'q4'];
-  const projectCounts: {[key: string]: number} = {};
-  
+  const projectCounts: { [key: string]: number } = {};
+
   data.forEach(item => {
     if (item.platform === 'Google Calendar') {
       // Calendar events don't have subjects in the same way emails do
@@ -248,7 +355,7 @@ function extractTopProjects(data: any[]): Array<{name: string, messageCount: num
     try {
       const subject = (item.payload?.headers || [])
         .find((h: any) => h.name === 'Subject')?.value || '';
-      
+
       // Simple keyword matching - in a real app, this would be more sophisticated
       const words = subject.toLowerCase().split(/\s+/);
       for (const word of words) {
@@ -260,9 +367,9 @@ function extractTopProjects(data: any[]): Array<{name: string, messageCount: num
       // Skip errors
     }
   });
-  
+
   return Object.entries(projectCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
     .map(([name, messageCount]) => ({ name, messageCount }));
 }
@@ -341,7 +448,7 @@ function getPlainTextBody(payload: any): string {
 function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: string): any {
   const now = new Date();
   const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
-  
+
   // Count messages by day and track senders
   const dailyCounts: { [key: string]: number } = {};
   const senders: { [key: string]: number } = {};
@@ -350,7 +457,7 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
   let totalInbound = 0;
   let totalOutbound = 0;
   const threadsData: { [threadId: string]: any[] } = {}; // New object to store messages grouped by thread
-  
+
   data.forEach(item => {
     if (item.platform === 'Google Calendar') {
       // Process calendar event
@@ -384,51 +491,52 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
         const date = new Date(parseInt(item.internalDate));
         const dayKey = date.toISOString().split('T')[0];
         const hour = date.getHours();
-        
+
         // Count messages by day and hour
         dailyCounts[dayKey] = (dailyCounts[dayKey] || 0) + 1;
         hours[hour] = (hours[hour] || 0) + 1;
-        
+
         // Extract sender and recipient information
         const headers = item.payload?.headers || [];
         const fromHeader = headers.find((h: any) => h.name === 'From');
         const toHeader = headers.find((h: any) => h.name === 'To');
-        
+
         if (fromHeader && fromHeader.value) {
           // Extract email address if in format "Name <email@example.com>"
           const emailMatch = fromHeader.value.match(/<([^>]+)>/);
           const email = emailMatch ? emailMatch[1] : fromHeader.value;
           const domain = email.split('@')[1] || '';
-          
+
           // Track senders and domains
           senders[email] = (senders[email] || 0) + 1;
           if (domain) {
             domains[domain] = (domains[domain] || 0) + 1;
           }
-          
+
           // Determine if message is inbound or outbound
           if (toHeader && toHeader.value.includes(userEmail) && !fromHeader.value.includes(userEmail)) {
             totalInbound++;
-                } else if (fromHeader.value.includes(userEmail)) {
-                  totalOutbound++;
-                }
-          
-                // Group messages by threadId for later processing
-                if (item.threadId) {
-                  if (!threadsData[item.threadId]) {
-                    threadsData[item.threadId] = [];
-                  }
-                  threadsData[item.threadId].push(item);
-                }        }
+          } else if (fromHeader.value.includes(userEmail)) {
+            totalOutbound++;
+          }
+
+          // Group messages by threadId for later processing
+          if (item.threadId) {
+            if (!threadsData[item.threadId]) {
+              threadsData[item.threadId] = [];
+            }
+            threadsData[item.threadId].push(item);
+          }
+        }
       } catch (e) {
         console.error('Error processing message:', e);
       }
     }
   });
-  
+
   const totalCount = data.length;
   const topSenders = Object.entries(senders)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
     .map(([sender, count]) => ({ name: sender, count }));
 
@@ -437,7 +545,7 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
   const avgReplyTime = replyTimes.length > 0 ? replyTimes.reduce((sum, time) => sum + time, 0) / replyTimes.length : 0;
 
   const peakHour = Object.entries(hours).reduce((a, b) => a[1] > b[1] ? a : b, ['12', 0])[0];
-  
+
   // Calculate external vs internal percentage
   const internalDomains = ['gmail.com', 'company.com']; // Add your company domains
   let internalCount = 0;
@@ -449,10 +557,10 @@ function convertDataToAnalytics(data: any[], daysBack: number = 7, userEmail: st
   const externalCount = totalCount - internalCount;
   const externalPercentage = Math.round((externalCount / totalCount) * 100) || 0;
   const internalPercentage = 100 - externalPercentage;
-  
+
   // Calculate focus ratio (placeholder - could be based on time between messages)
   const focusRatio = Math.min(100, Math.max(60, 100 - Math.floor(totalCount / 10)));
-  
+
   return {
     total_count: totalCount,
     inbound_count: totalInbound,

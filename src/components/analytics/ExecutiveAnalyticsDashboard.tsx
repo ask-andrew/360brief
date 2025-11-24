@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAnalyticsWithJobs } from '@/hooks/useAnalyticsWithJobs';
 import { ProgressTracker } from './ProgressTracker';
+import { createClient } from '@/lib/supabase/client';
 
 // Insight Card Component
 interface InsightCardProps {
@@ -135,6 +136,9 @@ const RelationshipCard: React.FC<RelationshipCardProps> = ({
 export function ExecutiveAnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('7d');
   
+  // Convert timeRange to daysBack
+  const daysBack = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+  
   const {
     data: jobData,
     job,
@@ -144,10 +148,50 @@ export function ExecutiveAnalyticsDashboard() {
     error,
     progress,
   } = useAnalyticsWithJobs({ 
-    daysBack: 7,
+    daysBack,  // Use dynamic value from timeRange
     enabled: true,
     useDemo: false
   });
+
+  // Fetch insights from database
+  const [insights, setInsights] = useState<{
+    decisionVelocity?: any;
+    relationshipHealth?: any;
+    strategicRatio?: any;
+  }>({});
+
+  useEffect(() => {
+    async function fetchInsights() {
+      if (!jobData?.processing_metadata?.is_real_data) return;
+      
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) return;
+
+        // Fetch all insights for this user
+        const { data: insightsData } = await supabase
+          .from('analytics_insights')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (insightsData) {
+          const grouped = {
+            decisionVelocity: insightsData.find(i => i.insight_type === 'decision_velocity'),
+            relationshipHealth: insightsData.find(i => i.insight_type === 'relationship_health'),
+            strategicRatio: insightsData.find(i => i.insight_type === 'strategic_vs_reactive'),
+          };
+          setInsights(grouped);
+        }
+      } catch (err) {
+        console.error('Error fetching insights:', err);
+      }
+    }
+
+    fetchInsights();
+  }, [jobData]);
 
   // Show loading state
   if (isLoading) {
@@ -199,6 +243,28 @@ export function ExecutiveAnalyticsDashboard() {
 
   const data = jobData;
 
+  // Extract real insight values
+  const decisionVelocityScore = insights.decisionVelocity?.value?.velocity_score 
+    ? Math.round(insights.decisionVelocity.value.velocity_score * 10) / 10 
+    : 0;
+  const avgResponseHours = insights.decisionVelocity?.value?.avg_response_hours 
+    ? Math.round(insights.decisionVelocity.value.avg_response_hours * 10) / 10 
+    : 0;
+  const totalResponses = insights.decisionVelocity?.value?.total_responses || 0;
+
+  const relationshipHealthScore = insights.relationshipHealth?.value?.health_score || 0;
+  const totalContacts = insights.relationshipHealth?.value?.total_contacts || 0;
+  const topRelationships = insights.relationshipHealth?.value?.top_relationships || [];
+  const balancedCount = topRelationships.filter((r: any) => r.balance >= 0.4 && r.balance <= 0.6).length;
+  const balancedPercent = topRelationships.length > 0 
+    ? Math.round((balancedCount / topRelationships.length) * 100) 
+    : 0;
+
+  const strategicRatio = insights.strategicRatio?.value?.ratio || 0;
+  const strategicPercent = Math.round(strategicRatio * 100);
+  const reactiveSeconds = insights.strategicRatio?.value?.reactive_seconds || 0;
+  const reactiveHours = Math.round((reactiveSeconds / 3600) * 10) / 10;
+
   return (
     <div className="container mx-auto p-6 max-w-7xl space-y-8">
       {/* Header */}
@@ -242,23 +308,23 @@ export function ExecutiveAnalyticsDashboard() {
         
         <InsightCard
           title="Decision Velocity"
-          value="91.7"
-          subtitle="19.8h avg response time"
+          value={decisionVelocityScore || 0}
+          subtitle={`${avgResponseHours}h avg response time`}
           trend={{ value: 12, direction: 'up' }}
           icon={Zap}
           gradient="bg-gradient-to-br from-amber-500 to-orange-500"
-          badge="Excellent"
+          badge={decisionVelocityScore > 80 ? "Excellent" : decisionVelocityScore > 60 ? "Good" : "Needs Improvement"}
           badgeVariant="default"
         />
         
         <InsightCard
           title="Relationship Health"
-          value="83"
-          subtitle="164 active contacts"
+          value={relationshipHealthScore || 0}
+          subtitle={`${totalContacts} active contacts`}
           trend={{ value: 5, direction: 'up' }}
           icon={Heart}
           gradient="bg-gradient-to-br from-pink-500 to-rose-500"
-          badge="Strong"
+          badge={relationshipHealthScore > 75 ? "Strong" : relationshipHealthScore > 50 ? "Good" : "Needs Attention"}
           badgeVariant="default"
         />
         
@@ -293,13 +359,13 @@ export function ExecutiveAnalyticsDashboard() {
           <CardContent>
             <div className="space-y-4">
               <div className="text-center py-6">
-                <div className="text-6xl font-bold text-amber-600">0%</div>
+                <div className="text-6xl font-bold text-amber-600">{strategicPercent}%</div>
                 <p className="text-sm text-muted-foreground mt-2">Strategic Time</p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Reactive</span>
-                  <span className="font-medium">234.3 hours</span>
+                  <span className="font-medium">{reactiveHours} hours</span>
                 </div>
                 <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-amber-500 to-red-500" style={{ width: '100%' }} />
@@ -332,18 +398,18 @@ export function ExecutiveAnalyticsDashboard() {
             <div className="space-y-4">
               <div className="text-center py-6">
                 <div className="text-6xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                  91.7
+                  {decisionVelocityScore || 0}
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">Velocity Score</p>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Avg Response</span>
-                  <span className="font-medium">19.8 hours</span>
+                  <span className="font-medium">{avgResponseHours} hours</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Total Responses</span>
-                  <span className="font-medium">25</span>
+                  <span className="font-medium">{totalResponses}</span>
                 </div>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
@@ -373,18 +439,18 @@ export function ExecutiveAnalyticsDashboard() {
             <div className="space-y-4">
               <div className="text-center py-6">
                 <div className="text-6xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                  83
+                  {relationshipHealthScore || 0}
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">Health Score</p>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Active Contacts</span>
-                  <span className="font-medium">164</span>
+                  <span className="font-medium">{totalContacts}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Balanced Relationships</span>
-                  <span className="font-medium">127 (77%)</span>
+                  <span className="font-medium">{balancedCount} ({balancedPercent}%)</span>
                 </div>
               </div>
               <div className="bg-pink-50 border border-pink-200 rounded-lg p-3">
@@ -410,36 +476,20 @@ export function ExecutiveAnalyticsDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <RelationshipCard
-              email="Andrew Ledet <andrew.ledet@gmail.com>"
-              balance={0.97}
-              interactions={61}
-              rank={1}
-            />
-            <RelationshipCard
-              email="Leann Stuber <stuber.leann@gmail.com>"
-              balance={0.5}
-              interactions={18}
-              rank={2}
-            />
-            <RelationshipCard
-              email="Carrera Romanini <carrera.harris@gmail.com>"
-              balance={0.5}
-              interactions={6}
-              rank={3}
-            />
-            <RelationshipCard
-              email="Judy Shimkus <ahccb.president@gmail.com>"
-              balance={0.67}
-              interactions={5}
-              rank={4}
-            />
-            <RelationshipCard
-              email="Stephen <sjcavill@gmail.com>"
-              balance={0.67}
-              interactions={5}
-              rank={5}
-            />
+            {topRelationships.slice(0, 5).map((rel: any, index: number) => (
+              <RelationshipCard
+                key={index}
+                email={rel.email}
+                balance={rel.balance}
+                interactions={rel.total_interactions}
+                rank={index + 1}
+              />
+            ))}
+            {topRelationships.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">
+                No relationship data available yet. Run the orchestrator to compute insights.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

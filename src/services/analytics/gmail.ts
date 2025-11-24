@@ -10,40 +10,54 @@ export async function fetchGmailMessages(
 ): Promise<GmailMessage[]> {
   const gmail = google.gmail({ version: 'v1', auth: oauth })
 
-  // Do NOT use the 'q' parameter when the app only has Gmail metadata scope.
-  // The metadata scope does not support server-side search with 'q'.
+  // Calculate the date range for filtering
+  const afterDate = new Date()
+  afterDate.setDate(afterDate.getDate() - daysBack)
+  const afterTimestamp = Math.floor(afterDate.getTime() / 1000)
+  
+  console.log(`📧 Fetching Gmail messages from last ${daysBack} days (after ${afterDate.toISOString()})...`)
+
+  // We use 'gmail.readonly' scope which allows reading full message content.
+  // We list messages first, then fetch details.
   const list = await withRetry(async () =>
     gmail.users.messages.list({
       userId: 'me',
       maxResults,
-      // No 'q' here; callers should filter after fetching metadata if needed
       includeSpamTrash: false,
+      q: `after:${afterTimestamp}`, // Filter by date
     })
   )
 
   const items = list.data.messages || []
+  console.log(`📬 Found ${items.length} messages in the last ${daysBack} days`)
+  
   if (items.length === 0) return []
 
-  // Hydrate messages with metadata headers and timestamps using 'metadata' format
-  // to stay within the Gmail metadata scope. Add a modest cap and concurrency.
+  // Hydrate messages with full content for sentiment analysis.
+  // We limit to maxResults (default 100, max 200 from route) to avoid timeouts.
   const ids = items.slice(0, Math.min(maxResults, 200)).map((m) => m.id!).filter(Boolean)
 
   const concurrency = 5
   const results: GmailMessage[] = []
+  console.log(`🔄 Fetching details for ${ids.length} messages in batches of ${concurrency}...`)
+  
   for (let i = 0; i < ids.length; i += concurrency) {
     const batch = ids.slice(i, i + concurrency)
-    // Fetch each message metadata in parallel within the small batch
+    const batchNum = Math.floor(i / concurrency) + 1
+    const totalBatches = Math.ceil(ids.length / concurrency)
+    console.log(`  📦 Batch ${batchNum}/${totalBatches}: Fetching ${batch.length} messages...`)
+    
+    // Fetch each message in parallel within the small batch
     const fetched = await Promise.all(
       batch.map((id) =>
         withRetry(async () =>
           gmail.users.messages.get({
             userId: 'me',
             id,
-            format: 'metadata',
-            metadataHeaders: ['From', 'To', 'Subject', 'Date'],
+            format: 'full', // Fetch full content for sentiment analysis
           })
         ).then((res) => res.data)
-        .catch(() => null)
+          .catch(() => null)
       )
     )
 
@@ -55,13 +69,18 @@ export async function fetchGmailMessages(
         snippet: data.snippet ?? undefined,
         payload: {
           headers: (data.payload?.headers || []) as Array<{ name: string; value: string }>,
-          parts: undefined,
+          parts: data.payload?.parts, // Include parts for body extraction
+          body: data.payload?.body ? {
+            data: data.payload.body.data ?? undefined,
+            size: data.payload.body.size ?? undefined,
+          } : undefined,
         },
         internalDate: data.internalDate ?? undefined,
       })
     }
+    console.log(`  ✅ Batch ${batchNum}/${totalBatches} complete: ${fetched.filter(Boolean).length} messages fetched`)
   }
-
+  
+  console.log(`✅ Fetched ${results.length} total Gmail messages with full content`)
   return results
 }
-

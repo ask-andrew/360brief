@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Mail, 
-  Calendar, 
-  Users, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Mail,
+  Calendar,
+  Users,
   Clock,
   AlertTriangle,
   CheckCircle2,
@@ -35,6 +35,13 @@ import {
   Trash2
 } from 'lucide-react';
 import { EmailSenderAnalytics } from './EmailSenderAnalytics';
+import { CacheMetrics } from './CacheMetrics';
+import { ProgressTracker } from './ProgressTracker';
+import { StrategicRatioCard } from '@/components/analytics/StrategicRatioCard';
+import { DecisionVelocityCard } from '@/components/analytics/DecisionVelocityCard';
+import { RelationshipHealthCard } from '@/components/analytics/RelationshipHealthCard';
+import { useAnalyticsWithJobs } from '@/hooks/useAnalyticsWithJobs';
+
 
 type SentimentTrend = 'positive' | 'neutral' | 'negative';
 
@@ -85,14 +92,14 @@ const mockAnalyticsData = {
         sender: 'Team Alpha',
         subject: 'Sprint planning questions',
         channel: 'teams',
-        timestamp: '6 hours ago', 
+        timestamp: '6 hours ago',
         priority: 'high' as const,
         link: '/messages/3'
       }
     ],
     awaiting_their_reply: [
       {
-        id: '2', 
+        id: '2',
         sender: 'Mike Rodriguez',
         subject: 'Client feedback on proposal',
         channel: 'slack',
@@ -167,8 +174,8 @@ const zeroAnalyticsData = {
     awaiting_their_reply: [] as any[]
   },
   channel_analytics: {
-    by_channel: [ { name: 'Email', count: 0, percentage: 100 } ],
-    by_time: [ { hour: '', count: 0 } ] as Array<{ hour: string; count: number }>
+    by_channel: [{ name: 'Email', count: 0, percentage: 100 }],
+    by_time: [{ hour: '', count: 0 }] as Array<{ hour: string; count: number }>
   },
   message_distribution: {
     by_day: [] as Array<{ date: string; count: number }>,
@@ -208,7 +215,7 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
             </div>
             <div className="flex items-baseline space-x-2">
               {linkTo ? (
-                <button 
+                <button
                   onClick={() => window.location.href = linkTo}
                   className="text-3xl font-bold hover:text-primary transition-colors cursor-pointer flex items-center gap-1"
                 >
@@ -219,9 +226,8 @@ function AnalyticsMetricCard({ title, value, change, icon: Icon, description, in
                 <p className="text-3xl font-bold">{typeof value === 'number' ? value.toLocaleString() : value}</p>
               )}
               {change && (
-                <div className={`flex items-center space-x-1 text-sm ${
-                  change.direction === 'up' ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <div className={`flex items-center space-x-1 text-sm ${change.direction === 'up' ? 'text-green-600' : 'text-red-600'
+                  }`}>
                   {change.direction === 'up' ? (
                     <TrendingUp className="w-4 h-4" />
                   ) : (
@@ -263,7 +269,7 @@ function useAnalyticsData(isDemo: boolean) {
     const checkAuthAndFetchData = async () => {
       setLoading(true);
       setError(null);
-      
+
       let fetchTimeout: ReturnType<typeof setTimeout> | undefined;
       const doFetch = async (timeoutMs: number) => {
         const controller = new AbortController();
@@ -275,11 +281,21 @@ function useAnalyticsData(isDemo: boolean) {
       };
 
       try {
-        // first attempt (120s)
-        let response = await doFetch(120_000);
+        // first attempt (30s - reduced from 120s for faster feedback)
+        let response = await doFetch(30_000);
 
         if (response.ok) {
           const apiData = await response.json();
+
+          // Check for "no Gmail connection" scenario
+          if (apiData.error === 'No Gmail connection found' || apiData.error === 'Gmail connection expired') {
+            console.log('⚠️ Gmail not connected:', apiData.message);
+            setError(apiData.error);
+            setData(zeroAnalyticsData);
+            setLoading(false);
+            return;
+          }
+
           // Normalize by_time to include 'hour' for UI compatibility
           const normalizedByTime = (apiData?.channel_analytics?.by_time || []).map((t: any) => ({
             hour: t?.hour ?? t?.date ?? '',
@@ -335,7 +351,7 @@ function useAnalyticsData(isDemo: boolean) {
         const isAbort = (err as any)?.name === 'AbortError';
         if (isAbort) {
           try {
-            let response = await doFetch(120_000);
+            let response = await doFetch(30_000);
             if (response.ok) {
               const apiData = await response.json();
               const normalizedByTime = (apiData?.channel_analytics?.by_time || []).map((t: any) => ({
@@ -452,7 +468,25 @@ function LeadershipTip() {
 export function ModernAnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDemo, setIsDemo] = useState(false);
-  const { data, loading, error } = useAnalyticsData(isDemo);
+  
+  // Use the new background jobs hook
+  const { 
+    data: jobData, 
+    job, 
+    isLoading, 
+    isProcessing, 
+    error: jobError,
+    refetch 
+  } = useAnalyticsWithJobs({ 
+    daysBack: 7,
+    enabled: !isDemo,
+    useDemo: isDemo
+  });
+
+  // Use job data when available, otherwise fall back to zero data
+  const data = isDemo ? zeroAnalyticsData : (jobData || zeroAnalyticsData);
+  const loading = isLoading;
+  const error = jobError?.message || null;
 
   const formatResponseTime = (minutes: number) => {
     if (minutes >= 60) {
@@ -514,7 +548,7 @@ export function ModernAnalyticsDashboard() {
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
             </div>
-            
+
             {/* Leadership Tips */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
               <div className="flex items-start space-x-3">
@@ -533,6 +567,106 @@ export function ModernAnalyticsDashboard() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Show progress tracker when job is processing
+  if (isProcessing && job && !isDemo) {
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+              <p className="text-blue-100 mt-2">
+                Your personal communication insights
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="data-toggle" className="text-white text-sm">
+                    Demo Data
+                  </Label>
+                  <Switch
+                    id="data-toggle"
+                    checked={!isDemo}
+                    onCheckedChange={(checked) => setIsDemo(!checked)}
+                    className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/30"
+                  />
+                  <Label htmlFor="data-toggle" className="text-white text-sm">
+                    My Data
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Tracker */}
+        <div className="max-w-3xl mx-auto">
+          <ProgressTracker 
+            jobId={job.id}
+            onComplete={() => {
+              console.log('✅ Analytics job completed!');
+              // Data will automatically refresh via the hook
+            }}
+            onError={(errorMsg) => {
+              console.error('❌ Analytics job failed:', errorMsg);
+            }}
+          />
+        </div>
+
+        {/* Info Card */}
+        <Card className="max-w-3xl mx-auto">
+          <CardContent className="p-6">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Info className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-2">Why is this taking time?</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  We're fetching your Gmail messages securely in the background. This happens once, 
+                  and subsequent loads will be instant thanks to intelligent caching.
+                </p>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span>First load: 5-15 seconds</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Zap className="w-4 h-4 text-yellow-600" />
+                    <span>Next loads: &lt; 1 second</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Leadership Tip While Waiting */}
+        <Card className="max-w-3xl mx-auto bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
+          <CardContent className="p-6">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-2">Leadership Insight</h3>
+                <LeadershipTip />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -608,14 +742,14 @@ export function ModernAnalyticsDashboard() {
             </div>
             <div className="flex gap-3">
               {error && error.includes('Gmail not connected') ? (
-                <Button 
+                <Button
                   onClick={() => window.location.href = '/api/auth/gmail/authorize'}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Connect Gmail Account
                 </Button>
               ) : null}
-              <Button 
+              <Button
                 onClick={() => setIsDemo(true)}
                 variant="outline"
               >
@@ -660,6 +794,32 @@ export function ModernAnalyticsDashboard() {
         </div>
       </div>
 
+      {/* Cache Metrics & Refresh */}
+      {!isDemo && job && (
+        <CacheMetrics
+          lastSyncAt={job?.completed_at}
+          totalMessages={data.total_count}
+          cacheHitRate={job?.metadata?.cacheHitRate as number}
+          onRefresh={refetch}
+          isRefreshing={isLoading || isProcessing}
+        />
+      )}
+
+      {/* Strategic Insights - Level 10 Metrics */}
+      {/* Temporarily disabled to debug webpack error
+      {!isDemo && job && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">🧠 Level 10 Insights</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StrategicRatioCard userId={job?.user_id ?? ''} />
+            <DecisionVelocityCard userId={job?.user_id ?? ''} />
+            <RelationshipHealthCard userId={job?.user_id ?? ''} />
+          </div>
+        </div>
+      )}
+      */}
+
+
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <AnalyticsMetricCard
@@ -668,14 +828,14 @@ export function ModernAnalyticsDashboard() {
           change={{ value: data.recent_trends.messages.change, direction: data.recent_trends.messages.direction }}
           icon={MessageSquare}
         />
-        
+
         <AnalyticsMetricCard
           title="Avg Response Time"
           value={formatResponseTime(data.avg_response_time_minutes)}
           change={{ value: data.recent_trends.response_time.change, direction: data.recent_trends.response_time.direction }}
           icon={Clock}
         />
-        
+
         <AnalyticsMetricCard
           title="Focus Time"
           value={`${data.focus_ratio}%`}
@@ -683,7 +843,7 @@ export function ModernAnalyticsDashboard() {
           description="of work time protected"
           infoTooltip="Percentage of time spent in deep work vs. communication"
         />
-        
+
         <AnalyticsMetricCard
           title="Missed Messages"
           value={data.missed_messages}
@@ -702,7 +862,7 @@ export function ModernAnalyticsDashboard() {
           icon={data.sentiment_analysis.overall_trend === 'positive' ? Smile : data.sentiment_analysis.overall_trend === 'negative' ? Frown : Meh}
           description="positive communications"
         />
-        
+
         <AnalyticsMetricCard
           title="Priority Messages"
           value={data.priority_messages.awaiting_my_reply.length + data.priority_messages.awaiting_their_reply.length}
@@ -711,14 +871,14 @@ export function ModernAnalyticsDashboard() {
           infoTooltip="High-priority messages and direct questions requiring response"
           linkTo="/messages?filter=priority"
         />
-        
+
         <AnalyticsMetricCard
           title="Top Channel"
           value={data.channel_analytics.by_channel[0].name}
           icon={Hash}
           description={`${data.channel_analytics.by_channel[0].percentage}% of messages`}
         />
-        
+
         <AnalyticsMetricCard
           title="Peak Activity"
           value={data.channel_analytics.by_time.reduce((prev, current) => (prev.count > current.count) ? prev : current).hour}
@@ -751,21 +911,21 @@ export function ModernAnalyticsDashboard() {
                     <span className="text-sm font-medium">Inbound Messages</span>
                     <div className="flex items-center gap-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full" 
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
                           style={{ width: `${(data.inbound_count / data.total_count) * 100}%` }}
                         ></div>
                       </div>
                       <span className="text-sm font-bold">{data.inbound_count}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Outbound Messages</span>
                     <div className="flex items-center gap-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-600 h-2 rounded-full" 
+                        <div
+                          className="bg-green-600 h-2 rounded-full"
                           style={{ width: `${(data.outbound_count / data.total_count) * 100}%` }}
                         ></div>
                       </div>
@@ -789,21 +949,21 @@ export function ModernAnalyticsDashboard() {
                     <span className="text-sm font-medium">External Contacts</span>
                     <div className="flex items-center gap-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-purple-600 h-2 rounded-full" 
+                        <div
+                          className="bg-purple-600 h-2 rounded-full"
                           style={{ width: `${data.external_percentage}%` }}
                         ></div>
                       </div>
                       <span className="text-sm font-bold">{data.external_percentage}%</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Internal Contacts</span>
                     <div className="flex items-center gap-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-orange-600 h-2 rounded-full" 
+                        <div
+                          className="bg-orange-600 h-2 rounded-full"
                           style={{ width: `${data.internal_percentage}%` }}
                         ></div>
                       </div>
@@ -842,7 +1002,7 @@ export function ModernAnalyticsDashboard() {
         <TabsContent value="communication" className="space-y-6">
           {/* Email Sender Analytics */}
           <EmailSenderAnalytics senders={data.message_distribution.by_sender} />
-          
+
           {/* Priority Messages Section */}
           <Card>
             <CardHeader>
@@ -862,7 +1022,7 @@ export function ModernAnalyticsDashboard() {
                   <div className="text-2xl font-bold text-red-900">{data.priority_messages.awaiting_my_reply.length}</div>
                   <p className="text-sm text-red-700">Direct questions asked of me</p>
                 </div>
-                
+
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Clock className="w-4 h-4 text-blue-600" />
@@ -872,7 +1032,7 @@ export function ModernAnalyticsDashboard() {
                   <p className="text-sm text-blue-700">Questions I asked others</p>
                 </div>
               </div>
-              
+
               {/* Awaiting My Reply Messages */}
               {data.priority_messages.awaiting_my_reply.length > 0 && (
                 <div className="mb-4">
@@ -885,7 +1045,7 @@ export function ModernAnalyticsDashboard() {
                       <div key={message.id} className="flex justify-between items-center p-3 border border-red-200 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge 
+                            <Badge
                               variant={message.priority === 'high' ? 'destructive' : 'secondary'}
                               className="text-xs"
                             >
@@ -898,8 +1058,8 @@ export function ModernAnalyticsDashboard() {
                           <p className="font-medium">{message.subject}</p>
                           <p className="text-sm text-muted-foreground">From: {message.sender}</p>
                         </div>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={() => window.location.href = message.link}
                         >
                           <ArrowRight className="w-4 h-4 mr-2" />
@@ -910,7 +1070,7 @@ export function ModernAnalyticsDashboard() {
                   </div>
                 </div>
               )}
-              
+
               {/* Awaiting Their Reply Messages */}
               {data.priority_messages.awaiting_their_reply.length > 0 && (
                 <div>
@@ -923,7 +1083,7 @@ export function ModernAnalyticsDashboard() {
                       <div key={message.id} className="flex justify-between items-center p-3 border border-blue-200 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge 
+                            <Badge
                               variant="outline"
                               className="text-xs"
                             >
@@ -936,8 +1096,8 @@ export function ModernAnalyticsDashboard() {
                           <p className="font-medium">{message.subject}</p>
                           <p className="text-sm text-muted-foreground">To: {message.sender}</p>
                         </div>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => window.location.href = message.link}
                         >
@@ -968,12 +1128,11 @@ export function ModernAnalyticsDashboard() {
                       <span className="text-sm font-medium">{channel.name}</span>
                       <div className="flex items-center gap-2">
                         <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              index === 0 ? 'bg-blue-600' :
-                              index === 1 ? 'bg-green-600' :
-                              index === 2 ? 'bg-purple-600' : 'bg-orange-600'
-                            }`}
+                          <div
+                            className={`h-2 rounded-full ${index === 0 ? 'bg-blue-600' :
+                                index === 1 ? 'bg-green-600' :
+                                  index === 2 ? 'bg-purple-600' : 'bg-orange-600'
+                              }`}
                             style={{ width: `${channel.percentage}%` }}
                           ></div>
                         </div>
@@ -999,10 +1158,10 @@ export function ModernAnalyticsDashboard() {
                       <span className="text-sm font-medium">{timeSlot.hour}</span>
                       <div className="flex items-center gap-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-indigo-600 h-2 rounded-full"
-                            style={{ 
-                              width: `${(timeSlot.count / Math.max(...data.channel_analytics.by_time.map(t => t.count))) * 100}%` 
+                            style={{
+                              width: `${(timeSlot.count / Math.max(...data.channel_analytics.by_time.map(t => t.count))) * 100}%`
                             }}
                           ></div>
                         </div>
@@ -1073,7 +1232,7 @@ export function ModernAnalyticsDashboard() {
                     </div>
                     <p className="text-sm text-muted-foreground">Average response time</p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>&lt; 1 hour</span>
@@ -1118,10 +1277,9 @@ export function ModernAnalyticsDashboard() {
                       const size = Math.max(40, Math.min(80, (node.messageCount / 250) * 80));
                       return (
                         <div key={node.id} className="flex flex-col items-center">
-                          <div 
-                            className={`rounded-full border-2 border-blue-500 bg-blue-100 flex items-center justify-center relative ${
-                              index % 2 === 0 ? 'ml-4' : 'mr-4'
-                            }`}
+                          <div
+                            className={`rounded-full border-2 border-blue-500 bg-blue-100 flex items-center justify-center relative ${index % 2 === 0 ? 'ml-4' : 'mr-4'
+                              }`}
                             style={{ width: size, height: size }}
                             title={`${node.messageCount} messages, ${node.connections} connections`}
                           >
@@ -1137,18 +1295,18 @@ export function ModernAnalyticsDashboard() {
                       );
                     })}
                   </div>
-                  
+
                   {/* Column 2 - Connection Hub */}
                   <div className="flex flex-col justify-center items-center relative">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
                       <Network className="w-8 h-8 text-white" />
                     </div>
                     <p className="text-xs text-center mt-2 font-medium">Communication Hub</p>
-                    
+
                     {/* Animated connection lines */}
                     <div className="absolute inset-0 pointer-events-none">
                       {[...Array(8)].map((_, i) => (
-                        <div 
+                        <div
                           key={i}
                           className="absolute w-0.5 bg-gradient-to-r from-transparent via-purple-400 to-transparent"
                           style={{
@@ -1163,7 +1321,7 @@ export function ModernAnalyticsDashboard() {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Column 3 - Topics */}
                   <div className="space-y-6">
                     <h4 className="font-medium text-sm text-gray-600 text-center">Topics</h4>
@@ -1171,10 +1329,9 @@ export function ModernAnalyticsDashboard() {
                       const size = Math.max(40, Math.min(80, (node.messageCount / 250) * 80));
                       return (
                         <div key={node.id} className="flex flex-col items-center">
-                          <div 
-                            className={`rounded-full border-2 border-green-500 bg-green-100 flex items-center justify-center relative ${
-                              index % 2 === 0 ? 'mr-4' : 'ml-4'
-                            }`}
+                          <div
+                            className={`rounded-full border-2 border-green-500 bg-green-100 flex items-center justify-center relative ${index % 2 === 0 ? 'mr-4' : 'ml-4'
+                              }`}
                             style={{ width: size, height: size }}
                             title={`${node.messageCount} messages, ${node.connections} connections`}
                           >
@@ -1191,7 +1348,7 @@ export function ModernAnalyticsDashboard() {
                     })}
                   </div>
                 </div>
-                
+
                 {/* Legend */}
                 <div className="absolute bottom-4 right-4 bg-white rounded-lg p-3 shadow-sm border">
                   <div className="text-xs space-y-1">
@@ -1232,8 +1389,8 @@ export function ModernAnalyticsDashboard() {
                       </div>
                       <p className="text-xs text-muted-foreground">{contact.role}</p>
                     </div>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       className="h-7 px-2"
                       onClick={() => window.location.href = `mailto:${contact.email}?subject=Reconnecting`}
@@ -1264,7 +1421,7 @@ export function ModernAnalyticsDashboard() {
                     <div className="text-2xl font-bold text-green-800">{data.sentiment_analysis.positive}%</div>
                     <p className="text-sm text-green-700">Positive</p>
                   </div>
-                  
+
                   <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-center mb-2">
                       <Meh className="w-8 h-8 text-gray-600" />
@@ -1272,7 +1429,7 @@ export function ModernAnalyticsDashboard() {
                     <div className="text-2xl font-bold text-gray-800">{data.sentiment_analysis.neutral}%</div>
                     <p className="text-sm text-gray-700">Neutral</p>
                   </div>
-                  
+
                   <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
                     <div className="flex items-center justify-center mb-2">
                       <Frown className="w-8 h-8 text-red-600" />
@@ -1281,35 +1438,32 @@ export function ModernAnalyticsDashboard() {
                     <p className="text-sm text-red-700">Negative</p>
                   </div>
                 </div>
-                
-                <div className={`p-4 rounded-lg border ${
-                  data.sentiment_analysis.overall_trend === 'positive' 
-                    ? 'bg-green-50 border-green-200' 
+
+                <div className={`p-4 rounded-lg border ${data.sentiment_analysis.overall_trend === 'positive'
+                    ? 'bg-green-50 border-green-200'
                     : data.sentiment_analysis.overall_trend === 'negative'
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <h4 className={`font-medium mb-2 ${
-                    data.sentiment_analysis.overall_trend === 'positive' 
-                      ? 'text-green-900' 
-                      : data.sentiment_analysis.overall_trend === 'negative'
-                      ? 'text-red-900'
-                      : 'text-gray-900'
+                      ? 'bg-red-50 border-red-200'
+                      : 'bg-gray-50 border-gray-200'
                   }`}>
+                  <h4 className={`font-medium mb-2 ${data.sentiment_analysis.overall_trend === 'positive'
+                      ? 'text-green-900'
+                      : data.sentiment_analysis.overall_trend === 'negative'
+                        ? 'text-red-900'
+                        : 'text-gray-900'
+                    }`}>
                     Overall Sentiment: {data.sentiment_analysis.overall_trend.charAt(0).toUpperCase() + data.sentiment_analysis.overall_trend.slice(1)}
                   </h4>
-                  <p className={`text-sm ${
-                    data.sentiment_analysis.overall_trend === 'positive' 
-                      ? 'text-green-800' 
+                  <p className={`text-sm ${data.sentiment_analysis.overall_trend === 'positive'
+                      ? 'text-green-800'
                       : data.sentiment_analysis.overall_trend === 'negative'
-                      ? 'text-red-800'
-                      : 'text-gray-800'
-                  }`}>
-                    {data.sentiment_analysis.overall_trend === 'positive' 
-                      ? 'Your communications have a predominantly positive tone, indicating healthy professional relationships.' 
+                        ? 'text-red-800'
+                        : 'text-gray-800'
+                    }`}>
+                    {data.sentiment_analysis.overall_trend === 'positive'
+                      ? 'Your communications have a predominantly positive tone, indicating healthy professional relationships.'
                       : data.sentiment_analysis.overall_trend === 'negative'
-                      ? 'Communications show some negative sentiment. Consider reviewing tone in challenging conversations.'
-                      : 'Communications maintain a professional, neutral tone.'}
+                        ? 'Communications show some negative sentiment. Consider reviewing tone in challenging conversations.'
+                        : 'Communications maintain a professional, neutral tone.'}
                   </p>
                 </div>
               </div>
@@ -1332,11 +1486,11 @@ export function ModernAnalyticsDashboard() {
                     You maintain {data.focus_ratio}% focus time. Consider blocking calendar time for deep work.
                   </p>
                 </div>
-                
+
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <h4 className="font-medium text-green-900 mb-2">Communication Balance</h4>
                   <p className="text-sm text-green-800">
-                    Good balance with {data.external_percentage}% external communication. 
+                    Good balance with {data.external_percentage}% external communication.
                     Keep nurturing customer/partner relationships.
                   </p>
                 </div>

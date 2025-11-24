@@ -272,6 +272,18 @@ const ExecutiveDashboard = () => {
     setProjectProgress(newProjectProgress);
   }, [analyticsData, isLoading]);
 
+  const [sentimentTab, setSentimentTab] = useState('all');
+
+  const filteredMessages = useMemo(() => {
+    if (sentimentTab === 'sent') {
+      return messagesForAnalysis.filter(m => m.isSent);
+    }
+    if (sentimentTab === 'received') {
+      return messagesForAnalysis.filter(m => !m.isSent);
+    }
+    return messagesForAnalysis;
+  }, [messagesForAnalysis, sentimentTab]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -419,7 +431,22 @@ const ExecutiveDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <SentimentInsights messages={messagesForAnalysis} />
+            <Tabs value={sentimentTab} onValueChange={setSentimentTab}>
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="sent">Sent</TabsTrigger>
+                <TabsTrigger value="received">Received</TabsTrigger>
+              </TabsList>
+              <TabsContent value="all">
+                <SentimentInsights messages={filteredMessages} />
+              </TabsContent>
+              <TabsContent value="sent">
+                <SentimentInsights messages={filteredMessages} />
+              </TabsContent>
+              <TabsContent value="received">
+                <SentimentInsights messages={filteredMessages} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
