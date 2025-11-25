@@ -11,23 +11,14 @@ import {
   TrendingUp,
   TrendingDown,
   Mail,
-  Calendar,
   Users,
   Clock,
   AlertTriangle,
-  CheckCircle2,
-  BarChart3,
   MessageSquare,
   Target,
-  Zap,
-  Eye,
-  Heart,
   Frown,
   Meh,
   Smile,
-  Network,
-  Timer,
-  ArrowRight,
   Info,
   ExternalLink
 } from 'lucide-react';
@@ -170,6 +161,7 @@ function useFastAnalyticsData(isDemo: boolean) {
   const [data, setData] = useState(fastDemoData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gmailConnected, setGmailConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (isDemo) {
@@ -190,9 +182,41 @@ function useFastAnalyticsData(isDemo: boolean) {
         const supa = getSupabaseClient();
         const { data: sessionData } = await supa.auth.getSession();
         const token = sessionData.session?.access_token;
+        const userId = sessionData.session?.user?.id;
+        
+        if (!userId) {
+          throw new Error('Not authenticated');
+        }
+
         const authHeaders: HeadersInit = token
           ? { Authorization: `Bearer ${token}` }
           : {};
+
+        // Check if Gmail is connected
+        console.log('🔍 Checking Gmail connection...');
+        const { data: connections, error: connError } = await supa
+          .from('oauth_connections')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('provider', 'google')
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (connError) {
+          console.warn('Error checking Gmail connection:', connError);
+        }
+
+        if (!connections) {
+          console.log('❌ Gmail not connected');
+          setGmailConnected(false);
+          setError('gmail_not_connected');
+          setData(fastDemoData);
+          setLoading(false);
+          return;
+        }
+
+        console.log('✅ Gmail connected');
+        setGmailConnected(true);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
@@ -229,10 +253,10 @@ function useFastAnalyticsData(isDemo: boolean) {
               const jobResult = await jobResponse.json();
               console.log('✅ Job created:', jobResult.job.id);
               
-              // Poll for job completion
+              // Poll for job completion with reduced timeout
               const pollForCompletion = async () => {
                 let attempts = 0;
-                const maxAttempts = 60; // 5 minutes max
+                const maxAttempts = 24; // 2 minutes max (24 * 5 seconds)
                 
                 while (attempts < maxAttempts) {
                   await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
@@ -241,7 +265,7 @@ function useFastAnalyticsData(isDemo: boolean) {
                     const jobStatusResponse = await fetch(`/api/analytics/jobs/${jobResult.job.id}`, { headers: authHeaders });
                     if (jobStatusResponse.ok) {
                       const jobData = await jobStatusResponse.json();
-                      console.log(`📋 Job status: ${jobData.status} (${jobData.progress || 0}%)`);
+                      console.log(`📋 Job status: ${jobData.status} (${jobData.progress || 0}/${jobData.total || 0})`);
                       
                       if (jobData.status === 'completed') {
                         // Job completed, fetch analytics from cache
@@ -250,12 +274,17 @@ function useFastAnalyticsData(isDemo: boolean) {
                           const analyticsData = await analyticsResponse.json();
                           if (analyticsData.total_count > 0) {
                             setData(analyticsData);
+                            setLoading(false);
                             console.log('✅ Real analytics loaded from job completion');
                             return;
                           }
                         }
                       } else if (jobData.status === 'failed') {
-                        throw new Error(jobData.error || 'Job failed');
+                        console.error('❌ Job failed:', jobData.error);
+                        setError(`Job failed: ${jobData.error || 'Unknown error'}`);
+                        setData(fastDemoData);
+                        setLoading(false);
+                        return;
                       }
                     }
                   } catch (pollError) {
@@ -265,30 +294,35 @@ function useFastAnalyticsData(isDemo: boolean) {
                   attempts++;
                 }
                 
-                // If we get here, job took too long or failed, fallback to demo
-                console.log('⏰ Job taking too long, using demo data');
+                // If we get here, job took too long, fallback to demo
+                console.log('⏰ Job timeout after 2 minutes, using demo data');
+                setError('Job is taking longer than expected. Showing demo data. Please try again later.');
                 setData(fastDemoData);
+                setLoading(false);
               };
               
               // Start polling
               pollForCompletion();
               
             } else {
-              throw new Error('Failed to create job');
+              const jobError = await jobResponse.json();
+              throw new Error(jobError.error || 'Failed to create job');
             }
           } else {
             // Use cached analytics data
             setData(apiData);
+            setLoading(false);
             console.log('✅ Real analytics loaded from cache');
           }
         } else {
-          throw new Error(`Failed to fetch analytics (${response.status})`);
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to fetch analytics (${response.status})`);
         }
       } catch (err) {
         console.warn('Fast analytics fetch failed, using demo:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage);
         setData(fastDemoData); // Always fallback to demo
-      } finally {
         setLoading(false);
       }
     };
@@ -296,13 +330,13 @@ function useFastAnalyticsData(isDemo: boolean) {
     fetchRealData();
   }, [isDemo]);
 
-  return { data, loading, error };
+  return { data, loading, error, gmailConnected };
 }
 
 export function FastAnalyticsDashboard() {
   const [isDemo, setIsDemo] = useState(true); // Start with demo for instant loading
   
-  const { data, loading, error } = useFastAnalyticsData(isDemo);
+  const { data, loading, error, gmailConnected } = useFastAnalyticsData(isDemo);
 
   const formatResponseTime = (minutes: number) => {
     if (minutes >= 60) {
@@ -353,7 +387,7 @@ export function FastAnalyticsDashboard() {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Your Analytics</h3>
           <p className="text-gray-600 mb-4 max-w-md mx-auto">
-            We're fetching your Gmail data and generating insights. This may take a few moments...
+            We&apos;re fetching your Gmail data and generating insights. This may take a few moments...
           </p>
           
           {/* Job Progress Indicator */}
@@ -424,6 +458,60 @@ export function FastAnalyticsDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Gmail Not Connected Error */}
+      {error === 'gmail_not_connected' && gmailConnected === false && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg text-gray-900 mb-2">Gmail Not Connected</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  To view your real communication analytics, you need to connect your Gmail account first. 
+                  This allows us to analyze your email patterns and provide personalized insights.
+                </p>
+                <Button 
+                  className="bg-orange-600 hover:bg-orange-700"
+                  onClick={() => window.location.href = '/dashboard'}
+                >
+                  Connect Gmail Now
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Job Timeout Error */}
+      {error && error.includes('taking longer than expected') && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Clock className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg text-gray-900 mb-2">Processing Taking Longer Than Expected</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Your analytics job is still running in the background. We&apos;ve loaded demo data for now. 
+                  Please check back in a few minutes, or toggle to &quot;Demo Data&quot; to explore the interface.
+                </p>
+                <Button 
+                  variant="outline"
+                  className="border-yellow-600 text-yellow-700 hover:bg-yellow-100"
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh Page
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
