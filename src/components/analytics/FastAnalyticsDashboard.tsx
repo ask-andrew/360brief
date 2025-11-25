@@ -336,6 +336,11 @@ function useFastAnalyticsData(isDemo: boolean) {
 export function FastAnalyticsDashboard() {
   const [isDemo, setIsDemo] = useState(true); // Start with demo for instant loading
   
+  // Version check log
+  useEffect(() => {
+    console.log('🚀 FastAnalyticsDashboard v2025-11-25-1145 loaded');
+  }, []);
+  
   const { data, loading, error, gmailConnected } = useFastAnalyticsData(isDemo);
 
   const formatResponseTime = (minutes: number) => {
