@@ -1,5 +1,6 @@
 'use client';
 
+import { Providers } from '@/app/providers';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Inter } from "next/font/google";
@@ -52,8 +53,8 @@ export default function RootLayout({
 
   return (
     <html lang="en" className="h-full bg-white">
-      <body className={`${inter.variable} font-sans h-full`}>
-        {children}
+      <body className={`${inter.variable} font-sans h-full`}> 
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

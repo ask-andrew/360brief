@@ -52,8 +52,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-**/lib/
-!src/lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -78,3 +77,7 @@ MANIFEST
 
 # Local Netlify folder
 .netlify
+services/risk_radar/venv/
+.venv/
+*.pyc
+services/data_processing/venv_minimal/

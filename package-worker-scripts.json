@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "worker": "tsx workers/analytics-worker.ts",
+    "worker:dev": "tsx watch workers/analytics-worker.ts"
+  }
+}

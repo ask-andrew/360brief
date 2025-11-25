@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { AppSidebar } from '@/components/layout/AppSidebar';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
