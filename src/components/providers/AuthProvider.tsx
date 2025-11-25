@@ -33,7 +33,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
 
         if (event === 'SIGNED_IN' && session) {
-          router.push('/dashboard');
+          // Only redirect to dashboard if we're on a public page
+          const path = window.location.pathname;
+          if (path === '/login' || path === '/' || path === '/signup') {
+            router.push('/dashboard');
+          }
         } else if (event === 'SIGNED_OUT') {
           router.push('/login');
         }
